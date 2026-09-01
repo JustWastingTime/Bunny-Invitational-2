@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Team {
+  id              String      @id
+  name            String
+  shortName       String?
+  tagline         String?
+  color           String      @default("#e07a5f")
+  backgroundPath  String?
+  group           String?
+  groupSlot       Int?
+  kind            String      @default("main")
+  umaEntries      UmaEntry[]
+  matchTeams      MatchTeam[]
+}
+
+model UmaEntry {
+  id          String @id @default(cuid())
+  teamId      String
+  team        Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  category    String
+  slot        Int
+  trainer     String @default("")
+  umaName     String @default("TBD")
+  spriteId    String @default("")
+  rating      String?
+  style       String?
+  aptTerrain  String?
+  aptDistance String?
+  aptStyle    String?
+  speed       Int    @default(0)
+  stamina     Int    @default(0)
+  power       Int    @default(0)
+  guts        Int    @default(0)
+  wisdom      Int    @default(0)
+  skillsJson  String @default("[]")
+
+  @@unique([teamId, category, slot])
+}
+
+model Match {
+  id        String      @id
+  stage     String
+  group     String?
+  day       Int
+  sortOrder Int
+  label     String
+  setNumber Int?
+  teams     MatchTeam[]
+  races     Race[]
+}
+
+model MatchTeam {
+  id      String  @id @default(cuid())
+  matchId String
+  teamId  String?
+  slot    Int
+  match   Match   @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  team    Team?   @relation(fields: [teamId], references: [id])
+
+  @@unique([matchId, slot])
+}
+
+model Race {
+  id          String      @id @default(cuid())
+  matchId     String
+  category    String
+  match       Match       @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  placements  Placement[]
+
+  @@unique([matchId, category])
+}
+
+model Placement {
+  id     String @id @default(cuid())
+  raceId String
+  place  Int
+  teamId String
+  slot   Int
+  race   Race   @relation(fields: [raceId], references: [id], onDelete: Cascade)
+
+  @@unique([raceId, place])
+}
+
+model OverlayState {
+  id             String  @id @default("default")
+  activeMatchId  String?
+  activeCategory String  @default("sprint")
+  view           String  @default("matchup")
+  visible        Boolean @default(true)
+  gatesJson      String  @default("{}")
+}

@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bunny Invitational 2
 
-## Getting Started
+Public tournament site plus a staff desk and an OBS overlay. Scores live in a database — no GitHub JSON pushes.
 
-First, run the development server:
+## Stack
+
+- Next.js (App Router) + Tailwind
+- Prisma + SQLite locally (switch to Neon Postgres for Vercel)
+- Discord login (Auth.js / NextAuth) with a staff user-ID allowlist
+
+## Local setup
 
 ```bash
+npm install
+copy .env.example .env
+npx prisma db push
+npx prisma db seed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Staff desk: [http://localhost:3000/staff](http://localhost:3000/staff) (dev bypass is on by default). OBS: [http://localhost:3000/obs](http://localhost:3000/obs) at 1920×1080.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Discord staff login
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Create a Discord application and set the redirect to `https://your-domain/api/auth/callback/discord` (and `http://localhost:3000/api/auth/callback/discord` for local).
+2. Put the client id/secret in env.
+3. Set `DISCORD_STAFF_IDS` to a comma-separated list of Discord user snowflakes.
+4. Set `DEV_STAFF_BYPASS=false` in production.
 
-## Learn More
+## Vercel + Neon
 
-To learn more about Next.js, take a look at the following resources:
+1. Create a Neon database and copy the connection string.
+2. In `prisma/schema.prisma`, change `provider = "sqlite"` to `provider = "postgresql"`.
+3. Set `DATABASE_URL` (and `NEXTAUTH_SECRET`, Discord vars) in the Vercel project.
+4. Build command can stay `prisma generate && prisma db push && next build` (or run `db push` / migrate once).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Pages
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Path | Who |
+|---|---|
+| `/` `/rules` `/teams` `/schedule` `/scoreboard` `/stats` | Audience |
+| `/staff` `/staff/groups` `/staff/scores` `/staff/overlay` `/staff/teams/[id]` | Staff |
+| `/obs` | OBS browser source (director-controlled) |
