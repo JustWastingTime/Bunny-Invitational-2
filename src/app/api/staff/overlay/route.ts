@@ -6,7 +6,7 @@ import { mergeRaceGates, parseOverlayBlob, stringifyOverlayBlob } from "@/lib/ov
 
 export const dynamic = "force-dynamic";
 
-const VIEWS = ["scoreboard", "matchup", "race", "groups"] as const;
+const VIEWS = ["scoreboard", "matchup", "race", "groups", "pause"] as const;
 
 export async function PUT(request: Request) {
   const staff = await requireStaff();

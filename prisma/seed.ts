@@ -181,8 +181,8 @@ async function main() {
     data: { id: "default", activeMatchId: "group-a-1", activeCategory: "sprint", view: "matchup", visible: true },
   });
 
-  const playInColors = ["#7a5c52", "#c9a227", "#4a8a62", "#5c6bc0", "#b05c4a"];
-  for (let i = 0; i < 5; i++) {
+  const playInColors = ["#7a5c52", "#c9a227", "#4a8a62", "#5c6bc0", "#b05c4a", "#6a4c93", "#2e7d6b"];
+  for (let i = 0; i < 7; i++) {
     const id = `play-in-${i + 1}`;
     await prisma.team.create({
       data: {
@@ -203,7 +203,26 @@ async function main() {
     }
   }
 
-  console.log("Seeded 21 teams, 5 play-ins, group matches, and knockout shell.");
+  const playInIds = Array.from({ length: 7 }, (_, i) => `play-in-${i + 1}`);
+  for (let i = 0; i < FANO.length; i++) {
+    await prisma.match.create({
+      data: {
+        id: `playin-${i + 1}`,
+        stage: "playin",
+        group: "P",
+        day: 0,
+        teams: {
+          create: FANO[i].map((memberIndex, slot) => ({
+            slot,
+            teamId: playInIds[memberIndex],
+          })),
+        },
+        races: { create: CATEGORIES.map((category) => ({ category })) },
+      },
+    });
+  }
+
+  console.log("Seeded 21 teams, 7 play-ins, group matches, play-in matches, and knockout shell.");
 }
 
 main()

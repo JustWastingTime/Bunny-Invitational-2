@@ -114,8 +114,9 @@ export function groupStandings(
   matches: MatchRef[],
   rosters: RosterEntry[],
   pop: PopSource,
+  stage = "group",
 ): TeamStanding[] {
-  const groupMatches = matches.filter((m) => m.stage === "group" && m.group === group);
+  const groupMatches = matches.filter((m) => m.stage === stage && m.group === group);
   const stats = new Map<string, TeamStanding>();
   for (const id of teamIds) {
     stats.set(id, { teamId: id, points: 0, wins: 0, firsts: 0, matchesPlayed: 0, rank: 0 });

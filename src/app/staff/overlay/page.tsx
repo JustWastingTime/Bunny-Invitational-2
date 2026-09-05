@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CATEGORIES, CATEGORY_LABEL } from "@/lib/constants";
 import { defaultGate, gateKey } from "@/lib/overlay-gates";
 import { usePublicData } from "@/components/use-public-data";
+import { PlayInSchedule } from "@/components/tournament-ui";
 import type { PublicMatch, PublicUma } from "@/lib/types";
 
 const VIEWS = [
@@ -11,6 +12,7 @@ const VIEWS = [
   { id: "race", label: "Show Race" },
   { id: "scoreboard", label: "Show Scoreboard" },
   { id: "groups", label: "Show Group Table" },
+  { id: "pause", label: "Show Pause" },
 ] as const;
 
 export default function OverlayDirectorPage() {
@@ -119,10 +121,14 @@ export default function OverlayDirectorPage() {
               onChange={(e) => setStagedMatchId(e.target.value || null)}
             >
               <option value="">(auto)</option>
-              {data.matches.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.label}
-                </option>
+              {matchOptGroups(data.matches).map((group) => (
+                <optgroup key={group.label} label={group.label}>
+                  {group.matches.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </label>
@@ -175,6 +181,19 @@ export default function OverlayDirectorPage() {
           </div>
         </div>
       </div>
+
+      {data.matches.some((m) => m.stage === "playin") ? (
+        <section className="rounded-3xl border border-[var(--line)] bg-white p-4">
+          <p className="mb-3 text-sm text-[var(--ink-soft)]">
+            Play-in uses the same Steiner triples as a group. Click a match to prep it — OBS stays put until you Show.
+          </p>
+          <PlayInSchedule
+            matches={data.matches.filter((m) => m.stage === "playin")}
+            nowId={stagedMatchId ?? o.activeMatchId}
+            onPick={setStagedMatchId}
+          />
+        </section>
+      ) : null}
 
       {o.view === "matchup" && o.visible ? (
         <section className="grid gap-3 rounded-3xl border border-[var(--line)] bg-white p-4">
@@ -261,7 +280,22 @@ function liveViewLabel(view: string) {
   if (view === "race") return "Race";
   if (view === "scoreboard") return "Scoreboard";
   if (view === "groups") return "Group table";
+  if (view === "pause") return "Pause";
   return "Match up";
+}
+
+function matchOptGroups(matches: PublicMatch[]) {
+  const playin = matches.filter((m) => m.stage === "playin");
+  const groups = ["A", "B", "C"].map((g) => ({
+    label: `Group ${g}`,
+    matches: matches.filter((m) => m.stage === "group" && m.group === g),
+  }));
+  const knockout = matches.filter((m) => m.stage !== "group" && m.stage !== "playin");
+  return [
+    ...(playin.length ? [{ label: "Play-in", matches: playin }] : []),
+    ...groups.filter((g) => g.matches.length),
+    ...(knockout.length ? [{ label: "Knockout", matches: knockout }] : []),
+  ];
 }
 
 function GatesCard({

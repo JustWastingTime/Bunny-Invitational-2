@@ -85,7 +85,7 @@ export default async function StaffHome() {
           Second-club entries. Their umas do not count toward the main field’s oshi / popularity — they have their own
           counter. Teams that make it through can remake for the main stage.
         </p>
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           {playIn.map((t) => (
             <li key={t.id}>
               <TeamCard team={t} />

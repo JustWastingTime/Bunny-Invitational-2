@@ -29,9 +29,14 @@ export const POPULAR_PENALTY_SECOND_THIRD = -1;
 export const GROUPS = ["A", "B", "C"] as const;
 export type GroupId = (typeof GROUPS)[number];
 export const TEAMS_PER_GROUP = 7;
-export const PLAY_IN_TEAM_COUNT = 5;
+export const PLAY_IN_TEAM_COUNT = 7;
 export const TEAM_KIND_MAIN = "main";
 export const TEAM_KIND_PLAYIN = "playin";
+export const PLAY_IN_STAGE = "playin";
+export const PLAY_IN_GROUP = "P";
+/** All seven play-in matches run on this one session (Match.day). */
+export const PLAY_IN_DAY = 0;
+export const PLAY_IN_EVENT_LABEL = "Sat 3 Oct 2026, 10:00 PM ICT";
 
 export const FANO_TRIPLES: [number, number, number][] = [
   [0, 1, 3],

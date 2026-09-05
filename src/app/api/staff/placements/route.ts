@@ -39,5 +39,5 @@ export async function PUT(request: Request) {
   await seedKnockoutSlots();
   const payload = await buildPublicPayload();
   const match = payload.matches.find((m) => m.id === body.matchId);
-  return NextResponse.json({ ok: true, match, groups: payload.groups });
+  return NextResponse.json({ ok: true, match, groups: payload.groups, playIn: payload.playIn });
 }

@@ -2,19 +2,25 @@
 
 import { useState } from "react";
 import type { GroupStandingRow, PublicMatch, PublicPayload } from "@/lib/types";
+import { PLAY_IN_EVENT_LABEL } from "@/lib/constants";
 
 export function GroupTable({
   group,
   standings,
+  note,
 }: {
   group: string;
   standings: GroupStandingRow[];
+  note?: string;
 }) {
+  const playIn = group === "Play-in" || group === "P";
   return (
     <section>
       <div className="mb-2 flex items-baseline justify-between gap-3">
-        <h3 className="font-[family-name:var(--font-display)] text-2xl">Group {group}</h3>
-        <p className="text-xs text-[var(--ink-soft)]">Top 2 Semis · 3–5 LCQ</p>
+        <h3 className="font-[family-name:var(--font-display)] text-2xl">{playIn ? "Play-in" : `Group ${group}`}</h3>
+        <p className="text-xs text-[var(--ink-soft)]">
+          {note ?? (playIn ? "Own oshi & popularity pool" : "Top 2 Semis · 3–5 LCQ")}
+        </p>
       </div>
       <div className="overflow-x-auto rounded-2xl bg-white/50">
         <table className="ink-table min-w-[22rem]">
@@ -32,7 +38,7 @@ export function GroupTable({
             {standings.map((row) => (
               <tr
                 key={row.teamId}
-                className={row.rank <= 2 ? "qualify" : row.rank <= 5 ? "playoff" : ""}
+                className={playIn ? "" : row.rank <= 2 ? "qualify" : row.rank <= 5 ? "playoff" : ""}
               >
                 <td className="font-semibold">{row.rank}</td>
                 <td>
@@ -156,25 +162,51 @@ export function GroupSchedule({
   );
 }
 
+export function PlayInSchedule({
+  matches,
+  nowId,
+  onPick,
+}: {
+  matches: PublicMatch[];
+  nowId?: string | null;
+  onPick?: (matchId: string) => void;
+}) {
+  const rows = [...matches].sort((a, b) => a.sortOrder - b.sortOrder);
+  return (
+    <section>
+      <h3 className="mb-3 font-[family-name:var(--font-display)] text-2xl">Play-in</h3>
+      <DayColumn label={PLAY_IN_EVENT_LABEL} matches={rows} nowId={nowId} onPick={onPick} />
+    </section>
+  );
+}
+
 function DayColumn({
   label,
   matches,
   nowId,
   className = "",
+  onPick,
 }: {
   label: string;
   matches: PublicMatch[];
   nowId?: string | null;
   className?: string;
+  onPick?: (matchId: string) => void;
 }) {
   if (!matches.length) return null;
   return (
     <div className={className}>
       <p className="kicker mb-2">{label}</p>
       <div className="grid gap-2">
-        {matches.map((match) => (
-          <CompactMatch key={match.id} match={match} highlight={match.id === nowId} />
-        ))}
+        {matches.map((match) => {
+          const card = <CompactMatch match={match} highlight={match.id === nowId} />;
+          if (!onPick) return <div key={match.id}>{card}</div>;
+          return (
+            <button key={match.id} type="button" className="text-left" onClick={() => onPick(match.id)}>
+              {card}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

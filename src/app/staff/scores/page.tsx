@@ -12,7 +12,10 @@ export default function ScoresPage() {
   const [category, setCategory] = useState<string>("sprint");
   const [places, setPlaces] = useState<Record<number, string>>({});
   const [status, setStatus] = useState("");
-  const [preview, setPreview] = useState<PublicPayload["groups"] | null>(null);
+  const [preview, setPreview] = useState<{
+    groups: PublicPayload["groups"];
+    playIn: PublicPayload["playIn"];
+  } | null>(null);
 
   const match: PublicMatch | undefined = useMemo(() => {
     if (!data) return undefined;
@@ -68,7 +71,7 @@ export default function ScoresPage() {
     const json = await res.json();
     if (res.ok) {
       setStatus("Saved. Points and qualification updated.");
-      setPreview(json.groups ?? null);
+      setPreview({ groups: json.groups ?? [], playIn: json.playIn });
     } else setStatus(json.error ?? "Failed");
   }
 
@@ -175,10 +178,13 @@ export default function ScoresPage() {
       </section>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        {(preview ?? data.groups).map((g) => (
+        {(preview?.groups ?? data.groups).map((g) => (
           <GroupTable key={g.id} group={g.id} standings={g.standings} />
         ))}
       </div>
+      {(preview?.playIn ?? data.playIn)?.standings?.length ? (
+        <GroupTable group="Play-in" standings={(preview?.playIn ?? data.playIn).standings} />
+      ) : null}
     </div>
   );
 }

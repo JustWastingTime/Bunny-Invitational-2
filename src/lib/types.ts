@@ -113,6 +113,7 @@ export type PublicPayload = {
   teams: PublicTeam[];
   matches: PublicMatch[];
   groups: { id: string; standings: GroupStandingRow[] }[];
+  playIn: { standings: GroupStandingRow[] };
   grandFinal: { rank: number; teamId: string; name: string; shortName: string; color: string; points: number }[];
   stats: {
     uniqueCount: number;

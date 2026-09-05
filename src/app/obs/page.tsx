@@ -4,14 +4,17 @@ import Image from "next/image";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CATEGORIES, CATEGORY_LABEL, STYLE_LABEL } from "@/lib/constants";
 import { defaultGate } from "@/lib/overlay-gates";
-import type { GroupStandingRow, PublicMatch, PublicPayload, PublicTeam, PublicUma } from "@/lib/types";
+import type { Cue, GroupStandingRow, PublicMatch, PublicPayload, PublicTeam, PublicUma } from "@/lib/types";
 
 type OverlayPayload = {
   overlay: PublicPayload["overlay"];
   match: PublicMatch | null;
   teams: PublicTeam[];
   groups: PublicPayload["groups"];
+  playIn: PublicPayload["playIn"];
   grandFinal: PublicPayload["grandFinal"];
+  now: Cue;
+  next: Cue;
 };
 
 export default function ObsPage() {
@@ -48,15 +51,16 @@ export default function ObsPage() {
   useEffect(() => {
     if (!viewKey) return;
     const [view, category, matchId, focus] = viewKey.split("|");
-    if (!matchId) return;
-    const nextShown = { view, category, matchId, focus: focus || "" };
+    if (!matchId && view !== "pause") return;
+    const shownMatchId = matchId || "pause";
+    const nextShown = { view, category, matchId: shownMatchId, focus: focus || "" };
     const current = shownRef.current;
     if (!current) {
       setShown(nextShown);
       setPhase("in");
       return;
     }
-    if (current.view === view && current.category === category && current.matchId === matchId && current.focus === (focus || "")) {
+    if (current.view === view && current.category === category && current.matchId === shownMatchId && current.focus === (focus || "")) {
       return;
     }
     setPhase("out");
@@ -75,18 +79,8 @@ export default function ObsPage() {
     return <div className="obs-root obs-hidden" />;
   }
 
-  if (!data.match || !shown) {
-    return (
-      <div className="obs-root">
-        <div className="mu">
-          <header className="mu-top">
-            <h1>Waiting for a match…</h1>
-          </header>
-          <div className="mu-board" />
-          <footer className="mu-bot">Bunny Invitational 2</footer>
-        </div>
-      </div>
-    );
+  if (!shown) {
+    return <div className="obs-root obs-hidden" />;
   }
 
   const liveMatch = data.match;
@@ -99,6 +93,36 @@ export default function ObsPage() {
   const wrap = (child: ReactNode) => (
     <div className={phase === "out" ? "obs-view-out" : "obs-view-in"}>{child}</div>
   );
+
+  if (view === "pause") {
+    return (
+      <div className="obs-root">
+        {wrap(
+          <PauseOverlay
+            match={liveMatch}
+            teams={data.teams}
+            category={cat}
+            now={data.now}
+            next={data.next}
+          />,
+        )}
+      </div>
+    );
+  }
+
+  if (!liveMatch) {
+    return (
+      <div className="obs-root">
+        <div className="mu">
+          <header className="mu-top">
+            <h1>Waiting for a match…</h1>
+          </header>
+          <div className="mu-board" />
+          <footer className="mu-bot">Bunny Invitational 2</footer>
+        </div>
+      </div>
+    );
+  }
 
   if (view === "matchup" && shownFocus && Number.isInteger(shownFocus.slot)) {
     return (
@@ -129,8 +153,76 @@ export default function ObsPage() {
               />,
             )
           : view === "groups"
-            ? wrap(<GroupTableOverlay match={liveMatch} groups={data.groups ?? []} />)
+            ? wrap(<GroupTableOverlay match={liveMatch} groups={data.groups ?? []} playIn={data.playIn} />)
             : wrap(<Scoreboard match={liveMatch} category={cat} />)}
+    </div>
+  );
+}
+
+function PauseOverlay({
+  match,
+  teams,
+  category,
+  now,
+  next,
+}: {
+  match: PublicMatch | null;
+  teams: PublicTeam[];
+  category: string;
+  now: Cue;
+  next: Cue;
+}) {
+  const sprites = (match?.teams ?? []).flatMap((t) => {
+    const team = teams.find((x) => x.id === t.teamId);
+    return (team?.roster.filter((u) => u.category === category && u.spritePath) ?? [])
+      .sort((a, b) => a.slot - b.slot)
+      .slice(0, 3)
+      .map((u) => ({ src: u.spritePath as string, color: t.color }));
+  });
+  const cue = now ?? next;
+  return (
+    <div className="pause">
+      <div className="pause-wash" />
+      <div className="pause-aurora" />
+      <div className="pause-spark pause-spark-a" />
+      <div className="pause-spark pause-spark-b" />
+      <div className="pause-spark pause-spark-c" />
+      <div className="pause-ring pause-ring-1" />
+      <div className="pause-ring pause-ring-2" />
+      <div className="pause-ring pause-ring-3" />
+      <div className="pause-sprites" aria-hidden>
+        {sprites.map((s, i) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={`${s.src}-${i}`}
+            src={s.src}
+            alt=""
+            className={`pause-sprite pause-sprite-${i}`}
+            style={{ ["--team" as string]: s.color }}
+          />
+        ))}
+      </div>
+      <div className="pause-core">
+        <p className="pause-kicker">Bunny Invitational 2</p>
+        <h1 className="pause-title">PAUSE</h1>
+        <p className="pause-tag">We’ll be right back · grab a carrot</p>
+        {cue ? (
+          <div className="pause-cue">
+            <span>{now ? "On deck" : "Up next"}</span>
+            <strong>{cue.matchLabel}</strong>
+            <em>{cue.categoryLabel}</em>
+          </div>
+        ) : null}
+      </div>
+      {match ? (
+        <div className="pause-teams">
+          {match.teams.map((t) => (
+            <span key={t.slot} style={{ ["--team" as string]: t.color }}>
+              {t.name}
+            </span>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -288,23 +380,34 @@ function RaceOverlay({
 function GroupTableOverlay({
   match,
   groups,
+  playIn,
 }: {
   match: PublicMatch;
   groups: { id: string; standings: GroupStandingRow[] }[];
+  playIn?: { standings: GroupStandingRow[] };
 }) {
-  const current = match.group ? groups.filter((g) => g.id === match.group) : groups;
+  const playInTable = playIn?.standings?.length
+    ? [{ id: "Play-in", standings: playIn.standings }]
+    : [];
+  const current =
+    match.stage === "playin"
+      ? playInTable
+      : match.group
+        ? groups.filter((g) => g.id === match.group)
+        : groups;
   const tables = current.length ? current : groups;
+  const heading = match.stage === "playin" ? "Play-in" : match.group ? `Group ${match.group}` : "Group standings";
   return (
     <div className="mu">
       <header className="mu-top">
-        <h1>{match.group ? `Group ${match.group}` : "Group standings"}</h1>
+        <h1>{heading}</h1>
         <p>{match.label}</p>
       </header>
       <div className="mu-board">
         <div className={`obs-board obs-groups ${tables.length > 1 ? "obs-groups-all" : ""}`}>
           {tables.map((g) => (
             <section key={g.id}>
-              <h2>Group {g.id}</h2>
+              <h2>{g.id === "Play-in" ? "Play-in" : `Group ${g.id}`}</h2>
               <div className="obs-table-wrap">
                 <table className="obs-table">
                   <thead>

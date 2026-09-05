@@ -150,7 +150,46 @@ export async function generateGroupMatches() {
       await ensureRaces(id);
     }
   }
+  await generatePlayInMatches();
   await ensureKnockoutShell();
+}
+
+export async function generatePlayInMatches() {
+  const { FANO_TRIPLES, PLAY_IN_DAY, PLAY_IN_GROUP, PLAY_IN_STAGE, TEAM_KIND_PLAYIN } = await import("./constants");
+  const teams = await prisma.team.findMany();
+  const members = teams
+    .filter((t) => t.kind === TEAM_KIND_PLAYIN)
+    .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+  if (members.length !== 7) return;
+  for (let i = 0; i < FANO_TRIPLES.length; i++) {
+    const triple = FANO_TRIPLES[i];
+    const id = `playin-${i + 1}`;
+    const day = PLAY_IN_DAY;
+    await prisma.match.upsert({
+      where: { id },
+      create: {
+        id,
+        stage: PLAY_IN_STAGE,
+        group: PLAY_IN_GROUP,
+        day,
+        sortOrder: 90 + i,
+        label: `Play-in Match ${i + 1}`,
+      },
+      update: { day, label: `Play-in Match ${i + 1}`, stage: PLAY_IN_STAGE, group: PLAY_IN_GROUP, sortOrder: 90 + i },
+    });
+    for (let slot = 0; slot < 3; slot++) {
+      const teamId = members[triple[slot]]?.id ?? null;
+      const existing = await prisma.matchTeam.findUnique({
+        where: { matchId_slot: { matchId: id, slot } },
+      });
+      if (existing) {
+        await prisma.matchTeam.update({ where: { id: existing.id }, data: { teamId } });
+      } else {
+        await prisma.matchTeam.create({ data: { matchId: id, slot, teamId } });
+      }
+    }
+    await ensureRaces(id);
+  }
 }
 
 export async function ensureKnockoutShell() {

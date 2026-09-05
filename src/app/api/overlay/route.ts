@@ -12,6 +12,7 @@ export async function GET() {
     match: payload.matches.find((m) => m.id === payload.overlay.activeMatchId) ?? payload.matches[0] ?? null,
     teams: payload.teams,
     groups: payload.groups,
+    playIn: payload.playIn,
     grandFinal: payload.grandFinal,
   });
 }

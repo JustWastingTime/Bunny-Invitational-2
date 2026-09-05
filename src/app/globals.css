@@ -85,10 +85,10 @@ body {
   background: rgba(255, 255, 255, 0.45);
 }
 
-.ink-table tr.qualify td {
+.ink-table tbody tr.qualify td {
   background: rgba(242, 193, 78, 0.28);
 }
 
-.ink-table tr.playoff td {
+.ink-table tbody tr.playoff td {
   background: rgba(255, 212, 188, 0.45);
 }

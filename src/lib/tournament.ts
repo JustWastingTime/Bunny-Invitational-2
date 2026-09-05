@@ -7,6 +7,8 @@ import {
   STYLE_LABEL,
   TEAM_KIND_PLAYIN,
   TOURNAMENT_NAME,
+  PLAY_IN_GROUP,
+  PLAY_IN_STAGE,
   type Category,
 } from "./constants";
 import { splitPopularity } from "./scoring";
@@ -154,6 +156,20 @@ export async function buildPublicPayload() {
     };
   });
 
+  const playInIds = teams.filter((t) => t.kind === TEAM_KIND_PLAYIN).map((t) => t.id);
+  const playInTable = groupStandings(PLAY_IN_GROUP, playInIds, matchRefs, rosters, forTeam, PLAY_IN_STAGE);
+  const playIn = {
+    standings: playInTable.map((row) => {
+      const team = teamById.get(row.teamId);
+      return {
+        ...row,
+        name: team?.name ?? row.teamId,
+        shortName: team?.shortName ?? team?.name ?? row.teamId,
+        color: team?.color ?? "#c9a227",
+      };
+    }),
+  };
+
   const gfTotals = grandFinalTotals(matchRefs, rosters, forTeam);
   const gfTeams = Object.entries(gfTotals)
     .sort((a, b) => b[1] - a[1])
@@ -208,6 +224,7 @@ export async function buildPublicPayload() {
     teams: publicTeams,
     matches: publicMatches,
     groups,
+    playIn,
     grandFinal: gfTeams,
     stats,
   };

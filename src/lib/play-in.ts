@@ -1,7 +1,7 @@
 import { prisma } from "./prisma";
 import { CATEGORIES, PLAY_IN_TEAM_COUNT, TEAM_KIND_PLAYIN } from "./constants";
 
-const PLAY_IN_COLORS = ["#7a5c52", "#c9a227", "#4a8a62", "#5c6bc0", "#b05c4a"];
+const PLAY_IN_COLORS = ["#7a5c52", "#c9a227", "#4a8a62", "#5c6bc0", "#b05c4a", "#6a4c93", "#2e7d6b"];
 
 export async function ensurePlayInTeams() {
   for (let i = 0; i < PLAY_IN_TEAM_COUNT; i++) {
@@ -38,4 +38,6 @@ export async function ensurePlayInTeams() {
       }
     }
   }
+  const { generatePlayInMatches } = await import("./advancement");
+  await generatePlayInMatches();
 }

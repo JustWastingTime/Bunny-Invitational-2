@@ -29,6 +29,10 @@ export default function ScoreboardPage() {
         ))}
       </div>
 
+      {data.playIn?.standings?.length ? (
+        <GroupTable group="Play-in" standings={data.playIn.standings} />
+      ) : null}
+
       <KnockoutBoard data={data} />
 
       <section>
