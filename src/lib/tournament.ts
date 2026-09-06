@@ -9,6 +9,8 @@ import {
   TOURNAMENT_NAME,
   PLAY_IN_GROUP,
   PLAY_IN_STAGE,
+  PUBLIC_GROUPS_LIVE,
+  PUBLIC_TOURNAMENT_LIVE,
   type Category,
 } from "./constants";
 import { splitPopularity } from "./scoring";
@@ -23,7 +25,8 @@ import {
 import { parseSkills, spriteFileName } from "./sprites";
 import { gatesForRace, parseFocusJson, parseGatesJson } from "./overlay-gates";
 
-export async function buildPublicPayload() {
+export async function buildPublicPayload(opts?: { reveal?: boolean }) {
+  const reveal = opts?.reveal ?? PUBLIC_TOURNAMENT_LIVE;
   const [teams, matches, overlay] = await Promise.all([
     prisma.team.findMany({ include: { umaEntries: true }, orderBy: [{ group: "asc" }, { groupSlot: "asc" }, { name: "asc" }] }),
     prisma.match.findMany({
@@ -61,6 +64,7 @@ export async function buildPublicPayload() {
     groupSlot: t.groupSlot,
     kind: t.kind === TEAM_KIND_PLAYIN ? "playin" : "main",
     roster: t.umaEntries.map((e) => {
+      if (!reveal) return unpublishedUma(e.category, e.slot);
       const pool = t.kind === TEAM_KIND_PLAYIN ? playInPop : pop;
       return {
       category: e.category,
@@ -124,10 +128,10 @@ export async function buildPublicPayload() {
                 teamName: team?.name ?? p.teamId,
                 teamColor: team?.color ?? "#c9a227",
                 slot: p.slot,
-                trainer: entry?.trainer ?? "",
-                umaName: entry?.umaName ?? "Unknown",
-                spriteId: entry?.spriteId ?? p.spriteId,
-                spritePath: spriteFileName(entry?.spriteId ?? p.spriteId),
+                trainer: reveal ? (entry?.trainer ?? "") : "",
+                umaName: reveal ? (entry?.umaName ?? "Unknown") : "TBD",
+                spriteId: reveal ? (entry?.spriteId ?? p.spriteId) : "",
+                spritePath: reveal ? spriteFileName(entry?.spriteId ?? p.spriteId) : null,
                 base: p.base,
                 penalty: p.penalty,
                 uniqueBonus: p.uniqueBonus,
@@ -185,20 +189,41 @@ export async function buildPublicPayload() {
       };
     });
 
-  const nowNext = resolveNowNext(publicMatches, overlay);
-  const stats = buildStats(
-    publicTeams
-      .filter((t) => t.kind !== "playin")
-      .map((t) => ({
-      id: t.id,
-      name: t.name,
-      shortName: t.shortName,
-      color: t.color,
-      roster: t.roster,
-    })),
-    publicMatches,
-    pop,
-  );
+  const hideGroups = !reveal && !PUBLIC_GROUPS_LIVE;
+  const visibleMatches = hideGroups
+    ? publicMatches.filter((m) => m.stage === "playin")
+    : publicMatches;
+  const visibleGroups = hideGroups ? [] : groups;
+  const visibleGf = hideGroups ? [] : gfTeams;
+
+  const nowNext = reveal
+    ? resolveNowNext(publicMatches, overlay)
+    : unpublishedNowNext(visibleMatches);
+  const stats = reveal
+    ? buildStats(
+        publicTeams
+          .filter((t) => t.kind !== "playin")
+          .map((t) => ({
+            id: t.id,
+            name: t.name,
+            shortName: t.shortName,
+            color: t.color,
+            roster: t.roster,
+          })),
+        publicMatches,
+        pop,
+      )
+    : {
+        uniqueCount: 0,
+        mostPopular: null,
+        mostPopularCombined: null,
+        umaPopulation: [],
+        skillsCommon: [],
+        skillsRare: [],
+        teamPowerByStats: [],
+        teamPowerBySkills: [],
+        mostUniqueTeam: null,
+      };
 
   return {
     tournament: TOURNAMENT_NAME,
@@ -222,12 +247,46 @@ export async function buildPublicPayload() {
     now: nowNext.now,
     next: nowNext.next,
     teams: publicTeams,
-    matches: publicMatches,
-    groups,
+    matches: visibleMatches,
+    groups: visibleGroups,
     playIn,
-    grandFinal: gfTeams,
+    grandFinal: visibleGf,
     stats,
   };
+}
+
+function unpublishedUma(category: string, slot: number) {
+  return {
+    category,
+    slot,
+    trainer: "",
+    umaName: "TBD",
+    spriteId: "",
+    spritePath: null,
+    rating: null,
+    style: null,
+    styleLabel: null,
+    aptitudes: { terrain: null, distance: null, style: null },
+    stats: { speed: 0, stamina: 0, power: 0, guts: 0, wisdom: 0 },
+    skills: [] as string[],
+    isUnique: false,
+    popularityRank: null,
+    pickCount: 0,
+  };
+}
+
+function unpublishedNowNext(
+  matches: {
+    id: string;
+    label: string;
+    stage: string;
+    sortOrder: number;
+    teams: { name: string; color: string }[];
+  }[],
+) {
+  const playIn = matches.filter((m) => m.stage === "playin").sort((a, b) => a.sortOrder - b.sortOrder)[0];
+  const first = playIn ?? [...matches].sort((a, b) => a.sortOrder - b.sortOrder)[0];
+  return { now: null, next: first ? toCue(first, "sprint") : null };
 }
 
 function resolveNowNext(

@@ -2,20 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import { PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
 
 const LINKS = [
   { href: "/", label: "Home" },
   { href: "/schedule", label: "Schedule" },
+  { href: "/maps", label: "Maps" },
   { href: "/scoreboard", label: "Scoreboard" },
-  { href: "/teams", label: "Teams" },
-  { href: "/stats", label: "Stats" },
+  { href: "/teams", label: "Teams", live: true },
+  { href: "/stats", label: "Stats", live: true },
   { href: "/rules", label: "Rules" },
 ];
 
 export function SiteHeader({ staff }: { staff?: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const links = LINKS.filter((link) => PUBLIC_TOURNAMENT_LIVE || !("live" in link && link.live));
 
   return (
     <header className="sticky top-0 z-40 bg-[color-mix(in_srgb,var(--paper)_86%,white)]/90 backdrop-blur-md">
@@ -29,7 +32,7 @@ export function SiteHeader({ staff }: { staff?: boolean }) {
           </span>
         </Link>
         <nav className="hidden items-center gap-1 md:flex">
-          {LINKS.map((link) => {
+          {links.map((link) => {
             const active = pathname === link.href;
             return (
               <Link
@@ -58,7 +61,7 @@ export function SiteHeader({ staff }: { staff?: boolean }) {
       </div>
       {open ? (
         <div className="grid gap-1 px-4 pb-3 md:hidden">
-          {LINKS.map((link) => (
+          {links.map((link) => (
             <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className="py-2">
               {link.label}
             </Link>
@@ -94,6 +97,27 @@ export function LivePill({ label = "Live" }: { label?: string }) {
   );
 }
 
+export function ComingSoon({
+  kicker,
+  title,
+  children,
+}: {
+  kicker: string;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <PageTitle kicker={kicker} title={title}>
+        {children}
+      </PageTitle>
+      <p className="rounded-2xl bg-white/55 px-5 py-4 text-[var(--ink-soft)]">
+        This page opens when the tournament goes live.
+      </p>
+    </div>
+  );
+}
+
 export function PageTitle({
   kicker,
   title,
@@ -101,7 +125,7 @@ export function PageTitle({
 }: {
   kicker?: string;
   title: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }) {
   return (
     <header className="mb-8 grid gap-3 lg:grid-cols-[1fr_minmax(16rem,32rem)] lg:items-end">

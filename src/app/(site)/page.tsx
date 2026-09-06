@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { NowNext } from "@/components/now-next";
 import { GroupTable } from "@/components/tournament-ui";
+import { MapsGrid } from "@/components/race-maps";
 import { usePublicData } from "@/components/use-public-data";
+import { PUBLIC_GROUPS_LIVE, PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
 
 export default function HomePage() {
   const { data, error } = usePublicData();
@@ -25,7 +27,10 @@ export default function HomePage() {
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link href="/scoreboard" className="rounded-full bg-[var(--coral)] px-5 py-2 text-sm font-semibold text-white">
-              Live scoreboard
+              {PUBLIC_TOURNAMENT_LIVE ? "Live scoreboard" : "Scoreboard"}
+            </Link>
+            <Link href="/maps" className="rounded-full bg-white/80 px-5 py-2 text-sm">
+              Maps
             </Link>
             <Link href="/schedule" className="rounded-full bg-white/80 px-5 py-2 text-sm">
               Order of play
@@ -37,7 +42,7 @@ export default function HomePage() {
       {error ? <p className="text-[var(--coral-ink)]">{error}. Try running the database seed.</p> : null}
       {data ? <NowNext now={data.now} next={data.next} /> : <p className="text-[var(--ink-soft)]">Loading the board…</p>}
 
-      {data ? (
+      {data && PUBLIC_GROUPS_LIVE ? (
         <section>
           <div className="mb-4 flex items-baseline justify-between gap-4">
             <h2 className="font-[family-name:var(--font-display)] text-3xl">Group tables</h2>
@@ -51,7 +56,17 @@ export default function HomePage() {
             ))}
           </div>
         </section>
-      ) : null}
+      ) : (
+        <section>
+          <div className="mb-4 flex items-baseline justify-between gap-4">
+            <h2 className="font-[family-name:var(--font-display)] text-3xl">Maps</h2>
+            <Link href="/maps" className="text-sm text-[var(--coral-ink)]">
+              Full maps →
+            </Link>
+          </div>
+          <MapsGrid compact />
+        </section>
+      )}
     </div>
   );
 }

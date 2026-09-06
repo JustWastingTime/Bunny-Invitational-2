@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PLAY_IN_EVENT_LABEL } from "@/lib/constants";
+import { PLAY_IN_EVENT_LABEL, PUBLIC_GROUPS_LIVE } from "@/lib/constants";
 import { NowNext } from "@/components/now-next";
 import { GroupSchedule, KnockoutBoard, PlayInSchedule } from "@/components/tournament-ui";
 import { PageTitle } from "@/components/site-chrome";
@@ -15,8 +15,9 @@ export default function SchedulePage() {
   if (!data) return <p>Loading schedule…</p>;
 
   const nowStage = data.matches.find((m) => m.id === data.now?.matchId)?.stage;
-  const active: Board =
-    board ?? (nowStage === "playin" ? "playin" : nowStage && nowStage !== "group" ? "knockout" : "groups");
+  const active: Board = PUBLIC_GROUPS_LIVE
+    ? (board ?? (nowStage === "playin" ? "playin" : nowStage && nowStage !== "group" ? "knockout" : "groups"))
+    : "playin";
   const groupMatches = data.matches.filter((m) => m.stage === "group");
   const playInMatches = data.matches.filter((m) => m.stage === "playin");
   const nowId = data.now?.matchId;
@@ -24,8 +25,9 @@ export default function SchedulePage() {
   return (
     <div className="grid gap-10">
       <PageTitle kicker="Order of play" title="Schedule">
-        Play-in is a Steiner triple of seven second clubs — same 3v3v3 as a group, all on {PLAY_IN_EVENT_LABEL}, with
-        its own oshi and popularity pool. Then three groups of seven, then knockout.
+        {PUBLIC_GROUPS_LIVE
+          ? `Play-in is a Steiner triple of seven second clubs — same 3v3v3 as a group, all on ${PLAY_IN_EVENT_LABEL}, with its own oshi and popularity pool. Then three groups of seven, then knockout.`
+          : `Play-in is seven Steiner triples on ${PLAY_IN_EVENT_LABEL}. Group draw lands closer to the main stage.`}
       </PageTitle>
       <NowNext now={data.now} next={data.next} />
 
@@ -38,20 +40,24 @@ export default function SchedulePage() {
           >
             Play-in
           </button>
-          <button
-            type="button"
-            onClick={() => setBoard("groups")}
-            className={`rounded-full px-4 py-1.5 text-sm ${active === "groups" ? "bg-[var(--coral)] text-white" : "bg-white/70 text-[var(--ink-soft)]"}`}
-          >
-            Group stage
-          </button>
-          <button
-            type="button"
-            onClick={() => setBoard("knockout")}
-            className={`rounded-full px-4 py-1.5 text-sm ${active === "knockout" ? "bg-[var(--coral)] text-white" : "bg-white/70 text-[var(--ink-soft)]"}`}
-          >
-            Knockout
-          </button>
+          {PUBLIC_GROUPS_LIVE ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setBoard("groups")}
+                className={`rounded-full px-4 py-1.5 text-sm ${active === "groups" ? "bg-[var(--coral)] text-white" : "bg-white/70 text-[var(--ink-soft)]"}`}
+              >
+                Group stage
+              </button>
+              <button
+                type="button"
+                onClick={() => setBoard("knockout")}
+                className={`rounded-full px-4 py-1.5 text-sm ${active === "knockout" ? "bg-[var(--coral)] text-white" : "bg-white/70 text-[var(--ink-soft)]"}`}
+              >
+                Knockout
+              </button>
+            </>
+          ) : null}
         </div>
 
         {active === "playin" ? (

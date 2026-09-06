@@ -1,12 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { PageTitle } from "@/components/site-chrome";
+import { ComingSoon, PageTitle } from "@/components/site-chrome";
 import { usePublicData } from "@/components/use-public-data";
+import { PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
 import type { PublicTeam } from "@/lib/types";
 
 export default function TeamsPage() {
   const { data } = usePublicData(15000);
+  if (!PUBLIC_TOURNAMENT_LIVE) {
+    return (
+      <ComingSoon kicker="The field" title="Teams">
+        Club rosters publish after uma submissions lock.
+      </ComingSoon>
+    );
+  }
   if (!data) return <p>Loading teams…</p>;
 
   const grouped = ["A", "B", "C"].map((g) => ({

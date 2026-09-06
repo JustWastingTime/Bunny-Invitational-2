@@ -1,12 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { PageTitle } from "@/components/site-chrome";
+import { PageTitle, ComingSoon } from "@/components/site-chrome";
 import { usePublicData } from "@/components/use-public-data";
+import { PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
 
 export default function StatsPage() {
   const { data } = usePublicData(8000);
   const [tab, setTab] = useState<"umas" | "teams" | "skills">("umas");
+  if (!PUBLIC_TOURNAMENT_LIVE) {
+    return (
+      <ComingSoon kicker="The meta" title="Stats">
+        Uma and skill stats stay hidden until clubs submit.
+      </ComingSoon>
+    );
+  }
   if (!data) return <p>Loading stats…</p>;
   const s = data.stats;
 

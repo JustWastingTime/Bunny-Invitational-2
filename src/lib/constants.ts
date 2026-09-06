@@ -1,6 +1,8 @@
 export const TOURNAMENT_NAME = "Bunny Invitational 2";
 /** Roster lock — Tazuna uma/skill catalog is snapshotted as of this date unless overridden. */
 export const TOURNAMENT_CATALOG_DATE = "2026-09-12";
+/** Public site: team/stats pages, real umas, and live match cues. Staff desk is unchanged. */
+export const PUBLIC_TOURNAMENT_LIVE = false;
 
 export const CATEGORIES = ["sprint", "mile", "medium", "long", "dirt"] as const;
 export type Category = (typeof CATEGORIES)[number];
@@ -12,6 +14,78 @@ export const CATEGORY_LABEL: Record<Category, string> = {
   long: "Long",
   dirt: "Dirt",
 };
+
+/** Public group tables, group-stage schedule, and knockout. Independent of uma/stats reveal. */
+export const PUBLIC_GROUPS_LIVE = false;
+
+export type TrackPiece = "straight" | "corner";
+
+export type RaceMap = {
+  category: Category;
+  venue: string;
+  distanceM: number;
+  course: string | null;
+  direction: "clockwise" | "counterclockwise";
+  surface: "turf" | "dirt";
+  season: "Spring" | "Summer" | "Fall" | "Winter";
+  weather: "Sunny" | "Cloudy" | "Rainy" | "Snowy";
+  going: "Firm" | "Good" | "Soft" | "Heavy";
+  layout: { kind: TrackPiece; label: string }[];
+};
+
+export const RACE_MAPS: RaceMap[] = [
+  { category: "sprint", venue: "Hanshin", distanceM: 1200, course: "Inner", direction: "clockwise", surface: "turf", season: "Fall", weather: "Sunny", going: "Firm",
+    layout: [
+      { kind: "straight", label: "Straight" },
+      { kind: "corner", label: "Corner 3" },
+      { kind: "corner", label: "Corner 4" },
+      { kind: "straight", label: "Straight" },
+    ],
+  },
+  { category: "mile", venue: "Kyoto", distanceM: 1600, course: "Outer", direction: "clockwise", surface: "turf", season: "Fall", weather: "Sunny", going: "Firm",
+    layout: [
+      { kind: "straight", label: "Straight" },
+      { kind: "corner", label: "Corner 3" },
+      { kind: "corner", label: "Corner 4" },
+      { kind: "straight", label: "Straight" },
+    ],
+  },
+  { category: "medium", venue: "Chukyo", distanceM: 2200, course: null, direction: "counterclockwise", surface: "turf", season: "Summer", weather: "Cloudy", going: "Good",
+    layout: [
+      { kind: "straight", label: "Straight" },
+      { kind: "corner", label: "Corner 1" },
+      { kind: "corner", label: "Corner 2" },
+      { kind: "straight", label: "Straight" },
+      { kind: "corner", label: "Corner 3" },
+      { kind: "corner", label: "Corner 4" },
+      { kind: "straight", label: "Straight" },
+    ],
+  },
+  { category: "long", venue: "Nakayama", distanceM: 2500, course: "Inner", direction: "clockwise", surface: "turf", season: "Winter", weather: "Snowy", going: "Good",
+    layout: [
+      { kind: "corner", label: "Corner 3" },
+      { kind: "corner", label: "Corner 4" },
+      { kind: "straight", label: "Straight" },
+      { kind: "corner", label: "Corner 1" },
+      { kind: "corner", label: "Corner 2" },
+      { kind: "straight", label: "Straight" },
+      { kind: "corner", label: "Corner 3" },
+      { kind: "corner", label: "Corner 4" },
+      { kind: "straight", label: "Straight" },
+    ],
+  },
+  { category: "dirt", venue: "Sapporo", distanceM: 1700, course: null, direction: "clockwise", surface: "dirt", season: "Fall", weather: "Cloudy", going: "Firm",
+    layout: [
+      { kind: "straight", label: "Straight" },
+      { kind: "corner", label: "Corner 1" },
+      { kind: "corner", label: "Corner 2" },
+      { kind: "straight", label: "Straight" },
+      { kind: "corner", label: "Corner 3" },
+      { kind: "corner", label: "Corner 4" },
+      { kind: "straight", label: "Straight" },
+    ],
+  },
+];
 
 export const PLACE_POINTS: Record<number, number> = {
   1: 8,

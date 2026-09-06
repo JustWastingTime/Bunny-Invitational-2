@@ -3,12 +3,20 @@
 import Image from "next/image";
 import Link from "next/link";
 import { use, useMemo } from "react";
-import { CATEGORY_LABEL, CATEGORIES } from "@/lib/constants";
+import { CATEGORY_LABEL, CATEGORIES, PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
+import { ComingSoon } from "@/components/site-chrome";
 import { usePublicData } from "@/components/use-public-data";
 
 export default function TeamDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { data } = usePublicData(15000);
+  if (!PUBLIC_TOURNAMENT_LIVE) {
+    return (
+      <ComingSoon kicker="The field" title="Teams">
+        Club rosters publish after uma submissions lock.
+      </ComingSoon>
+    );
+  }
   const team = data?.teams.find((t) => t.id === id);
 
   const records = useMemo(() => {

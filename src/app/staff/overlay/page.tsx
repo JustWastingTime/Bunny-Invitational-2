@@ -16,7 +16,7 @@ const VIEWS = [
 ] as const;
 
 export default function OverlayDirectorPage() {
-  const { data } = usePublicData(1500);
+  const { data } = usePublicData(1500, "staff");
   const [status, setStatus] = useState("");
   const [stagedMatchId, setStagedMatchId] = useState<string | null>(null);
   const [stagedCat, setStagedCat] = useState<string | null>(null);

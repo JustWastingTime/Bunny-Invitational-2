@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { PageTitle } from "@/components/site-chrome";
 
 type RulesTab = "simple" | "advanced";
@@ -79,9 +80,15 @@ function SimplifiedRules() {
 
       <section>
         <p className="kicker">2</p>
-        <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Map rolls</h2>
+        <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Maps</h2>
         <ul className="space-y-2 text-[var(--ink-soft)]">
-          <li>Maps and their conditions will be rolled live on stream later (date to be announced).</li>
+          <li>
+            Maps are locked. See the{" "}
+            <Link className="font-semibold text-[var(--coral-ink)] underline" href="/maps">
+              Maps
+            </Link>{" "}
+            page for venue, distance, season, weather, and going.
+          </li>
           <li>Each team will have an equal time to build their umas.</li>
           <li>Each team will fight at least 3 times in the group stage, and top 5 teams will advance to the next stage.</li>
         </ul>
@@ -225,23 +232,17 @@ function AdvancedRules() {
         <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Maps</h2>
         <ul className="space-y-2 text-[var(--ink-soft)]">
           <li>
-            We will wheel-spin the maps and their conditions in the{" "}
-            <a className="font-semibold text-[var(--coral-ink)] underline" href="https://discord.gg/UwUaP2Yyqj">
-              Discord
-            </a>{" "}
-            on <When>Sat 12 Sep 2026, 10:30 PM ICT</When>. If teams are filled before this date, we can move it forward
-            for extra preparation time.
+            Maps and conditions are locked. Full cards live on{" "}
+            <Link className="font-semibold text-[var(--coral-ink)] underline" href="/maps">
+              Maps
+            </Link>
+            .
           </li>
-          <li>Team representatives please show up if possible, or send a substitute.</li>
-          <li>
-            We will wheel-spin 2 maps per distance and <strong className="font-extrabold text-[var(--ink)]">team representatives</strong>{" "}
-            will vote which map to do. Only one vote is counted per team. Play-in teams do not have a vote.
-          </li>
-          <li>
-            For Long, one of the map votes is locked to Nakayama 2500m (Sagittarius Cup / CM 20 map), with conditions
-            still wheel-spun — so smaller clubs can two-bird-one-stone a player onto that cup.
-          </li>
-          <li>If a vote ties, we roll a 3rd map and that one is selected instantly.</li>
+          <li>Sprint: Hanshin 1200m Inner, clockwise — Fall, Sunny, Firm.</li>
+          <li>Mile: Kyoto 1600m Outer, clockwise — Fall, Sunny, Firm.</li>
+          <li>Medium: Chukyo 2200m, counterclockwise — Summer, Cloudy, Good.</li>
+          <li>Long: Nakayama 2500m Inner, clockwise — Winter, Snowy, Good.</li>
+          <li>Dirt: Sapporo 1700m, clockwise — Fall, Cloudy, Firm.</li>
         </ul>
       </section>
 

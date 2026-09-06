@@ -7,7 +7,7 @@ import { usePublicData } from "@/components/use-public-data";
 import type { PublicMatch, PublicPayload } from "@/lib/types";
 
 export default function ScoresPage() {
-  const { data, error } = usePublicData(2500);
+  const { data, error } = usePublicData(2500, "staff");
   const [matchId, setMatchId] = useState<string>("");
   const [category, setCategory] = useState<string>("sprint");
   const [places, setPlaces] = useState<Record<number, string>>({});
