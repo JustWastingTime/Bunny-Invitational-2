@@ -86,3 +86,29 @@ export function mergeRaceGates(
 export function defaultGate(teamIndex: number, slot: number) {
   return teamIndex * 3 + slot + 1;
 }
+
+export type OverlayRow = {
+  activeMatchId: string | null;
+  activeCategory: string;
+  view: string;
+  visible: boolean;
+  gatesJson: string;
+};
+
+export function overlayStamp(row: OverlayRow) {
+  return `${row.visible ? 1 : 0}|${row.view}|${row.activeMatchId ?? ""}|${row.activeCategory}|${row.gatesJson}`;
+}
+
+export function overlayFromRow(row: OverlayRow) {
+  const gatesAll = parseGatesJson(row.gatesJson);
+  return {
+    activeMatchId: row.activeMatchId,
+    activeCategory: row.activeCategory,
+    view: row.view,
+    visible: row.visible,
+    gates: row.activeMatchId ? gatesForRace(gatesAll, row.activeMatchId, row.activeCategory) : [],
+    gatesAll,
+    focus: parseFocusJson(row.gatesJson),
+    stamp: overlayStamp(row),
+  };
+}

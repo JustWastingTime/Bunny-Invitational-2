@@ -6,6 +6,9 @@ function databaseUrl() {
   if (raw === "file:./dev.db" || raw === "file:dev.db") {
     return `file:${path.join(process.cwd(), "prisma", "dev.db").replace(/\\/g, "/")}`;
   }
+  if (/^postgres(ql)?:/i.test(raw) && !/[?&]connection_limit=/i.test(raw)) {
+    return `${raw}${raw.includes("?") ? "&" : "?"}connection_limit=1`;
+  }
   return raw;
 }
 

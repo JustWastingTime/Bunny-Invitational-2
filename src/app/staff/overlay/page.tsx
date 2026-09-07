@@ -47,14 +47,37 @@ export default function OverlayDirectorPage() {
     o && (stagedMatchId !== o.activeMatchId || cat !== liveCat),
   );
 
-  async function patch(body: Record<string, unknown>) {
-    setStatus("Updating…");
-    const res = await fetch("/api/staff/overlay", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+  const patchQueue = useRef(Promise.resolve());
+
+  async function sendOverlay(body: Record<string, unknown>) {
+    let last = "Failed — tap again";
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        const res = await fetch("/api/staff/overlay", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          cache: "no-store",
+          keepalive: true,
+        });
+        if (res.ok) return true;
+        last = `Failed (${res.status}) — tap again`;
+      } catch {
+        last = "Failed — tap again";
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 280 * (attempt + 1)));
+    }
+    setStatus(last);
+    return false;
+  }
+
+  function patch(body: Record<string, unknown>) {
+    patchQueue.current = patchQueue.current.then(async () => {
+      setStatus("Updating…");
+      const ok = await sendOverlay(body);
+      if (ok) setStatus("Overlay updated.");
     });
-    setStatus(res.ok ? "Overlay updated." : "Failed");
+    return patchQueue.current;
   }
 
   function goLive(view: string) {
@@ -152,7 +175,7 @@ export default function OverlayDirectorPage() {
                 key={v.id}
                 type="button"
                 onClick={() => goLive(v.id)}
-                className={`rounded-full px-4 py-2 ${o.visible && o.view === v.id && !pending ? "bg-[var(--gold)]" : "bg-[var(--surface-strong)] ring-1 ring-[var(--line)]"}`}
+                className={`min-h-11 rounded-full px-4 py-2.5 ${o.visible && o.view === v.id && !pending ? "bg-[var(--gold)]" : "bg-[var(--surface-strong)] ring-1 ring-[var(--line)]"}`}
               >
                 {v.label}
               </button>
@@ -160,7 +183,7 @@ export default function OverlayDirectorPage() {
             <button
               type="button"
               onClick={() => void patch({ visible: !o.visible })}
-              className="rounded-full bg-[var(--surface-strong)] px-4 py-2 ring-1 ring-[var(--line)]"
+              className="min-h-11 rounded-full bg-[var(--surface-strong)] px-4 py-2.5 ring-1 ring-[var(--line)]"
             >
               {o.visible ? "Hide overlay" : "Show overlay"}
             </button>

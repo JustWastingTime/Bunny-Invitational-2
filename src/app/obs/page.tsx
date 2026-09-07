@@ -31,16 +31,47 @@ export default function ObsPage() {
 
   useEffect(() => {
     let stop = false;
-    async function tick() {
-      const res = await fetch("/api/overlay", { cache: "no-store" });
+    let stamp = "";
+    let inFlight = false;
+    let matchId = "";
+
+    async function loadFull() {
+      const res = await fetch(`/api/overlay?t=${Date.now()}`, { cache: "no-store" });
       if (!res.ok || stop) return;
-      setData(await res.json());
+      const json = (await res.json()) as OverlayPayload;
+      matchId = json.match?.id ?? "";
+      setData(json);
     }
-    tick();
-    const id = setInterval(tick, 1000);
+
+    async function tickLive() {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const res = await fetch(`/api/overlay/live?t=${Date.now()}`, { cache: "no-store" });
+        if (!res.ok || stop) return;
+        const live = (await res.json()) as { stamp: string; overlay: OverlayPayload["overlay"] };
+        if (live.stamp === stamp) return;
+        stamp = live.stamp;
+        const nextMatchId = live.overlay.activeMatchId ?? "";
+        if (!matchId || nextMatchId !== matchId) {
+          await loadFull();
+          return;
+        }
+        setData((prev) => (prev ? { ...prev, overlay: live.overlay } : prev));
+      } catch {
+        /* keep last frame */
+      } finally {
+        inFlight = false;
+      }
+    }
+
+    void loadFull().then(() => tickLive());
+    const liveId = window.setInterval(() => void tickLive(), 250);
+    const fullId = window.setInterval(() => void loadFull(), 8000);
     return () => {
       stop = true;
-      clearInterval(id);
+      window.clearInterval(liveId);
+      window.clearInterval(fullId);
     };
   }, []);
 

@@ -3,10 +3,16 @@ import { requireStaff } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CATEGORIES } from "@/lib/constants";
 import { mergeRaceGates, parseOverlayBlob, stringifyOverlayBlob } from "@/lib/overlay-gates";
+import { noStoreHeaders } from "@/lib/no-store";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const VIEWS = ["scoreboard", "matchup", "race", "groups", "pause"] as const;
+
+export async function POST(request: Request) {
+  return PUT(request);
+}
 
 export async function PUT(request: Request) {
   const staff = await requireStaff();
@@ -61,5 +67,5 @@ export async function PUT(request: Request) {
       gatesJson: stringifyOverlayBlob(gates, focus),
     },
   });
-  return NextResponse.json({ ok: true, overlay, focus });
+  return NextResponse.json({ ok: true, overlay, focus }, { headers: noStoreHeaders() });
 }
