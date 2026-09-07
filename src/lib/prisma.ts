@@ -6,8 +6,12 @@ function databaseUrl() {
   if (raw === "file:./dev.db" || raw === "file:dev.db") {
     return `file:${path.join(process.cwd(), "prisma", "dev.db").replace(/\\/g, "/")}`;
   }
-  if (/^postgres(ql)?:/i.test(raw) && !/[?&]connection_limit=/i.test(raw)) {
-    return `${raw}${raw.includes("?") ? "&" : "?"}connection_limit=1`;
+  if (/^postgres(ql)?:/i.test(raw)) {
+    const parts: string[] = [];
+    if (!/[?&]connection_limit=/i.test(raw)) parts.push("connection_limit=1");
+    if (!/[?&]pgbouncer=/i.test(raw) && /-pooler\./i.test(raw)) parts.push("pgbouncer=true");
+    if (!parts.length) return raw;
+    return `${raw}${raw.includes("?") ? "&" : "?"}${parts.join("&")}`;
   }
   return raw;
 }

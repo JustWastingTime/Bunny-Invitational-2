@@ -43,21 +43,24 @@ export default function ObsPage() {
       setData(json);
     }
 
+    function applyLive(live: { stamp: string; overlay: OverlayPayload["overlay"] }) {
+      if (live.stamp === stamp) return;
+      stamp = live.stamp;
+      const nextMatchId = live.overlay.activeMatchId ?? "";
+      if (!matchId || nextMatchId !== matchId) {
+        void loadFull();
+        return;
+      }
+      setData((prev) => (prev ? { ...prev, overlay: live.overlay } : prev));
+    }
+
     async function tickLive() {
       if (inFlight) return;
       inFlight = true;
       try {
         const res = await fetch(`/api/overlay/live?t=${Date.now()}`, { cache: "no-store" });
         if (!res.ok || stop) return;
-        const live = (await res.json()) as { stamp: string; overlay: OverlayPayload["overlay"] };
-        if (live.stamp === stamp) return;
-        stamp = live.stamp;
-        const nextMatchId = live.overlay.activeMatchId ?? "";
-        if (!matchId || nextMatchId !== matchId) {
-          await loadFull();
-          return;
-        }
-        setData((prev) => (prev ? { ...prev, overlay: live.overlay } : prev));
+        applyLive((await res.json()) as { stamp: string; overlay: OverlayPayload["overlay"] });
       } catch {
         /* keep last frame */
       } finally {
@@ -65,11 +68,39 @@ export default function ObsPage() {
       }
     }
 
-    void loadFull().then(() => tickLive());
-    const liveId = window.setInterval(() => void tickLive(), 250);
-    const fullId = window.setInterval(() => void loadFull(), 8000);
+    const es = new EventSource("/api/overlay/stream");
+    let streamOk = false;
+    let streamFails = 0;
+    es.onmessage = (ev) => {
+      if (stop || !ev.data) return;
+      try {
+        applyLive(JSON.parse(ev.data) as { stamp: string; overlay: OverlayPayload["overlay"] });
+      } catch {
+        /* ignore malformed frames */
+      }
+    };
+    es.onopen = () => {
+      streamOk = true;
+      streamFails = 0;
+    };
+    es.onerror = () => {
+      streamFails += 1;
+      if (streamFails >= 4) {
+        streamOk = false;
+        es.close();
+      }
+    };
+
+    void loadFull().then(() => {
+      if (!streamOk) void tickLive();
+    });
+    const liveId = window.setInterval(() => {
+      if (!streamOk) void tickLive();
+    }, 400);
+    const fullId = window.setInterval(() => void loadFull(), 30000);
     return () => {
       stop = true;
+      es.close();
       window.clearInterval(liveId);
       window.clearInterval(fullId);
     };

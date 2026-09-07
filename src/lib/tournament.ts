@@ -24,6 +24,7 @@ import {
 } from "./standings";
 import { parseSkills, spriteFileName } from "./sprites";
 import { gatesForRace, parseFocusJson, parseGatesJson } from "./overlay-gates";
+import { loadOverlayRow } from "./overlay-store";
 
 export async function buildPublicPayload(opts?: { reveal?: boolean }) {
   const reveal = opts?.reveal ?? PUBLIC_TOURNAMENT_LIVE;
@@ -33,11 +34,7 @@ export async function buildPublicPayload(opts?: { reveal?: boolean }) {
       include: { teams: true, races: { include: { placements: true } } },
       orderBy: { sortOrder: "asc" },
     }),
-    prisma.overlayState.upsert({
-      where: { id: "default" },
-      create: { id: "default" },
-      update: {},
-    }),
+    loadOverlayRow(),
   ]);
 
   const teamById = new Map(teams.map((t) => [t.id, t]));

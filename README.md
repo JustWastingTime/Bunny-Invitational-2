@@ -36,7 +36,9 @@ Staff access is **Discord accounts whose user IDs are listed in `DISCORD_STAFF_I
 
 | Name | Required | Notes |
 |---|---|---|
-| `DATABASE_URL` | yes | Postgres URL. SQLite will fail the Vercel build. |
+| `DATABASE_URL` | yes | Neon **pooled** Postgres URL (`-pooler` in the host). SQLite will fail the Vercel build. |
+| `KV_REST_API_URL` / `KV_REST_API_TOKEN` | strongly recommended | Vercel KV / Upstash. Overlay director writes here so OBS does not wait on Postgres. |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | alt | Same as KV if you create Upstash Redis instead of Vercel KV. |
 | `NEXTAUTH_SECRET` | yes | `openssl rand -base64 32` |
 | `NEXTAUTH_URL` | yes | Canonical site URL, e.g. `https://your-app.vercel.app` |
 | `DISCORD_CLIENT_ID` | yes for staff | Discord app OAuth2 |
@@ -58,6 +60,18 @@ npm run db:copy-prod
 Team background **file uploads** do not persist on Vercel’s filesystem. Use a hosted image URL in the staff team editor, or re-upload after each deploy only for local/dev.
 
 The OBS route stays independent of site dark mode so the browser source stays transparent.
+
+### Overlay director lag on Vercel
+
+Pooling Neon is not enough: every OBS poll used to **write** OverlayState, and staff clicks still hit Postgres across serverless instances.
+
+After deploy:
+
+1. Storage → create **KV** (Upstash) and reconnect env vars, **or** paste Upstash Redis REST URL + token.
+2. In Neon, turn **scale to zero off** for event day (cold starts are multi-second).
+3. Redeploy. OBS uses `/api/overlay/stream` (SSE). Staff Show writes KV first, then Postgres in the background.
+
+Without KV the overlay still only **reads** Postgres (no write-on-poll), but phone taps will not feel instant until KV is on.
 
 ## Pages
 

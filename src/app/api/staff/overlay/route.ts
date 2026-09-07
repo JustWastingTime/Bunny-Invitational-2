@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireStaff } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { CATEGORIES } from "@/lib/constants";
 import { mergeRaceGates, parseOverlayBlob, stringifyOverlayBlob } from "@/lib/overlay-gates";
+import { loadOverlayRow, persistOverlayRow } from "@/lib/overlay-store";
 import { noStoreHeaders } from "@/lib/no-store";
 
 export const dynamic = "force-dynamic";
@@ -32,11 +32,7 @@ export async function PUT(request: Request) {
     : undefined;
   const view = VIEWS.includes(body.view as (typeof VIEWS)[number]) ? body.view : undefined;
 
-  const current = await prisma.overlayState.upsert({
-    where: { id: "default" },
-    create: { id: "default" },
-    update: {},
-  });
+  const current = await loadOverlayRow();
 
   const liveMatchId = body.activeMatchId !== undefined ? body.activeMatchId : current.activeMatchId;
   const gateMatchId = body.gateMatchId !== undefined ? body.gateMatchId : liveMatchId;
@@ -57,15 +53,12 @@ export async function PUT(request: Request) {
     focus = body.focus;
   }
 
-  const overlay = await prisma.overlayState.update({
-    where: { id: "default" },
-    data: {
-      ...(body.activeMatchId !== undefined ? { activeMatchId: body.activeMatchId } : {}),
-      ...(category ? { activeCategory: category } : {}),
-      ...(view ? { view } : {}),
-      ...(body.visible !== undefined ? { visible: body.visible } : {}),
-      gatesJson: stringifyOverlayBlob(gates, focus),
-    },
+  const overlay = await persistOverlayRow({
+    activeMatchId: body.activeMatchId !== undefined ? body.activeMatchId : current.activeMatchId,
+    activeCategory: category ?? current.activeCategory,
+    view: view ?? current.view,
+    visible: body.visible !== undefined ? body.visible : current.visible,
+    gatesJson: stringifyOverlayBlob(gates, focus),
   });
   return NextResponse.json({ ok: true, overlay, focus }, { headers: noStoreHeaders() });
 }
