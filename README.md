@@ -48,10 +48,11 @@ Staff access is **Discord accounts whose user IDs are listed in `DISCORD_STAFF_I
 
 3. Add the Vercel URL to the Discord OAuth redirect list.
 4. Deploy. The build runs `prisma db push` so tables exist.
-5. Seed once against production (from your machine, with the same `DATABASE_URL`):
+After the first deploy, copy **your local SQLite data** into Neon (do not use `prisma db seed` — that is demo clubs):
 
-```bash
-npx prisma db seed
+```powershell
+$env:PROD_DATABASE_URL="postgresql://USER:PASSWORD@HOST/DB?sslmode=require"
+npm run db:copy-prod
 ```
 
 Team background **file uploads** do not persist on Vercel’s filesystem. Use a hosted image URL in the staff team editor, or re-upload after each deploy only for local/dev.
