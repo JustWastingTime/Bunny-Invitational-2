@@ -24,7 +24,7 @@ export default function StatsPage() {
         Who brought what, who’s popping off, and which skills are everywhere.
       </PageTitle>
 
-      <dl className="grid gap-6 rounded-2xl bg-white/50 px-5 py-5 sm:grid-cols-3">
+      <dl className="grid gap-6 rounded-2xl bg-[var(--surface)] px-5 py-5 sm:grid-cols-3">
         <div>
           <dt className="kicker">Unique costumes</dt>
           <dd className="mt-1 font-[family-name:var(--font-display)] text-3xl">{s.uniqueCount}</dd>
@@ -49,7 +49,7 @@ export default function StatsPage() {
             key={key}
             type="button"
             onClick={() => setTab(key)}
-            className={`rounded-full px-4 py-1.5 text-sm ${tab === key ? "bg-[var(--coral)] text-white" : "bg-white/70 text-[var(--ink-soft)]"}`}
+            className={`rounded-full px-4 py-1.5 text-sm ${tab === key ? "bg-[var(--coral)] text-white" : "bg-[var(--surface-2)] text-[var(--ink-soft)]"}`}
           >
             {key === "umas" ? "Uma population" : key === "teams" ? "Team strength" : "Skill meta"}
           </button>
@@ -57,7 +57,7 @@ export default function StatsPage() {
       </div>
 
       {tab === "umas" ? (
-        <div className="overflow-x-auto rounded-2xl bg-white/50">
+        <div className="overflow-x-auto rounded-2xl bg-[var(--surface)]">
           <table className="ink-table min-w-[36rem]">
             <thead>
               <tr>

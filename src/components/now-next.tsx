@@ -12,7 +12,7 @@ export function NowNext({ now, next }: { now: Cue; next: Cue }) {
 
 function CueBlock({ kind, cue }: { kind: "now" | "next"; cue: Cue }) {
   return (
-    <article className={`rounded-2xl px-5 py-4 ${kind === "now" ? "bg-white/70" : "bg-[var(--peach)]/55"}`}>
+    <article className={`rounded-2xl px-5 py-4 ${kind === "now" ? "bg-[var(--surface-2)]" : "bg-[var(--peach)]/55"}`}>
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <p className="kicker">{kind === "now" ? "Now" : "Up next"}</p>
         {kind === "now" && cue ? <LivePill /> : null}

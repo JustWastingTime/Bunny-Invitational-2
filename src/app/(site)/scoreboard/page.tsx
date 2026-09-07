@@ -44,7 +44,7 @@ export default function ScoreboardPage() {
         <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <h2 className="font-[family-name:var(--font-display)] text-3xl">Who scored</h2>
           <select
-            className="rounded-full bg-white/80 px-3 py-2 text-sm"
+            className="rounded-full bg-[var(--surface-2)] px-3 py-2 text-sm"
             value={selected?.id ?? ""}
             onChange={(e) => setMatchId(e.target.value)}
           >

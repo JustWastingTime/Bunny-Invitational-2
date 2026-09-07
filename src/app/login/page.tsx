@@ -7,7 +7,7 @@ export default function LoginPage() {
     <div className="mx-auto grid max-w-md flex-1 place-content-center gap-4 px-4 py-24 text-center">
       <h1 className="font-[family-name:var(--font-display)] text-3xl">Staff login</h1>
       <p className="text-[var(--ink-soft)]">
-        Discord only, and only IDs listed in <code>DISCORD_STAFF_IDS</code>. Locally you can set <code>DEV_STAFF_BYPASS=true</code>.
+        Discord only, and only Discord user IDs listed in <code>DISCORD_STAFF_IDS</code>. That list is required on Vercel. Locally you can set <code>DEV_STAFF_BYPASS=true</code>.
       </p>
       <button
         type="button"

@@ -66,7 +66,7 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
                 const rec = records.get(`${u.category}:${u.slot}`) ?? { starts: 0, wins: 0, top5: 0 };
                 const winRate = rec.starts ? Math.round((rec.wins / rec.starts) * 100) : 0;
                 return (
-                  <article key={`${u.category}-${u.slot}`} className="rounded-2xl bg-white/55 p-3">
+                  <article key={`${u.category}-${u.slot}`} className="rounded-2xl bg-[var(--surface)] p-3">
                     <div className="flex gap-3">
                       <div className="grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-xl bg-[var(--paper-2)]">
                         {u.spritePath ? (

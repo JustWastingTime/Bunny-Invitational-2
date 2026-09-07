@@ -22,7 +22,7 @@ export function GroupTable({
           {note ?? (playIn ? "Own oshi & popularity pool" : "Top 2 Semis · 3–5 LCQ")}
         </p>
       </div>
-      <div className="overflow-x-auto rounded-2xl bg-white/50">
+      <div className="overflow-x-auto rounded-2xl bg-[var(--surface)]">
         <table className="ink-table min-w-[22rem]">
           <thead>
             <tr>
@@ -60,7 +60,7 @@ export function GroupTable({
 
 export function MatchCard({ match, highlight }: { match: PublicMatch; highlight?: boolean }) {
   return (
-    <article className={`rounded-2xl px-4 py-3 ${highlight ? "bg-[var(--gold)]/40" : "bg-white/55"}`}>
+    <article className={`rounded-2xl px-4 py-3 ${highlight ? "bg-[var(--gold)]/40" : "bg-[var(--surface)]"}`}>
       <div className="mb-2 flex items-baseline justify-between gap-2">
         <h3 className="font-[family-name:var(--font-display)] text-base leading-tight">{match.label}</h3>
         {highlight ? <span className="text-[0.65rem] font-extrabold uppercase tracking-wide text-[var(--coral-ink)]">Now</span> : null}
@@ -94,7 +94,7 @@ function MatchTeams({ match }: { match: PublicMatch }) {
 
 function CompactMatch({ match, highlight }: { match: PublicMatch; highlight?: boolean }) {
   return (
-    <article className={`rounded-xl px-3 py-2.5 ${highlight ? "bg-[var(--gold)]/40" : "bg-white/55"}`}>
+    <article className={`rounded-xl px-3 py-2.5 ${highlight ? "bg-[var(--gold)]/40" : "bg-[var(--surface)]"}`}>
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <h4 className="text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">
           Match {matchNumber(match)}
@@ -131,7 +131,7 @@ export function GroupSchedule({
             type="button"
             onClick={() => setFocus(group)}
             className={`rounded-full px-4 py-1.5 text-sm ${
-              focus === group ? "bg-[var(--coral)] text-white" : "bg-white/70 text-[var(--ink-soft)]"
+              focus === group ? "bg-[var(--coral)] text-white" : "bg-[var(--surface-2)] text-[var(--ink-soft)]"
             }`}
           >
             Group {group}
@@ -220,7 +220,7 @@ export function ScorerList({ match }: { match: PublicMatch }) {
   );
   if (!scorers.length) return <p className="text-sm text-[var(--ink-soft)]">No points recorded yet.</p>;
   return (
-    <div className="overflow-x-auto rounded-2xl bg-white/50">
+    <div className="overflow-x-auto rounded-2xl bg-[var(--surface)]">
       <table className="ink-table">
         <thead>
           <tr>
@@ -276,7 +276,7 @@ export function KnockoutBoard({ data }: { data: PublicPayload }) {
         {data.grandFinal.length ? (
           <ol className="mt-4 grid gap-2 sm:grid-cols-3">
             {data.grandFinal.map((row) => (
-              <li key={row.teamId} className="flex justify-between rounded-xl bg-white/50 px-3 py-2">
+              <li key={row.teamId} className="flex justify-between rounded-xl bg-[var(--surface)] px-3 py-2">
                 <span>
                   {row.rank}. {row.name}
                 </span>

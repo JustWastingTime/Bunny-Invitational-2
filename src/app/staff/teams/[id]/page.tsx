@@ -243,7 +243,7 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
         </button>
       </div>
 
-      <section className="grid gap-4 rounded-3xl bg-white p-4 ring-1 ring-[var(--line)] lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <section className="grid gap-4 rounded-3xl bg-[var(--surface-strong)] p-4 ring-1 ring-[var(--line)] lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="grid gap-1">
             <span className="text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">Club code</span>
@@ -256,7 +256,7 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
           <label className="grid gap-1 sm:col-span-2">
             <span className="text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">Color</span>
             <span className="flex items-center gap-3">
-              <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="h-10 w-14 cursor-pointer rounded-lg border border-[var(--line)] bg-white" />
+              <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="h-10 w-14 cursor-pointer rounded-lg border border-[var(--line)] bg-[var(--surface-strong)]" />
               <span className="h-10 flex-1 rounded-xl ring-1 ring-[var(--line)]" style={{ background: color }} />
               <span className="font-mono text-sm text-[var(--ink-soft)]">{color}</span>
             </span>
@@ -309,7 +309,7 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
                 key={cat}
                 type="button"
                 onClick={() => setTab(cat)}
-                className={`rounded-full px-4 py-1.5 text-sm ${tab === cat ? "bg-[var(--coral)] text-white" : "bg-white/70 text-[var(--ink-soft)]"}`}
+                className={`rounded-full px-4 py-1.5 text-sm ${tab === cat ? "bg-[var(--coral)] text-white" : "bg-[var(--surface-2)] text-[var(--ink-soft)]"}`}
               >
                 {CATEGORY_LABEL[cat]}
               </button>
@@ -319,7 +319,7 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
             Tazuna snapshot
             <input
               type="date"
-              className="rounded-lg border border-[var(--line)] bg-white px-2 py-1"
+              className="rounded-lg border border-[var(--line)] bg-[var(--surface-strong)] px-2 py-1"
               value={asOf}
               onChange={(e) => setAsOf(e.target.value)}
             />
@@ -367,7 +367,7 @@ function UmaCard({
 }) {
   const thumb = uma.spritePath || spriteFileName(uma.spriteId);
   return (
-    <article className="rounded-3xl bg-white p-4 ring-1 ring-[var(--line)]">
+    <article className="rounded-3xl bg-[var(--surface-strong)] p-4 ring-1 ring-[var(--line)]">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="font-[family-name:var(--font-display)] text-xl">Uma {uma.slot + 1}</h2>
         {uma.spriteId ? <span className="font-mono text-xs text-[var(--ink-soft)]">{uma.spriteId}</span> : null}

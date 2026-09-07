@@ -42,6 +42,7 @@ yarn-error.log*
 
 # vercel
 .vercel
+/prisma/schema.build.prisma
 
 # staff-uploaded team art
 /public/uploads/teams/*

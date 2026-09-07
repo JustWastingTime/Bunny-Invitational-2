@@ -65,7 +65,7 @@ function TeamBox({ team, showTagline = false }: { team: PublicTeam; showTagline?
   return (
     <Link
       href={`/teams/${team.id}`}
-      className="flex overflow-hidden rounded-2xl bg-white/55 ring-1 ring-[var(--line)] transition hover:bg-white/80"
+      className="flex overflow-hidden rounded-2xl bg-[var(--surface)] ring-1 ring-[var(--line)] transition hover:bg-[var(--surface-2)]"
     >
       <span className="w-2 shrink-0" style={{ background: team.color }} />
       <span className="flex min-w-0 flex-1 items-baseline justify-between gap-3 px-3 py-3">

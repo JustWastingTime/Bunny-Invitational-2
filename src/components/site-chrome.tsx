@@ -4,29 +4,33 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const LINKS = [
   { href: "/", label: "Home" },
   { href: "/schedule", label: "Schedule" },
-  { href: "/maps", label: "Maps" },
   { href: "/scoreboard", label: "Scoreboard" },
   { href: "/teams", label: "Teams", live: true },
   { href: "/stats", label: "Stats", live: true },
   { href: "/rules", label: "Rules" },
 ];
 
-export function SiteHeader({ staff }: { staff?: boolean }) {
+export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const links = LINKS.filter((link) => PUBLIC_TOURNAMENT_LIVE || !("live" in link && link.live));
 
   return (
-    <header className="sticky top-0 z-40 bg-[color-mix(in_srgb,var(--paper)_86%,white)]/90 backdrop-blur-md">
+    <header className="sticky top-0 z-40 bg-[color-mix(in_srgb,var(--paper)_86%,var(--lift))]/90 backdrop-blur-md">
       <div className="page-shell flex items-center justify-between gap-4 py-3">
         <Link href="/" className="flex items-center gap-2.5 text-[var(--ink)]">
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-[var(--coral)] text-xs font-extrabold text-white">
-            BI
-          </span>
+          <img
+            src="/favicon.png"
+            alt="Bunny Invitational 2"
+            width={36}
+            height={36}
+            className="h-10 w-10 object-contain"
+          />
           <span className="hidden font-[family-name:var(--font-display)] text-xl leading-none sm:inline">
             Bunny Invitational 2
           </span>
@@ -44,20 +48,19 @@ export function SiteHeader({ staff }: { staff?: boolean }) {
               </Link>
             );
           })}
-          {staff ? (
-            <Link href="/staff" className="ml-1 rounded-full bg-[var(--gold)] px-3 py-1.5 text-sm font-semibold">
-              Staff
-            </Link>
-          ) : null}
+          <ThemeToggle />
         </nav>
-        <button
-          type="button"
-          className="rounded-full bg-white/70 px-3 py-1.5 text-sm md:hidden"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-        >
-          Menu
-        </button>
+        <div className="flex items-center gap-2 md:hidden">
+          <ThemeToggle />
+          <button
+            type="button"
+            className="rounded-full bg-[var(--surface-2)] px-3 py-1.5 text-sm"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+          >
+            Menu
+          </button>
+        </div>
       </div>
       {open ? (
         <div className="grid gap-1 px-4 pb-3 md:hidden">
@@ -66,11 +69,6 @@ export function SiteHeader({ staff }: { staff?: boolean }) {
               {link.label}
             </Link>
           ))}
-          {staff ? (
-            <Link href="/staff" onClick={() => setOpen(false)} className="py-2">
-              Staff
-            </Link>
-          ) : null}
         </div>
       ) : null}
     </header>
@@ -111,7 +109,7 @@ export function ComingSoon({
       <PageTitle kicker={kicker} title={title}>
         {children}
       </PageTitle>
-      <p className="rounded-2xl bg-white/55 px-5 py-4 text-[var(--ink-soft)]">
+      <p className="rounded-2xl bg-[var(--surface)] px-5 py-4 text-[var(--ink-soft)]">
         This page opens when the tournament goes live.
       </p>
     </div>

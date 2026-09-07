@@ -12,6 +12,35 @@
   --line: rgba(176, 92, 74, 0.16);
   --line-strong: rgba(61, 42, 36, 0.22);
   --mint: #4a8a62;
+  --lift: #ffffff;
+  --surface: rgb(255 255 255 / 0.55);
+  --surface-2: rgb(255 255 255 / 0.75);
+  --surface-strong: #ffffff;
+  --table-odd: rgb(255 255 255 / 0.45);
+  --glow-a: rgb(255 186 160 / 0.45);
+  --glow-b: rgb(242 193 78 / 0.22);
+  --chip-ink: #3d2a24;
+}
+
+html.dark {
+  --paper: #3a2432;
+  --paper-2: #4c3040;
+  --peach: #f0b3bc;
+  --ink: #fff6ee;
+  --ink-soft: #f3d2c8;
+  --coral: #f4a392;
+  --coral-ink: #ffcfc4;
+  --gold: #ffd78f;
+  --line: rgba(255, 214, 204, 0.22);
+  --line-strong: rgba(255, 246, 238, 0.28);
+  --mint: #9ddcb4;
+  --lift: #2a1824;
+  --surface: rgb(255 226 218 / 0.16);
+  --surface-2: rgb(255 232 224 / 0.24);
+  --surface-strong: #563848;
+  --table-odd: rgb(255 226 218 / 0.12);
+  --glow-a: rgb(255 154 168 / 0.38);
+  --glow-b: rgb(255 205 130 / 0.3);
 }
 
 @theme inline {
@@ -27,14 +56,23 @@ html {
   background: var(--paper);
 }
 
+html[data-obs],
+html[data-obs] body {
+  background: transparent;
+}
+
 body {
   min-height: 100%;
   background:
-    radial-gradient(900px 420px at 8% -8%, rgba(255, 186, 160, 0.45), transparent 55%),
-    radial-gradient(700px 360px at 100% 0%, rgba(242, 193, 78, 0.22), transparent 50%),
+    radial-gradient(900px 420px at 8% -8%, var(--glow-a), transparent 55%),
+    radial-gradient(700px 360px at 100% 0%, var(--glow-b), transparent 50%),
     var(--paper);
   color: var(--ink);
   font-family: var(--font-nunito), "Segoe UI", sans-serif;
+}
+
+html[data-obs] body {
+  background: transparent;
 }
 
 ::selection {
@@ -82,7 +120,7 @@ body {
 }
 
 .ink-table tbody tr:nth-child(odd) td {
-  background: rgba(255, 255, 255, 0.45);
+  background: var(--table-odd);
 }
 
 .ink-table tbody tr.qualify td {
@@ -91,4 +129,12 @@ body {
 
 .ink-table tbody tr.playoff td {
   background: rgba(255, 212, 188, 0.45);
+}
+
+html.dark .ink-table tbody tr.qualify td {
+  background: rgba(255, 215, 143, 0.32);
+}
+
+html.dark .ink-table tbody tr.playoff td {
+  background: rgba(240, 179, 188, 0.32);
 }

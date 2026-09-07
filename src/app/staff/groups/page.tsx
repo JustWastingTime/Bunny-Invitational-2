@@ -94,7 +94,7 @@ export default function GroupsEditor() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         {GROUPS.map((group) => (
-          <section key={group} className="rounded-3xl bg-white p-3 ring-1 ring-[var(--line)]">
+          <section key={group} className="rounded-3xl bg-[var(--surface-strong)] p-3 ring-1 ring-[var(--line)]">
             <div className="mb-3 flex items-baseline justify-between">
               <h2 className="font-[family-name:var(--font-display)] text-2xl">Group {group}</h2>
               <span className="text-sm text-[var(--ink-soft)]">
@@ -169,7 +169,7 @@ function DropColumn({
             const id = e.dataTransfer.getData("text/team-id") || e.dataTransfer.getData("text/plain");
             if (id && id !== team.id) onDrop(id, group, team.id);
           }}
-          className={`flex cursor-grab items-center gap-2 rounded-xl bg-white px-3 py-2 ring-1 ring-[var(--line)] active:cursor-grabbing ${
+          className={`flex cursor-grab items-center gap-2 rounded-xl bg-[var(--surface-strong)] px-3 py-2 ring-1 ring-[var(--line)] active:cursor-grabbing ${
             dragging === team.id ? "opacity-50" : ""
           }`}
         >

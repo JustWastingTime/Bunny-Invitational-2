@@ -36,28 +36,40 @@ export default function SchedulePage() {
           <button
             type="button"
             onClick={() => setBoard("playin")}
-            className={`rounded-full px-4 py-1.5 text-sm ${active === "playin" ? "bg-[var(--coral)] text-white" : "bg-white/70 text-[var(--ink-soft)]"}`}
+            className={`rounded-full px-4 py-1.5 text-sm ${active === "playin" ? "bg-[var(--coral)] text-white" : "bg-[var(--surface-2)] text-[var(--ink-soft)]"}`}
           >
             Play-in
           </button>
-          {PUBLIC_GROUPS_LIVE ? (
-            <>
-              <button
-                type="button"
-                onClick={() => setBoard("groups")}
-                className={`rounded-full px-4 py-1.5 text-sm ${active === "groups" ? "bg-[var(--coral)] text-white" : "bg-white/70 text-[var(--ink-soft)]"}`}
-              >
-                Group stage
-              </button>
-              <button
-                type="button"
-                onClick={() => setBoard("knockout")}
-                className={`rounded-full px-4 py-1.5 text-sm ${active === "knockout" ? "bg-[var(--coral)] text-white" : "bg-white/70 text-[var(--ink-soft)]"}`}
-              >
-                Knockout
-              </button>
-            </>
-          ) : null}
+          <button
+            type="button"
+            disabled={!PUBLIC_GROUPS_LIVE}
+            onClick={() => setBoard("groups")}
+            title={PUBLIC_GROUPS_LIVE ? undefined : "Group draw lands closer to the tournament"}
+            className={`rounded-full px-4 py-1.5 text-sm ${
+              PUBLIC_GROUPS_LIVE
+                ? active === "groups"
+                  ? "bg-[var(--coral)] text-white"
+                  : "bg-[var(--surface-2)] text-[var(--ink-soft)]"
+                : "cursor-not-allowed bg-[var(--surface-2)] text-[var(--ink-soft)] opacity-45"
+            }`}
+          >
+            Group stage
+          </button>
+          <button
+            type="button"
+            disabled={!PUBLIC_GROUPS_LIVE}
+            onClick={() => setBoard("knockout")}
+            title={PUBLIC_GROUPS_LIVE ? undefined : "Knockout bracket lands closer to the tournament"}
+            className={`rounded-full px-4 py-1.5 text-sm ${
+              PUBLIC_GROUPS_LIVE
+                ? active === "knockout"
+                  ? "bg-[var(--coral)] text-white"
+                  : "bg-[var(--surface-2)] text-[var(--ink-soft)]"
+                : "cursor-not-allowed bg-[var(--surface-2)] text-[var(--ink-soft)] opacity-45"
+            }`}
+          >
+            Knockout
+          </button>
         </div>
 
         {active === "playin" ? (

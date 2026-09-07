@@ -86,7 +86,7 @@ export default function ScoresPage() {
         <label className="grid gap-1 text-sm">
           Match
           <select
-            className="rounded-2xl border border-[var(--line)] bg-white px-3 py-2"
+            className="rounded-2xl border border-[var(--line)] bg-[var(--surface-strong)] px-3 py-2"
             value={current?.id ?? ""}
             onChange={(e) => {
               setMatchId(e.target.value);
@@ -103,7 +103,7 @@ export default function ScoresPage() {
         <label className="grid gap-1 text-sm">
           Race
           <select
-            className="rounded-2xl border border-[var(--line)] bg-white px-3 py-2"
+            className="rounded-2xl border border-[var(--line)] bg-[var(--surface-strong)] px-3 py-2"
             value={category}
             onChange={(e) => {
               setCategory(e.target.value);
@@ -122,7 +122,7 @@ export default function ScoresPage() {
       {current ? (
         <div className="grid gap-3 md:grid-cols-3">
           {current.teams.map((t) => (
-            <div key={t.slot} className="rounded-2xl bg-white p-3 ring-1 ring-[var(--line)]">
+            <div key={t.slot} className="rounded-2xl bg-[var(--surface-strong)] p-3 ring-1 ring-[var(--line)]">
               <p className="font-semibold">{t.name}</p>
               <p className="text-sm text-[var(--ink-soft)]">Match pts: {t.points}</p>
             </div>
@@ -130,7 +130,7 @@ export default function ScoresPage() {
         </div>
       ) : null}
 
-      <section className="rounded-3xl border border-[var(--line)] bg-white p-4">
+      <section className="rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
         <h2 className="mb-3 font-[family-name:var(--font-display)] text-xl">Places 1–5</h2>
         <div className="grid gap-2">
           {[1, 2, 3, 4, 5].map((place) => (

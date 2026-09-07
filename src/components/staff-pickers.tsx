@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CatalogSkill, CatalogUma } from "@/lib/tazuna-types";
 
 const field =
-  "w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--coral)]/40";
+  "w-full rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--coral)]/40";
 
 export function UmaPicker({
   umas,
@@ -79,7 +79,7 @@ export function UmaPicker({
         />
       </div>
       {open ? (
-        <ul className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-2xl bg-white p-1 shadow-lg ring-1 ring-[var(--line)]">
+        <ul className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-2xl bg-[var(--surface-strong)] p-1 shadow-lg ring-1 ring-[var(--line)]">
           {matches.length ? (
             matches.map((uma) => (
               <li key={uma.id}>
@@ -163,7 +163,7 @@ export function SkillInput({
           <button
             key={skill}
             type="button"
-            className="rounded-full bg-white px-2.5 py-1 text-xs ring-1 ring-[var(--line)]"
+            className="rounded-full bg-[var(--surface-strong)] px-2.5 py-1 text-xs ring-1 ring-[var(--line)]"
             onClick={() => onChange(value.filter((s) => s !== skill))}
             title="Remove"
           >
@@ -188,7 +188,7 @@ export function SkillInput({
         }}
       />
       {open && query.trim() ? (
-        <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-2xl bg-white p-1 shadow-lg ring-1 ring-[var(--line)]">
+        <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-2xl bg-[var(--surface-strong)] p-1 shadow-lg ring-1 ring-[var(--line)]">
           {matches.map((skill) => (
             <li key={skill.name}>
               <button

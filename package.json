@@ -4,12 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "prebuild": "node scripts/sync-prisma-provider.mjs",
+    "build": "prisma generate --schema prisma/schema.build.prisma && prisma db push --schema prisma/schema.build.prisma && next build",
     "start": "next start",
     "lint": "eslint",
-    "db:push": "prisma db push",
+    "db:push": "node scripts/sync-prisma-provider.mjs && prisma db push --schema prisma/schema.build.prisma",
     "db:seed": "tsx prisma/seed.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "node scripts/sync-prisma-provider.mjs && prisma generate --schema prisma/schema.build.prisma"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

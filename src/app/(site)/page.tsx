@@ -23,16 +23,13 @@ export default function HomePage() {
         </div>
         <div>
           <p className="text-[var(--ink-soft)]">
-            21 teams, three groups of seven. 3v3v3 across Sprint, Mile, Medium, Long, and Dirt — then quarters, semis, and a two-set Grand Final.
+            21 main stage teams, 7 play in teams. 3v3v3 across Sprint, Mile, Medium, Long, and Dirt.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link href="/scoreboard" className="rounded-full bg-[var(--coral)] px-5 py-2 text-sm font-semibold text-white">
               {PUBLIC_TOURNAMENT_LIVE ? "Live scoreboard" : "Scoreboard"}
             </Link>
-            <Link href="/maps" className="rounded-full bg-white/80 px-5 py-2 text-sm">
-              Maps
-            </Link>
-            <Link href="/schedule" className="rounded-full bg-white/80 px-5 py-2 text-sm">
+            <Link href="/schedule" className="rounded-full bg-[var(--surface-2)] px-5 py-2 text-sm">
               Order of play
             </Link>
           </div>
@@ -57,12 +54,9 @@ export default function HomePage() {
           </div>
         </section>
       ) : (
-        <section>
+        <section id="maps">
           <div className="mb-4 flex items-baseline justify-between gap-4">
             <h2 className="font-[family-name:var(--font-display)] text-3xl">Maps</h2>
-            <Link href="/maps" className="text-sm text-[var(--coral-ink)]">
-              Full maps →
-            </Link>
           </div>
           <MapsGrid compact />
         </section>

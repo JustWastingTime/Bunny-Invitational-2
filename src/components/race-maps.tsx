@@ -6,7 +6,7 @@ export function MapsGrid({ compact = false }: { compact?: boolean }) {
       {RACE_MAPS.map((map) => (
         <article
           key={map.category}
-          className="overflow-hidden rounded-3xl bg-white/70 ring-1 ring-[var(--line)]"
+          className="overflow-hidden rounded-3xl bg-[var(--surface-2)] ring-1 ring-[var(--line)]"
         >
           <div className="flex items-baseline justify-between gap-3 px-5 pt-4">
             <p className="kicker">{CATEGORY_LABEL[map.category]}</p>
@@ -47,8 +47,8 @@ function Pill({ children, tone }: { children: string; tone?: string }) {
     <span
       className="rounded-full px-2.5 py-0.5 text-xs font-extrabold uppercase tracking-wide"
       style={{
-        background: tone ?? "var(--peach)",
-        color: "var(--ink)",
+        background: tone ?? "color-mix(in srgb, var(--peach) 70%, #fff4ea)",
+        color: "var(--chip-ink)",
       }}
     >
       {children}
@@ -57,10 +57,10 @@ function Pill({ children, tone }: { children: string; tone?: string }) {
 }
 
 function seasonTone(season: RaceMap["season"]) {
-  if (season === "Fall") return "color-mix(in srgb, var(--coral) 35%, white)";
-  if (season === "Summer") return "color-mix(in srgb, var(--mint) 40%, white)";
-  if (season === "Winter") return "color-mix(in srgb, #7c9cbf 45%, white)";
-  return "color-mix(in srgb, var(--gold) 45%, white)";
+  if (season === "Fall") return "color-mix(in srgb, var(--coral) 45%, #fff4ea)";
+  if (season === "Summer") return "color-mix(in srgb, var(--mint) 50%, #fff4ea)";
+  if (season === "Winter") return "color-mix(in srgb, #7c9cbf 55%, #fff4ea)";
+  return "color-mix(in srgb, var(--gold) 55%, #fff4ea)";
 }
 
 function TrackRibbon({ layout }: { layout: RaceMap["layout"] }) {
@@ -71,8 +71,8 @@ function TrackRibbon({ layout }: { layout: RaceMap["layout"] }) {
           key={`${piece.label}-${i}`}
           className="grid min-w-0 flex-1 place-items-center px-1 text-center text-[0.55rem] font-extrabold uppercase leading-tight tracking-wide"
           style={{
-            background: piece.kind === "corner" ? "var(--gold)" : "color-mix(in srgb, var(--peach) 70%, white)",
-            color: "var(--ink)",
+            background: piece.kind === "corner" ? "var(--gold)" : "color-mix(in srgb, var(--peach) 55%, #fff4ea)",
+            color: "var(--chip-ink)",
           }}
           title={piece.label}
         >

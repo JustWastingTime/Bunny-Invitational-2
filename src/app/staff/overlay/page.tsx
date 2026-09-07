@@ -96,7 +96,7 @@ export default function OverlayDirectorPage() {
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_30rem]">
         <div className="grid gap-4">
-          <div className="rounded-3xl bg-white p-4 ring-1 ring-[var(--line)]">
+          <div className="rounded-3xl bg-[var(--surface-strong)] p-4 ring-1 ring-[var(--line)]">
             <p className="text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">On air</p>
             <p className="mt-1 font-[family-name:var(--font-display)] text-xl">
               {o.visible === false
@@ -116,7 +116,7 @@ export default function OverlayDirectorPage() {
           <label className="grid gap-1 text-sm">
             Prep match
             <select
-              className="rounded-2xl border border-[var(--line)] bg-white px-3 py-2"
+              className="rounded-2xl border border-[var(--line)] bg-[var(--surface-strong)] px-3 py-2"
               value={stagedMatchId ?? ""}
               onChange={(e) => setStagedMatchId(e.target.value || null)}
             >
@@ -139,7 +139,7 @@ export default function OverlayDirectorPage() {
                 key={c}
                 type="button"
                 onClick={() => setStagedCat(c)}
-                className={`rounded-full px-4 py-2 text-sm ${cat === c ? "bg-[var(--coral)] text-white" : "bg-white ring-1 ring-[var(--line)]"}`}
+                className={`rounded-full px-4 py-2 text-sm ${cat === c ? "bg-[var(--coral)] text-white" : "bg-[var(--surface-strong)] ring-1 ring-[var(--line)]"}`}
               >
                 {CATEGORY_LABEL[c]}
               </button>
@@ -152,7 +152,7 @@ export default function OverlayDirectorPage() {
                 key={v.id}
                 type="button"
                 onClick={() => goLive(v.id)}
-                className={`rounded-full px-4 py-2 ${o.visible && o.view === v.id && !pending ? "bg-[var(--gold)]" : "bg-white ring-1 ring-[var(--line)]"}`}
+                className={`rounded-full px-4 py-2 ${o.visible && o.view === v.id && !pending ? "bg-[var(--gold)]" : "bg-[var(--surface-strong)] ring-1 ring-[var(--line)]"}`}
               >
                 {v.label}
               </button>
@@ -160,7 +160,7 @@ export default function OverlayDirectorPage() {
             <button
               type="button"
               onClick={() => void patch({ visible: !o.visible })}
-              className="rounded-full bg-white px-4 py-2 ring-1 ring-[var(--line)]"
+              className="rounded-full bg-[var(--surface-strong)] px-4 py-2 ring-1 ring-[var(--line)]"
             >
               {o.visible ? "Hide overlay" : "Show overlay"}
             </button>
@@ -183,7 +183,7 @@ export default function OverlayDirectorPage() {
       </div>
 
       {data.matches.some((m) => m.stage === "playin") ? (
-        <section className="rounded-3xl border border-[var(--line)] bg-white p-4">
+        <section className="rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
           <p className="mb-3 text-sm text-[var(--ink-soft)]">
             Play-in uses the same Steiner triples as a group. Click a match to prep it — OBS stays put until you Show.
           </p>
@@ -196,7 +196,7 @@ export default function OverlayDirectorPage() {
       ) : null}
 
       {o.view === "matchup" && o.visible ? (
-        <section className="grid gap-3 rounded-3xl border border-[var(--line)] bg-white p-4">
+        <section className="grid gap-3 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-[family-name:var(--font-display)] text-xl">Uma detail · on-air matchup</h2>
             {o.focus ? (
@@ -232,7 +232,7 @@ export default function OverlayDirectorPage() {
                     active ? "bg-[var(--gold)]/50 ring-[var(--gold)]" : "bg-[var(--paper)] ring-[var(--line)]"
                   }`}
                 >
-                  <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-white">
+                  <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-[var(--surface-strong)]">
                     {row.uma?.spritePath ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={row.uma.spritePath} alt="" className="h-12 w-12 object-contain" />
@@ -317,7 +317,7 @@ function GatesCard({
 }) {
   const liveGates = match.id === liveMatchId && cat === liveCat;
   return (
-    <section className="grid gap-3 rounded-3xl border border-[var(--line)] bg-white p-4">
+    <section className="grid gap-3 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
       <h2 className="font-[family-name:var(--font-display)] text-xl">
         Gates · {match.label} · {CATEGORY_LABEL[cat as keyof typeof CATEGORY_LABEL] ?? cat}
       </h2>

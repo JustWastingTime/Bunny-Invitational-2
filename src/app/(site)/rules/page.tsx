@@ -14,21 +14,21 @@ export default function RulesPage() {
       <PageTitle kicker="How this works" title="Rules">
         {tab === "simple"
           ? "Joining, maps, submissions, bans, and scoring."
-          : "The full write-up: maps, submissions, brackets, play-ins, and scoring."}
+          : "The full write-up: maps, submissions, brackets, play-ins, and missing players."}
       </PageTitle>
 
       <div className="mb-8 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => setTab("simple")}
-          className={`rounded-full px-4 py-1.5 text-sm ${tab === "simple" ? "bg-[var(--coral)] text-white" : "bg-white/70 text-[var(--ink-soft)]"}`}
+          className={`rounded-full px-4 py-1.5 text-sm ${tab === "simple" ? "bg-[var(--coral)] text-white" : "bg-[var(--surface-2)] text-[var(--ink-soft)]"}`}
         >
           Simplified
         </button>
         <button
           type="button"
           onClick={() => setTab("advanced")}
-          className={`rounded-full px-4 py-1.5 text-sm ${tab === "advanced" ? "bg-[var(--coral)] text-white" : "bg-white/70 text-[var(--ink-soft)]"}`}
+          className={`rounded-full px-4 py-1.5 text-sm ${tab === "advanced" ? "bg-[var(--coral)] text-white" : "bg-[var(--surface-2)] text-[var(--ink-soft)]"}`}
         >
           Advanced
         </button>
@@ -83,11 +83,11 @@ function SimplifiedRules() {
         <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Maps</h2>
         <ul className="space-y-2 text-[var(--ink-soft)]">
           <li>
-            Maps are locked. See the{" "}
-            <Link className="font-semibold text-[var(--coral-ink)] underline" href="/maps">
-              Maps
-            </Link>{" "}
-            page for venue, distance, season, weather, and going.
+            Maps are locked. Venue, distance, season, weather, and going are on the{" "}
+            <Link className="font-semibold text-[var(--coral-ink)] underline" href="/#maps">
+              home page
+            </Link>
+            .
           </li>
           <li>Each team will have an equal time to build their umas.</li>
           <li>Each team will fight at least 3 times in the group stage, and top 5 teams will advance to the next stage.</li>
@@ -232,9 +232,9 @@ function AdvancedRules() {
         <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Maps</h2>
         <ul className="space-y-2 text-[var(--ink-soft)]">
           <li>
-            Maps and conditions are locked. Full cards live on{" "}
-            <Link className="font-semibold text-[var(--coral-ink)] underline" href="/maps">
-              Maps
+            Maps and conditions are locked. Cards are on the{" "}
+            <Link className="font-semibold text-[var(--coral-ink)] underline" href="/#maps">
+              home page
             </Link>
             .
           </li>
@@ -348,6 +348,21 @@ function AdvancedRules() {
           <li>
             Teams that make it through may remake / change their umas for the main stage, then follow the main
             submission deadlines above.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <p className="kicker">9</p>
+        <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Missing players / umas</h2>
+        <ul className="space-y-2 text-[var(--ink-soft)]">
+          <li>
+            Please do not change your in-game name after submission. If your uma cannot be found due to a name change
+            while live on stream, you may be replaced by an NPC.
+          </li>
+          <li>
+            If a member is missing during submission, you may also be replaced by an NPC. If we deem a team is trying to
+            abuse this rule, we may disqualify them instead.
           </li>
         </ul>
       </section>

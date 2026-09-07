@@ -17,7 +17,7 @@ function TeamCard({
   return (
     <Link
       href={`/staff/teams/${team.id}`}
-      className="flex overflow-hidden rounded-2xl bg-white ring-1 ring-[var(--line)] transition hover:-translate-y-0.5 hover:shadow-sm"
+      className="flex overflow-hidden rounded-2xl bg-[var(--surface-strong)] ring-1 ring-[var(--line)] transition hover:-translate-y-0.5 hover:shadow-sm"
     >
       <span className="w-2 shrink-0" style={{ background: team.color }} />
       <span className="flex min-w-0 flex-1 items-center justify-between gap-3 px-4 py-3">
@@ -49,15 +49,15 @@ export default async function StaffHome() {
         Update rosters here. Assign groups on the Groups page. The public site and OBS overlay poll automatically.
       </p>
       <div className="grid gap-3 sm:grid-cols-3">
-        <Link href="/staff/groups" className="rounded-3xl border border-[var(--line)] bg-white p-4">
+        <Link href="/staff/groups" className="rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
           <h2 className="font-[family-name:var(--font-display)] text-xl">Groups</h2>
           <p className="text-sm text-[var(--ink-soft)]">Drag 21 teams into A/B/C and regenerate matchups.</p>
         </Link>
-        <Link href="/staff/scores" className="rounded-3xl border border-[var(--line)] bg-white p-4">
+        <Link href="/staff/scores" className="rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
           <h2 className="font-[family-name:var(--font-display)] text-xl">Scores</h2>
           <p className="text-sm text-[var(--ink-soft)]">Enter 1st–5th. Points and advancement update immediately.</p>
         </Link>
-        <Link href="/staff/overlay" className="rounded-3xl border border-[var(--line)] bg-white p-4">
+        <Link href="/staff/overlay" className="rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
           <h2 className="font-[family-name:var(--font-display)] text-xl">Overlay director</h2>
           <p className="text-sm text-[var(--ink-soft)]">Pick the live match and flip matchup / scoreboard for OBS.</p>
         </Link>

@@ -13,6 +13,11 @@ declare module "next-auth" {
   }
 }
 
+if (!process.env.NEXTAUTH_URL) {
+  const host = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+  if (host) process.env.NEXTAUTH_URL = host.startsWith("http") ? host : `https://${host}`;
+}
+
 export function staffIdList(): string[] {
   return (process.env.DISCORD_STAFF_IDS ?? "")
     .split(/[,\s]+/)
@@ -22,6 +27,20 @@ export function staffIdList(): string[] {
 
 export function devBypass(): boolean {
   return process.env.DEV_STAFF_BYPASS === "true" && process.env.NODE_ENV !== "production";
+}
+
+export async function requireStaff(): Promise<{ ok: true; session: Session | null } | { ok: false; status: number }> {
+  if (devBypass()) return { ok: true, session: null };
+  const ids = staffIdList();
+  if (process.env.NODE_ENV === "production" && ids.length === 0) {
+    console.error("DISCORD_STAFF_IDS is required in production so staff Discord accounts can sign in.");
+    return { ok: false, status: 503 };
+  }
+  const session = await getSession();
+  const id = session?.user?.id;
+  if (!session || !id) return { ok: false, status: 401 };
+  if (!ids.includes(id)) return { ok: false, status: 403 };
+  return { ok: true, session };
 }
 
 export const authOptions: NextAuthOptions = {
@@ -44,15 +63,6 @@ export const authOptions: NextAuthOptions = {
 
 export async function getSession(): Promise<Session | null> {
   return getServerSession(authOptions);
-}
-
-export async function requireStaff(): Promise<{ ok: true; session: Session | null } | { ok: false; status: number }> {
-  if (devBypass()) return { ok: true, session: null };
-  const session = await getSession();
-  const id = session?.user?.id;
-  if (!session || !id) return { ok: false, status: 401 };
-  if (!staffIdList().includes(id)) return { ok: false, status: 403 };
-  return { ok: true, session };
 }
 
 export function isStaffSession(session: Session | null): boolean {
