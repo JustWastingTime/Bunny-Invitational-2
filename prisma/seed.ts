@@ -211,6 +211,8 @@ async function main() {
         stage: "playin",
         group: "P",
         day: 0,
+        sortOrder: 90 + i,
+        label: `Play-in Match ${i + 1}`,
         teams: {
           create: FANO[i].map((memberIndex, slot) => ({
             slot,

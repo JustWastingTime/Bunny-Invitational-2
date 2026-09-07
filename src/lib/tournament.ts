@@ -13,7 +13,7 @@ import {
   PUBLIC_TOURNAMENT_LIVE,
   type Category,
 } from "./constants";
-import { splitPopularity } from "./scoring";
+import { popularityFromRosters, splitPopularity } from "./scoring";
 import {
   grandFinalTotals,
   groupStandings,
