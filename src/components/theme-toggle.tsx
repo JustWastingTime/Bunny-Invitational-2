@@ -27,8 +27,25 @@ export function applyTheme(stored: "light" | "dark" | "system") {
   document.documentElement.style.colorScheme = dark ? "dark" : "light";
 }
 
+/**
+ * A theme flip repaints colour, background and border on nearly every element
+ * at once. Without this the transitions all fire together and the swap smears
+ * instead of snapping.
+ */
+function applyThemeInstantly(stored: "light" | "dark" | "system") {
+  const style = document.createElement("style");
+  style.append(document.createTextNode("*,*::before,*::after{transition:none !important}"));
+  document.head.appendChild(style);
+  applyTheme(stored);
+  // Force a reflow so the suppressed styles are flushed before we restore.
+  void document.body.offsetHeight;
+  requestAnimationFrame(() => style.remove());
+}
+
 export function ThemeToggle() {
-  const [resolved, setResolved] = useState<"light" | "dark">("light");
+  // Null until mounted: the inline bootstrap script has already set the theme
+  // on <html>, but the server render can't know which one it picked.
+  const [resolved, setResolved] = useState<"light" | "dark" | null>(null);
 
   useEffect(() => {
     const sync = () => {
@@ -55,10 +72,10 @@ export function ThemeToggle() {
         const next = document.documentElement.classList.contains("dark") ? "light" : "dark";
         localStorage.setItem(THEME_KEY, next);
         setResolved(next);
-        applyTheme(next);
+        applyThemeInstantly(next);
       }}
     >
-      {dark ? <SunIcon /> : <MoonIcon />}
+      {resolved === null ? <span className="h-5 w-5" /> : dark ? <SunIcon /> : <MoonIcon />}
     </button>
   );
 }

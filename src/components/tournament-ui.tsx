@@ -15,7 +15,7 @@ export function GroupTable({
 }) {
   const playIn = group === "Play-in" || group === "P";
   return (
-    <section>
+    <section className="min-w-0">
       <div className="mb-2 flex items-baseline justify-between gap-3">
         <h3 className="font-[family-name:var(--font-display)] text-2xl">{playIn ? "Play-in" : `Group ${group}`}</h3>
         <p className="text-xs text-[var(--ink-soft)]">
@@ -26,35 +26,59 @@ export function GroupTable({
         <table className="ink-table min-w-[22rem]">
           <thead>
             <tr>
-              <th>#</th>
-              <th>Team</th>
-              <th className="text-right">Pts</th>
-              <th className="text-right">W</th>
-              <th className="text-right">1st</th>
-              <th className="text-right">GP</th>
+              <th scope="col">#</th>
+              <th scope="col">Team</th>
+              {playIn ? null : <th scope="col">Advances</th>}
+              <th scope="col" className="text-right">Pts</th>
+              <th scope="col" className="text-right">W</th>
+              <th scope="col" className="text-right">1st</th>
+              <th scope="col" className="text-right">GP</th>
             </tr>
           </thead>
           <tbody>
-            {standings.map((row) => (
-              <tr
-                key={row.teamId}
-                className={playIn ? "" : row.rank <= 2 ? "qualify" : row.rank <= 5 ? "playoff" : ""}
-              >
-                <td className="font-semibold">{row.rank}</td>
-                <td>
-                  <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{ background: row.color }} />
-                  {row.name}
-                </td>
-                <td className="text-right font-semibold">{row.points}</td>
-                <td className="text-right">{row.wins}</td>
-                <td className="text-right">{row.firsts}</td>
-                <td className="text-right">{row.matchesPlayed}</td>
-              </tr>
-            ))}
+            {standings.map((row) => {
+              const outcome = playIn ? null : row.rank <= 2 ? "Semis" : row.rank <= 5 ? "LCQ" : null;
+              return (
+                <tr key={row.teamId} className={outcome === "Semis" ? "qualify" : outcome === "LCQ" ? "playoff" : ""}>
+                  <td className="font-semibold">{row.rank}</td>
+                  <td>
+                    <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{ background: row.color }} />
+                    {row.name}
+                  </td>
+                  {playIn ? null : (
+                    <td>
+                      {outcome ? <OutcomeTag>{outcome}</OutcomeTag> : <span className="text-[var(--ink-soft)]">Out</span>}
+                    </td>
+                  )}
+                  <td className="text-right font-semibold">{row.points}</td>
+                  <td className="text-right">{row.wins}</td>
+                  <td className="text-right">{row.firsts}</td>
+                  <td className="text-right">{row.matchesPlayed}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
+      {playIn ? null : (
+        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--ink-soft)]">
+          <span className="inline-flex items-center gap-1.5">
+            <OutcomeTag>Semis</OutcomeTag> top 2 go straight to the Semi Finals
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <OutcomeTag>LCQ</OutcomeTag> 3rd–5th go to the Last Chance Qualifiers
+          </span>
+        </p>
+      )}
     </section>
+  );
+}
+
+function OutcomeTag({ children }: { children: string }) {
+  return (
+    <span className="inline-block whitespace-nowrap rounded-full bg-[var(--chip-base)] px-2 py-0.5 text-xs font-extrabold uppercase tracking-wide text-[var(--chip-ink)]">
+      {children}
+    </span>
   );
 }
 
@@ -63,7 +87,7 @@ export function MatchCard({ match, highlight }: { match: PublicMatch; highlight?
     <article className={`rounded-2xl px-4 py-3 ${highlight ? "bg-[var(--gold)]/40" : "bg-[var(--surface)]"}`}>
       <div className="mb-2 flex items-baseline justify-between gap-2">
         <h3 className="font-[family-name:var(--font-display)] text-base leading-tight">{match.label}</h3>
-        {highlight ? <span className="text-[0.65rem] font-extrabold uppercase tracking-wide text-[var(--coral-ink)]">Now</span> : null}
+        {highlight ? <span className="text-xs font-extrabold uppercase tracking-wide text-[var(--coral-ink)]">Now</span> : null}
       </div>
       <MatchTeams match={match} />
     </article>
@@ -100,7 +124,7 @@ function CompactMatch({ match, highlight }: { match: PublicMatch; highlight?: bo
           Match {matchNumber(match)}
         </h4>
         {highlight ? (
-          <span className="text-[0.65rem] font-extrabold uppercase tracking-wide text-[var(--coral-ink)]">Now</span>
+          <span className="text-xs font-extrabold uppercase tracking-wide text-[var(--coral-ink)]">Now</span>
         ) : null}
       </div>
       <MatchTeams match={match} />
@@ -130,8 +154,11 @@ export function GroupSchedule({
             key={group}
             type="button"
             onClick={() => setFocus(group)}
+            aria-pressed={focus === group}
             className={`rounded-full px-4 py-1.5 text-sm ${
-              focus === group ? "bg-[var(--coral)] text-white" : "bg-[var(--surface-2)] text-[var(--ink-soft)]"
+              focus === group
+                ? "bg-[var(--accent-solid)] font-semibold text-[var(--accent-on-solid)]"
+                : "bg-[var(--surface-2)] text-[var(--ink-soft)]"
             }`}
           >
             Group {group}
@@ -149,7 +176,7 @@ export function GroupSchedule({
           return (
             <section
               key={group}
-              className={focus === group ? "block" : "hidden lg:block"}
+              className={`min-w-0 ${focus === group ? "block" : "hidden lg:block"}`}
             >
               <h3 className="mb-3 font-[family-name:var(--font-display)] text-2xl">Group {group}</h3>
               <DayColumn label="Day 1" matches={day1} nowId={nowId} />
@@ -173,7 +200,7 @@ export function PlayInSchedule({
 }) {
   const rows = [...matches].sort((a, b) => a.sortOrder - b.sortOrder);
   return (
-    <section>
+    <section className="min-w-0">
       <h3 className="mb-3 font-[family-name:var(--font-display)] text-2xl">Play-in</h3>
       <DayColumn label={PLAY_IN_EVENT_LABEL} matches={rows} nowId={nowId} onPick={onPick} />
     </section>
@@ -218,17 +245,22 @@ export function ScorerList({ match }: { match: PublicMatch }) {
       .filter((p) => p.net !== 0)
       .map((p) => ({ ...p, race: race.label })),
   );
-  if (!scorers.length) return <p className="text-sm text-[var(--ink-soft)]">No points recorded yet.</p>;
+  if (!scorers.length)
+    return (
+      <p className="rounded-2xl bg-[var(--surface)] px-5 py-4 text-sm text-[var(--ink-soft)]">
+        No points scored yet. Placements appear here as each race is called in.
+      </p>
+    );
   return (
-    <div className="overflow-x-auto rounded-2xl bg-[var(--surface)]">
+    <div className="min-w-0 overflow-x-auto rounded-2xl bg-[var(--surface)]">
       <table className="ink-table">
         <thead>
           <tr>
-            <th>Place</th>
-            <th>Uma</th>
-            <th>Team</th>
-            <th>Race</th>
-            <th className="text-right">Pts</th>
+            <th scope="col">Place</th>
+            <th scope="col">Uma</th>
+            <th scope="col">Team</th>
+            <th scope="col">Race</th>
+            <th scope="col" className="text-right">Pts</th>
           </tr>
         </thead>
         <tbody>

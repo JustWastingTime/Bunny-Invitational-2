@@ -30,7 +30,7 @@ export function MapsGrid({ compact = false }: { compact?: boolean }) {
           {compact ? null : (
             <div className="px-5 pb-5">
               <TrackRibbon layout={map.layout} />
-              <div className="mt-2 flex justify-between text-[0.65rem] font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">
+              <div className="mt-2 flex justify-between text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">
                 <span>0</span>
                 <span>{map.distanceM}m</span>
               </div>
@@ -47,7 +47,7 @@ function Pill({ children, tone }: { children: string; tone?: string }) {
     <span
       className="rounded-full px-2.5 py-0.5 text-xs font-extrabold uppercase tracking-wide"
       style={{
-        background: tone ?? "color-mix(in srgb, var(--peach) 70%, #fff4ea)",
+        background: tone ?? "color-mix(in srgb, var(--peach) 70%, var(--chip-base))",
         color: "var(--chip-ink)",
       }}
     >
@@ -57,10 +57,10 @@ function Pill({ children, tone }: { children: string; tone?: string }) {
 }
 
 function seasonTone(season: RaceMap["season"]) {
-  if (season === "Fall") return "color-mix(in srgb, var(--coral) 45%, #fff4ea)";
-  if (season === "Summer") return "color-mix(in srgb, var(--mint) 50%, #fff4ea)";
-  if (season === "Winter") return "color-mix(in srgb, #7c9cbf 55%, #fff4ea)";
-  return "color-mix(in srgb, var(--gold) 55%, #fff4ea)";
+  if (season === "Fall") return "color-mix(in srgb, var(--coral) 45%, var(--chip-base))";
+  if (season === "Summer") return "color-mix(in srgb, var(--mint) 50%, var(--chip-base))";
+  if (season === "Winter") return "color-mix(in srgb, #7c9cbf 55%, var(--chip-base))";
+  return "color-mix(in srgb, var(--gold) 55%, var(--chip-base))";
 }
 
 function TrackRibbon({ layout }: { layout: RaceMap["layout"] }) {
@@ -69,9 +69,9 @@ function TrackRibbon({ layout }: { layout: RaceMap["layout"] }) {
       {layout.map((piece, i) => (
         <div
           key={`${piece.label}-${i}`}
-          className="grid min-w-0 flex-1 place-items-center px-1 text-center text-[0.55rem] font-extrabold uppercase leading-tight tracking-wide"
+          className="grid min-w-0 flex-1 place-items-center px-1 text-center text-[0.6875rem] font-extrabold uppercase leading-tight tracking-wide"
           style={{
-            background: piece.kind === "corner" ? "var(--gold)" : "color-mix(in srgb, var(--peach) 55%, #fff4ea)",
+            background: piece.kind === "corner" ? "var(--gold)" : "color-mix(in srgb, var(--peach) 55%, var(--chip-base))",
             color: "var(--chip-ink)",
           }}
           title={piece.label}

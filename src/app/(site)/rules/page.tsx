@@ -18,24 +18,41 @@ export default function RulesPage() {
       </PageTitle>
 
       <div className="mb-8 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setTab("simple")}
-          className={`rounded-full px-4 py-1.5 text-sm ${tab === "simple" ? "bg-[var(--coral)] text-white" : "bg-[var(--surface-2)] text-[var(--ink-soft)]"}`}
-        >
+        <RulesTabButton active={tab === "simple"} onClick={() => setTab("simple")}>
           Simplified
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab("advanced")}
-          className={`rounded-full px-4 py-1.5 text-sm ${tab === "advanced" ? "bg-[var(--coral)] text-white" : "bg-[var(--surface-2)] text-[var(--ink-soft)]"}`}
-        >
+        </RulesTabButton>
+        <RulesTabButton active={tab === "advanced"} onClick={() => setTab("advanced")}>
           Advanced
-        </button>
+        </RulesTabButton>
       </div>
 
       {tab === "simple" ? <SimplifiedRules /> : <AdvancedRules />}
     </div>
+  );
+}
+
+function RulesTabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`rounded-full px-4 py-1.5 text-sm ${
+        active
+          ? "bg-[var(--accent-solid)] font-semibold text-[var(--accent-on-solid)]"
+          : "bg-[var(--surface-2)] text-[var(--ink-soft)]"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -142,7 +159,7 @@ function PlaceTable() {
       <thead>
         <tr>
           {["1st", "2nd", "3rd", "4th", "5th"].map((p) => (
-            <th key={p} className="text-center">
+            <th key={p} scope="col" className="text-center">
               {p}
             </th>
           ))}

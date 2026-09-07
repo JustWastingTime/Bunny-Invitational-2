@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { PageTitle, ComingSoon } from "@/components/site-chrome";
+import { PageTitle, ComingSoon, DataError, Loading } from "@/components/site-chrome";
 import { usePublicData } from "@/components/use-public-data";
 import { PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
 
 export default function StatsPage() {
-  const { data } = usePublicData(8000);
+  const { data, error } = usePublicData(8000);
   const [tab, setTab] = useState<"umas" | "teams" | "skills">("umas");
   if (!PUBLIC_TOURNAMENT_LIVE) {
     return (
@@ -15,7 +15,7 @@ export default function StatsPage() {
       </ComingSoon>
     );
   }
-  if (!data) return <p>Loading stats…</p>;
+  if (!data) return error ? <DataError what="stats" /> : <Loading what="stats" />;
   const s = data.stats;
 
   return (
@@ -49,7 +49,12 @@ export default function StatsPage() {
             key={key}
             type="button"
             onClick={() => setTab(key)}
-            className={`rounded-full px-4 py-1.5 text-sm ${tab === key ? "bg-[var(--coral)] text-white" : "bg-[var(--surface-2)] text-[var(--ink-soft)]"}`}
+            aria-pressed={tab === key}
+            className={`rounded-full px-4 py-1.5 text-sm ${
+              tab === key
+                ? "bg-[var(--accent-solid)] font-semibold text-[var(--accent-on-solid)]"
+                : "bg-[var(--surface-2)] text-[var(--ink-soft)]"
+            }`}
           >
             {key === "umas" ? "Uma population" : key === "teams" ? "Team strength" : "Skill meta"}
           </button>
@@ -57,16 +62,16 @@ export default function StatsPage() {
       </div>
 
       {tab === "umas" ? (
-        <div className="overflow-x-auto rounded-2xl bg-[var(--surface)]">
+        <div className="min-w-0 overflow-x-auto rounded-2xl bg-[var(--surface)]">
           <table className="ink-table min-w-[36rem]">
             <thead>
               <tr>
-                <th>Uma</th>
-                <th className="text-right">Picks</th>
-                <th className="text-right">Starts</th>
-                <th className="text-right">Wins</th>
-                <th className="text-right">Top 5</th>
-                <th className="text-right">Win%</th>
+                <th scope="col">Uma</th>
+                <th scope="col" className="text-right">Picks</th>
+                <th scope="col" className="text-right">Starts</th>
+                <th scope="col" className="text-right">Wins</th>
+                <th scope="col" className="text-right">Top 5</th>
+                <th scope="col" className="text-right">Win%</th>
               </tr>
             </thead>
             <tbody>
@@ -89,28 +94,32 @@ export default function StatsPage() {
 
       {tab === "teams" ? (
         <div className="grid gap-10 md:grid-cols-2">
-          <ol>
+          <section>
             <h2 className="mb-2 font-[family-name:var(--font-display)] text-2xl">Build stats (not standings)</h2>
-            {s.teamPowerByStats.slice(0, 10).map((t, i) => (
-              <li key={t.teamId} className="flex justify-between py-1.5 text-sm">
-                <span>
-                  {i + 1}. {t.name}
-                </span>
-                <span>{t.totalStats.toLocaleString()}</span>
-              </li>
-            ))}
-          </ol>
-          <ol>
+            <ol>
+              {s.teamPowerByStats.slice(0, 10).map((t, i) => (
+                <li key={t.teamId} className="flex justify-between py-1.5 text-sm">
+                  <span>
+                    {i + 1}. {t.name}
+                  </span>
+                  <span className="tabular-nums">{t.totalStats.toLocaleString()}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+          <section>
             <h2 className="mb-2 font-[family-name:var(--font-display)] text-2xl">Most skills</h2>
-            {s.teamPowerBySkills.slice(0, 10).map((t, i) => (
-              <li key={t.teamId} className="flex justify-between py-1.5 text-sm">
-                <span>
-                  {i + 1}. {t.name}
-                </span>
-                <span>{t.skills}</span>
-              </li>
-            ))}
-          </ol>
+            <ol>
+              {s.teamPowerBySkills.slice(0, 10).map((t, i) => (
+                <li key={t.teamId} className="flex justify-between py-1.5 text-sm">
+                  <span>
+                    {i + 1}. {t.name}
+                  </span>
+                  <span className="tabular-nums">{t.skills}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
           {s.mostUniqueTeam ? (
             <p className="md:col-span-2 text-sm text-[var(--ink-soft)]">
               Most unique costumes: <strong>{s.mostUniqueTeam.name}</strong> ({s.mostUniqueTeam.uniquePicks})

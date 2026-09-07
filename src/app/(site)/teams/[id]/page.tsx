@@ -4,19 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { use, useMemo } from "react";
 import { CATEGORY_LABEL, CATEGORIES, PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
-import { ComingSoon } from "@/components/site-chrome";
+import { ComingSoon, DataError, Loading } from "@/components/site-chrome";
 import { usePublicData } from "@/components/use-public-data";
 
 export default function TeamDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { data } = usePublicData(15000);
-  if (!PUBLIC_TOURNAMENT_LIVE) {
-    return (
-      <ComingSoon kicker="The field" title="Teams">
-        Club rosters publish after uma submissions lock.
-      </ComingSoon>
-    );
-  }
+  const { data, error } = usePublicData(15000);
   const team = data?.teams.find((t) => t.id === id);
 
   const records = useMemo(() => {
@@ -38,8 +31,24 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
     return map;
   }, [data, id]);
 
-  if (!data) return <p>Loading team…</p>;
-  if (!team) return <p>Team not found.</p>;
+  if (!PUBLIC_TOURNAMENT_LIVE) {
+    return (
+      <ComingSoon kicker="The field" title="Teams">
+        Club rosters publish after uma submissions lock.
+      </ComingSoon>
+    );
+  }
+  if (!data) return error ? <DataError what="team" /> : <Loading what="team" />;
+  if (!team)
+    return (
+      <div className="rounded-2xl bg-[var(--surface)] px-5 py-4">
+        <p className="font-semibold text-[var(--ink)]">That team isn’t in the field.</p>
+        <p className="mt-1 text-sm text-[var(--ink-soft)]">The link may be out of date since the draw changed.</p>
+        <Link href="/teams" className="mt-3 inline-block font-semibold text-[var(--coral-ink)] underline">
+          Browse all teams
+        </Link>
+      </div>
+    );
 
   return (
     <div className="grid gap-8">

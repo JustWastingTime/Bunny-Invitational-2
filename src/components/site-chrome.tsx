@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
 import { ThemeToggle } from "@/components/theme-toggle";
+
+const MENU_ID = "site-menu";
 
 const LINKS = [
   { href: "/", label: "Home" },
@@ -20,20 +22,30 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const links = LINKS.filter((link) => PUBLIC_TOURNAMENT_LIVE || !("live" in link && link.live));
 
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open]);
+
   return (
     <header className="sticky top-0 z-40 bg-[color-mix(in_srgb,var(--paper)_86%,var(--lift))]/90 backdrop-blur-md">
       <div className="page-shell flex items-center justify-between gap-4 py-3">
         <Link href="/" className="flex items-center gap-2.5 text-[var(--ink)]">
           <img
             src="/favicon.png"
-            alt="Bunny Invitational 2"
-            width={36}
-            height={36}
+            alt=""
+            width={40}
+            height={40}
             className="h-10 w-10 object-contain"
           />
           <span className="hidden font-[family-name:var(--font-display)] text-xl leading-none sm:inline">
             Bunny Invitational 2
           </span>
+          <span className="sr-only sm:hidden">Bunny Invitational 2</span>
         </Link>
         <nav className="hidden items-center gap-1 md:flex">
           {links.map((link) => {
@@ -42,6 +54,7 @@ export function SiteHeader() {
               <Link
                 key={link.href}
                 href={link.href}
+                aria-current={active ? "page" : undefined}
                 className={`px-3 py-1.5 text-sm ${active ? "font-extrabold text-[var(--coral-ink)]" : "text-[var(--ink-soft)] hover:text-[var(--ink)]"}`}
               >
                 {link.label}
@@ -57,18 +70,32 @@ export function SiteHeader() {
             className="rounded-full bg-[var(--surface-2)] px-3 py-1.5 text-sm"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
+            aria-controls={MENU_ID}
           >
-            Menu
+            {open ? "Close" : "Menu"}
           </button>
         </div>
       </div>
       {open ? (
-        <div className="grid gap-1 px-4 pb-3 md:hidden">
-          {links.map((link) => (
-            <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className="py-2">
-              {link.label}
-            </Link>
-          ))}
+        <div id={MENU_ID} className="grid gap-1 px-4 pb-3 md:hidden">
+          {links.map((link) => {
+            const active = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setOpen(false)}
+                aria-current={active ? "page" : undefined}
+                className={`rounded-xl px-3 py-2 ${
+                  active
+                    ? "bg-[var(--surface-2)] font-extrabold text-[var(--coral-ink)]"
+                    : "bg-[var(--surface)] text-[var(--ink)]"
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </div>
       ) : null}
     </header>
@@ -88,8 +115,8 @@ export function SiteFooter() {
 
 export function LivePill({ label = "Live" }: { label?: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--gold)] px-2.5 py-0.5 text-[0.65rem] font-extrabold uppercase tracking-wide text-[var(--ink)]">
-      <span className="h-1.5 w-1.5 rounded-full bg-[var(--coral)]" />
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--gold)] px-2.5 py-0.5 text-xs font-extrabold uppercase tracking-wide text-[var(--chip-ink)]">
+      <span className="h-1.5 w-1.5 rounded-full bg-[var(--live-dot)]" />
       {label}
     </span>
   );
@@ -116,6 +143,32 @@ export function ComingSoon({
   );
 }
 
+export function DataError({ what }: { what: string }) {
+  return (
+    <div role="alert" className="rounded-2xl bg-[var(--surface)] px-5 py-4">
+      <p className="font-semibold text-[var(--ink)]">Unable to load the {what}.</p>
+      <p className="mt-1 text-sm text-[var(--ink-soft)]">
+        The board refreshes on its own every few seconds. Check your connection, or reload the page.
+      </p>
+      <button
+        type="button"
+        onClick={() => window.location.reload()}
+        className="mt-3 rounded-full bg-[var(--accent-solid)] px-4 py-1.5 text-sm font-semibold text-[var(--accent-on-solid)]"
+      >
+        Reload
+      </button>
+    </div>
+  );
+}
+
+export function Loading({ what }: { what: string }) {
+  return (
+    <p role="status" className="text-[var(--ink-soft)]">
+      Loading the {what}…
+    </p>
+  );
+}
+
 export function PageTitle({
   kicker,
   title,
@@ -129,7 +182,7 @@ export function PageTitle({
     <header className="mb-8 grid gap-3 lg:grid-cols-[1fr_minmax(16rem,32rem)] lg:items-end">
       <div>
         {kicker ? <p className="kicker mb-2">{kicker}</p> : null}
-        <h1 className="font-[family-name:var(--font-display)] text-4xl leading-none lg:text-5xl">{title}</h1>
+        <h1 className="font-[family-name:var(--font-display)] text-4xl leading-tight text-balance lg:text-5xl">{title}</h1>
       </div>
       {children ? <p className="text-[var(--ink-soft)] lg:text-right">{children}</p> : null}
     </header>

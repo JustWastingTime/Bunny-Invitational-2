@@ -4,6 +4,7 @@ import Link from "next/link";
 import { NowNext } from "@/components/now-next";
 import { GroupTable } from "@/components/tournament-ui";
 import { MapsGrid } from "@/components/race-maps";
+import { DataError, Loading } from "@/components/site-chrome";
 import { usePublicData } from "@/components/use-public-data";
 import { PUBLIC_GROUPS_LIVE, PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
 
@@ -26,7 +27,10 @@ export default function HomePage() {
             21 main stage teams, 7 play in teams. 3v3v3 across Sprint, Mile, Medium, Long, and Dirt.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
-            <Link href="/scoreboard" className="rounded-full bg-[var(--coral)] px-5 py-2 text-sm font-semibold text-white">
+            <Link
+              href="/scoreboard"
+              className="rounded-full bg-[var(--accent-solid)] px-5 py-2 text-sm font-semibold text-[var(--accent-on-solid)]"
+            >
               {PUBLIC_TOURNAMENT_LIVE ? "Live scoreboard" : "Scoreboard"}
             </Link>
             <Link href="/schedule" className="rounded-full bg-[var(--surface-2)] px-5 py-2 text-sm">
@@ -36,8 +40,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {error ? <p className="text-[var(--coral-ink)]">{error}. Try running the database seed.</p> : null}
-      {data ? <NowNext now={data.now} next={data.next} /> : <p className="text-[var(--ink-soft)]">Loading the board…</p>}
+      {error && !data ? <DataError what="board" /> : null}
+      {data ? <NowNext now={data.now} next={data.next} /> : error ? null : <Loading what="board" />}
 
       {data && PUBLIC_GROUPS_LIVE ? (
         <section>

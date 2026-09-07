@@ -2,20 +2,20 @@
 
 import { useMemo, useState } from "react";
 import { NowNext } from "@/components/now-next";
-import { PageTitle } from "@/components/site-chrome";
+import { DataError, Loading, PageTitle } from "@/components/site-chrome";
 import { GroupTable, KnockoutBoard, ScorerList } from "@/components/tournament-ui";
 import { usePublicData } from "@/components/use-public-data";
 import { PUBLIC_GROUPS_LIVE, PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
 
 export default function ScoreboardPage() {
-  const { data } = usePublicData(3000);
+  const { data, error } = usePublicData(3000);
   const [matchId, setMatchId] = useState<string | null>(null);
   const selected = useMemo(() => {
     if (!data) return null;
     return data.matches.find((m) => m.id === (matchId ?? data.now?.matchId ?? data.matches[0]?.id)) ?? null;
   }, [data, matchId]);
 
-  if (!data) return <p>Loading scoreboard…</p>;
+  if (!data) return error ? <DataError what="scoreboard" /> : <Loading what="scoreboard" />;
 
   return (
     <div className="grid gap-10">
@@ -40,20 +40,23 @@ export default function ScoreboardPage() {
 
       {PUBLIC_GROUPS_LIVE ? <KnockoutBoard data={data} /> : null}
 
-      <section>
+      <section className="min-w-0">
         <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <h2 className="font-[family-name:var(--font-display)] text-3xl">Who scored</h2>
-          <select
-            className="rounded-full bg-[var(--surface-2)] px-3 py-2 text-sm"
-            value={selected?.id ?? ""}
-            onChange={(e) => setMatchId(e.target.value)}
-          >
-            {data.matches.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.label}
-              </option>
-            ))}
-          </select>
+          <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-[var(--ink-soft)] sm:items-end">
+            Match
+            <select
+              className="w-full max-w-full truncate rounded-full bg-[var(--surface-2)] px-3 py-2 text-base font-normal text-[var(--ink)] sm:w-auto sm:text-sm"
+              value={selected?.id ?? ""}
+              onChange={(e) => setMatchId(e.target.value)}
+            >
+              {data.matches.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         {selected ? <ScorerList match={selected} /> : null}
       </section>

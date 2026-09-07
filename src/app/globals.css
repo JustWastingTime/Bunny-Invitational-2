@@ -7,11 +7,13 @@
   --ink: #3d2a24;
   --ink-soft: #7a5c52;
   --coral: #e07a5f;
-  --coral-ink: #b05c4a;
+  --coral-ink: #9d5242;
+  --accent-solid: #c2452a;
+  --accent-on-solid: #ffffff;
   --gold: #f2c14e;
   --line: rgba(176, 92, 74, 0.16);
   --line-strong: rgba(61, 42, 36, 0.22);
-  --mint: #4a8a62;
+  --mint: #417a56;
   --lift: #ffffff;
   --surface: rgb(255 255 255 / 0.55);
   --surface-2: rgb(255 255 255 / 0.75);
@@ -19,7 +21,11 @@
   --table-odd: rgb(255 255 255 / 0.45);
   --glow-a: rgb(255 186 160 / 0.45);
   --glow-b: rgb(242 193 78 / 0.22);
+  /* Chips keep a light base and dark ink in both themes, so the tinted
+     category fills stay legible without a second set of dark-mode tones. */
   --chip-ink: #3d2a24;
+  --chip-base: #fff4ea;
+  --live-dot: #9c3a24;
 }
 
 html.dark {
@@ -30,6 +36,8 @@ html.dark {
   --ink-soft: #f3d2c8;
   --coral: #f4a392;
   --coral-ink: #ffcfc4;
+  --accent-solid: #f4a392;
+  --accent-on-solid: #3a2432;
   --gold: #ffd78f;
   --line: rgba(255, 214, 204, 0.22);
   --line-strong: rgba(255, 246, 238, 0.28);
@@ -92,7 +100,7 @@ html[data-obs] body {
 }
 
 .kicker {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -117,6 +125,13 @@ html[data-obs] body {
 
 .ink-table td {
   padding: 0.4rem 0.5rem;
+}
+
+/* Standings poll every few seconds; tabular figures stop the columns
+   jittering as digit widths change. */
+.ink-table td.text-right,
+.ink-table th.text-right {
+  font-variant-numeric: tabular-nums;
 }
 
 .ink-table tbody tr:nth-child(odd) td {

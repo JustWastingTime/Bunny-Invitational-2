@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { ComingSoon, PageTitle } from "@/components/site-chrome";
+import { ComingSoon, DataError, Loading, PageTitle } from "@/components/site-chrome";
 import { usePublicData } from "@/components/use-public-data";
 import { PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
 import type { PublicTeam } from "@/lib/types";
 
 export default function TeamsPage() {
-  const { data } = usePublicData(15000);
+  const { data, error } = usePublicData(15000);
   if (!PUBLIC_TOURNAMENT_LIVE) {
     return (
       <ComingSoon kicker="The field" title="Teams">
@@ -15,7 +15,7 @@ export default function TeamsPage() {
       </ComingSoon>
     );
   }
-  if (!data) return <p>Loading teams…</p>;
+  if (!data) return error ? <DataError what="team list" /> : <Loading what="teams" />;
 
   const grouped = ["A", "B", "C"].map((g) => ({
     g,
