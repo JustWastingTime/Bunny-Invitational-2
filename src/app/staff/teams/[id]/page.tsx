@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CATEGORIES, CATEGORY_LABEL, STYLES, STYLE_LABEL, TOURNAMENT_CATALOG_DATE, type Category } from "@/lib/constants";
 import { spriteFileName } from "@/lib/sprites";
 import type { PublicUma } from "@/lib/types";
@@ -102,9 +102,11 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
   const [asOf, setAsOf] = useState(TOURNAMENT_CATALOG_DATE);
   const [catalog, setCatalog] = useState<TazunaCatalog | null>(null);
   const toast = useStaffToast();
+  const router = useRouter();
   const ready = useRef(false);
   const firstReady = useRef(true);
-  const saving = useRef(false);
+  const savingRef = useRef(false);
+  const dirtyRef = useRef(false);
 
   useEffect(() => {
     fetch("/api/public")
@@ -153,46 +155,50 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
   }
 
   async function save() {
-    if (saving.current) return;
-    saving.current = true;
+    if (savingRef.current) return;
+    savingRef.current = true;
     setSaveState("saving");
     toast.saving("Saving roster…");
-    const res = await fetch("/api/staff/teams", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id,
-        name: clubCode.trim(),
-        shortName: clubCode.trim(),
-        tagline,
-        color,
-        roster: roster.map((u) => ({
-          category: u.category,
-          slot: u.slot,
-          trainer: u.trainer,
-          umaName: u.umaName || "TBD",
-          spriteId: u.spriteId,
-          rating: u.rating,
-          style: u.style,
-          aptTerrain: u.aptitudes.terrain,
-          aptDistance: u.aptitudes.distance,
-          aptStyle: u.aptitudes.style,
-          speed: u.stats.speed,
-          stamina: u.stats.stamina,
-          power: u.stats.power,
-          guts: u.stats.guts,
-          wisdom: u.stats.wisdom,
-          skills: u.skills,
-        })),
-      }),
-    });
-    saving.current = false;
-    if (res.ok) {
-      setSaveState("saved");
-      toast.saved("Roster saved");
-    } else {
-      setSaveState("unsaved");
-      toast.error("Roster save failed");
+    try {
+      const res = await fetch("/api/staff/teams", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          name: clubCode.trim(),
+          shortName: clubCode.trim(),
+          tagline,
+          color,
+          roster: roster.map((u) => ({
+            category: u.category,
+            slot: u.slot,
+            trainer: u.trainer,
+            umaName: u.umaName || "TBD",
+            spriteId: u.spriteId,
+            rating: u.rating,
+            style: u.style,
+            aptTerrain: u.aptitudes.terrain,
+            aptDistance: u.aptitudes.distance,
+            aptStyle: u.aptitudes.style,
+            speed: u.stats.speed,
+            stamina: u.stats.stamina,
+            power: u.stats.power,
+            guts: u.stats.guts,
+            wisdom: u.stats.wisdom,
+            skills: u.skills,
+          })),
+        }),
+      });
+      if (res.ok) {
+        dirtyRef.current = false;
+        setSaveState("saved");
+        toast.saved("Roster saved");
+      } else {
+        setSaveState("unsaved");
+        toast.error("Roster save failed");
+      }
+    } finally {
+      savingRef.current = false;
     }
   }
 
@@ -202,11 +208,84 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
       firstReady.current = false;
       return;
     }
+    dirtyRef.current = true;
     setSaveState("unsaved");
-    const t = window.setTimeout(() => void save(), 900);
-    return () => window.clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clubCode, tagline, color, roster]);
+
+  function leaveMessage() {
+    if (savingRef.current) return "Still saving. Wait until it finishes.";
+    if (dirtyRef.current) return "You have unsaved roster changes.";
+    return "";
+  }
+
+  function canLeave() {
+    if (savingRef.current) {
+      toast.error("Still saving — wait until it finishes");
+      return false;
+    }
+    if (!dirtyRef.current) return true;
+    return window.confirm("You have unsaved roster changes. Leave this page?");
+  }
+
+  function goRosters() {
+    if (!canLeave()) return;
+    dirtyRef.current = false;
+    router.push("/staff");
+  }
+
+  useEffect(() => {
+    history.pushState({ rosterGuard: true }, "", window.location.href);
+
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      if (!savingRef.current && !dirtyRef.current) return;
+      e.preventDefault();
+      e.returnValue = leaveMessage();
+    }
+
+    function onPopState() {
+      if (savingRef.current) {
+        history.pushState({ rosterGuard: true }, "", window.location.href);
+        toast.error("Still saving — wait until it finishes");
+        return;
+      }
+      if (dirtyRef.current && !window.confirm("You have unsaved roster changes. Leave this page?")) {
+        history.pushState({ rosterGuard: true }, "", window.location.href);
+        return;
+      }
+      dirtyRef.current = false;
+    }
+
+    function onClick(e: MouseEvent) {
+      const target = e.target as HTMLElement | null;
+      const link = target?.closest("a[href]");
+      if (!link) return;
+      const href = link.getAttribute("href");
+      if (!href || href.startsWith("#") || link.getAttribute("target") === "_blank") return;
+      if (savingRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        toast.error("Still saving — wait until it finishes");
+        return;
+      }
+      if (dirtyRef.current && !window.confirm("You have unsaved roster changes. Leave this page?")) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      dirtyRef.current = false;
+    }
+
+    window.addEventListener("beforeunload", onBeforeUnload);
+    window.addEventListener("popstate", onPopState);
+    document.addEventListener("click", onClick, true);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      window.removeEventListener("popstate", onPopState);
+      document.removeEventListener("click", onClick, true);
+    };
+    // toast helpers stay valid via context
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function uploadBackground(file: File) {
     setStatus("Uploading background…");
@@ -263,9 +342,14 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
     <div className="grid gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <Link href="/staff" className="text-sm text-[var(--coral-ink)]">
+          <button
+            type="button"
+            onClick={goRosters}
+            disabled={saveState === "saving"}
+            className="text-sm text-[var(--coral-ink)] disabled:opacity-50"
+          >
             ← Rosters
-          </Link>
+          </button>
           <h1 className="font-[family-name:var(--font-display)] text-3xl">Edit team</h1>
         </div>
         <button
@@ -383,7 +467,7 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
       </section>
 
       <p className="text-sm text-[var(--ink-soft)]">
-        {saveState === "unsaved" ? "Unsaved changes — autosaves in a moment." : status}
+        {saveState === "unsaved" ? "Unsaved changes." : status}
       </p>
     </div>
   );
