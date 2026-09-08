@@ -1,9 +1,15 @@
 import { prisma } from "./prisma";
-import { CATEGORIES, PLAY_IN_TEAM_COUNT, TEAM_KIND_PLAYIN } from "./constants";
+import { CATEGORIES, FANO_TRIPLES, PLAY_IN_STAGE, PLAY_IN_TEAM_COUNT, TEAM_KIND_PLAYIN } from "./constants";
 
 const PLAY_IN_COLORS = ["#7a5c52", "#c9a227", "#4a8a62", "#5c6bc0", "#b05c4a", "#6a4c93", "#2e7d6b"];
 
 export async function ensurePlayInTeams() {
+  const [teamCount, matchCount] = await Promise.all([
+    prisma.team.count({ where: { kind: TEAM_KIND_PLAYIN } }),
+    prisma.match.count({ where: { stage: PLAY_IN_STAGE } }),
+  ]);
+  if (teamCount >= PLAY_IN_TEAM_COUNT && matchCount >= FANO_TRIPLES.length) return;
+
   for (let i = 0; i < PLAY_IN_TEAM_COUNT; i++) {
     const id = `play-in-${i + 1}`;
     const existing = await prisma.team.findUnique({ where: { id } });
