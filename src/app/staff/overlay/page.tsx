@@ -28,7 +28,7 @@ export default function OverlayDirectorPage() {
   }, [data, o?.activeMatchId]);
 
   const prepMatchId = stagedMatchId === undefined ? o?.activeMatchId ?? null : stagedMatchId;
-  const cat = stagedCat === undefined ? o?.activeCategory ?? "sprint" : stagedCat;
+  const cat = stagedCat || o?.activeCategory || "sprint";
   const liveCat = o?.activeCategory ?? "sprint";
 
   const stagedMatch = useMemo(() => {
