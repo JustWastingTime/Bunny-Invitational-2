@@ -1,4 +1,4 @@
-import { livePayload, loadOverlayRow, peekOverlay } from "@/lib/overlay-store";
+import { livePayload, loadOverlayRow } from "@/lib/overlay-store";
 import { noStoreHeaders } from "@/lib/no-store";
 
 export const dynamic = "force-dynamic";
@@ -22,11 +22,6 @@ export async function GET(request: Request) {
         if (closed || inFlight) return;
         inFlight = true;
         try {
-          const mem = peekOverlay();
-          if (mem && mem.stamp !== last) {
-            last = mem.stamp;
-            send(livePayload(mem.row));
-          }
           const live = livePayload(await loadOverlayRow());
           if (live.stamp === last) return;
           last = live.stamp;

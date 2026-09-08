@@ -23,7 +23,7 @@ import {
   type RosterEntry,
 } from "./standings";
 import { parseSkills, spriteFileName } from "./sprites";
-import { gatesForRace, parseFocusJson, parseGatesJson } from "./overlay-gates";
+import { overlayFromRow } from "./overlay-gates";
 import { loadOverlayRow } from "./overlay-store";
 
 export async function buildPublicPayload(opts?: { reveal?: boolean }) {
@@ -226,21 +226,7 @@ export async function buildPublicPayload(opts?: { reveal?: boolean }) {
     tournament: TOURNAMENT_NAME,
     updatedAt: new Date().toISOString(),
     scoring: { place: PLACE_POINTS, uniqueBonus: 2, popular: { 1: -2, 2: -1, 3: -1 } },
-    overlay: {
-      activeMatchId: overlay.activeMatchId,
-      activeCategory: overlay.activeCategory,
-      view: overlay.view,
-      visible: overlay.visible,
-      gates: overlay.activeMatchId
-        ? gatesForRace(
-            parseGatesJson(overlay.gatesJson),
-            overlay.activeMatchId,
-            overlay.activeCategory,
-          )
-        : [],
-      gatesAll: parseGatesJson(overlay.gatesJson),
-      focus: parseFocusJson(overlay.gatesJson),
-    },
+    overlay: overlayFromRow(overlay),
     now: nowNext.now,
     next: nowNext.next,
     teams: publicTeams,

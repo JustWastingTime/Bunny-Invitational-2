@@ -9,10 +9,11 @@ export const EMPTY_OVERLAY: OverlayRow = {
   view: "matchup",
   visible: true,
   gatesJson: "{}",
+  rev: 0,
 };
 
 type Mem = { row: OverlayRow; stamp: string };
-const g = globalThis as typeof globalThis & { __bunviOverlay?: Mem };
+const g = globalThis as typeof globalThis & { __bunviOverlay?: Mem; __bunviOverlayRev?: number };
 
 function kvCreds() {
   const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
@@ -26,17 +27,18 @@ export function hasOverlayKv() {
 
 export function rememberOverlay(row: OverlayRow) {
   g.__bunviOverlay = { row, stamp: overlayStamp(row) };
+  if (row.rev != null) g.__bunviOverlayRev = Math.max(g.__bunviOverlayRev ?? 0, row.rev);
 }
 
 export function peekOverlay() {
   return g.__bunviOverlay ?? null;
 }
 
-async function kvCommand(command: unknown[]) {
+async function kvCommand(command: unknown[], timeoutMs: number) {
   const creds = kvCreds();
   if (!creds) return null;
   const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), 200);
+  const timer = setTimeout(() => ac.abort(), timeoutMs);
   try {
     const res = await fetch(creds.url, {
       method: "POST",
@@ -57,11 +59,10 @@ async function kvCommand(command: unknown[]) {
   }
 }
 
-async function kvGet(): Promise<OverlayRow | null> {
-  const json = await kvCommand(["GET", KEY]);
-  if (!json || json.result == null) return null;
+function parseKvRow(raw: unknown): OverlayRow | null {
+  if (raw == null) return null;
   try {
-    const row = JSON.parse(String(json.result)) as OverlayRow;
+    const row = JSON.parse(String(raw)) as OverlayRow;
     if (!row || typeof row !== "object") return null;
     return {
       activeMatchId: row.activeMatchId ?? null,
@@ -69,14 +70,20 @@ async function kvGet(): Promise<OverlayRow | null> {
       view: row.view || "matchup",
       visible: row.visible !== false,
       gatesJson: row.gatesJson || "{}",
+      rev: Number(row.rev) || 0,
     };
   } catch {
     return null;
   }
 }
 
+async function kvGet(): Promise<OverlayRow | null> {
+  const json = await kvCommand(["GET", KEY], 1500);
+  return parseKvRow(json?.result);
+}
+
 async function kvSet(row: OverlayRow) {
-  await kvCommand(["SET", KEY, JSON.stringify(row)]);
+  await kvCommand(["SET", KEY, JSON.stringify(row)], 2500);
 }
 
 export function asOverlayRow(row: {
@@ -85,6 +92,7 @@ export function asOverlayRow(row: {
   view: string;
   visible: boolean;
   gatesJson: string;
+  rev?: number;
 }): OverlayRow {
   return {
     activeMatchId: row.activeMatchId,
@@ -92,28 +100,53 @@ export function asOverlayRow(row: {
     view: row.view,
     visible: row.visible,
     gatesJson: row.gatesJson,
+    rev: row.rev ?? 0,
   };
 }
 
 async function writePrisma(next: OverlayRow) {
   await prisma.overlayState.upsert({
     where: { id: "default" },
-    create: { id: "default", ...next },
-    update: next,
+    create: {
+      id: "default",
+      activeMatchId: next.activeMatchId,
+      activeCategory: next.activeCategory,
+      view: next.view,
+      visible: next.visible,
+      gatesJson: next.gatesJson,
+    },
+    update: {
+      activeMatchId: next.activeMatchId,
+      activeCategory: next.activeCategory,
+      view: next.view,
+      visible: next.visible,
+      gatesJson: next.gatesJson,
+    },
   });
 }
 
+function newer(a: OverlayRow, b: OverlayRow) {
+  return (a.rev ?? 0) >= (b.rev ?? 0) ? a : b;
+}
+
 export async function loadOverlayRow(): Promise<OverlayRow> {
-  const mem = peekOverlay();
+  const mem = peekOverlay()?.row;
   if (hasOverlayKv()) {
     const cached = await kvGet();
+    if (cached && mem) {
+      const next = newer(mem, cached);
+      rememberOverlay(next);
+      return next;
+    }
     if (cached) {
       rememberOverlay(cached);
       return cached;
     }
-    if (mem) return mem.row;
+    if (mem) return mem;
+    const row = await prisma.overlayState.findUnique({ where: { id: "default" } });
+    return row ? asOverlayRow(row) : EMPTY_OVERLAY;
   }
-  if (mem) return mem.row;
+  if (mem) return mem;
   const row = await prisma.overlayState.findUnique({ where: { id: "default" } });
   const next = row ? asOverlayRow(row) : EMPTY_OVERLAY;
   rememberOverlay(next);
@@ -121,21 +154,23 @@ export async function loadOverlayRow(): Promise<OverlayRow> {
 }
 
 export async function persistOverlayRow(next: OverlayRow): Promise<OverlayRow> {
-  rememberOverlay(next);
+  const rev = Math.max(g.__bunviOverlayRev ?? 0, peekOverlay()?.row.rev ?? 0, next.rev ?? 0) + 1;
+  g.__bunviOverlayRev = rev;
+  const row = { ...next, rev };
+  rememberOverlay(row);
   if (hasOverlayKv()) {
+    await kvSet(row);
     after(() => {
-      void (async () => {
-        await kvSet(next);
-        await writePrisma(next);
-      })().catch(() => undefined);
+      if (g.__bunviOverlayRev !== rev) return;
+      void writePrisma(row).catch(() => undefined);
     });
-    return next;
+    return row;
   }
-  await writePrisma(next);
-  return next;
+  await writePrisma(row);
+  return row;
 }
 
 export function livePayload(row: OverlayRow) {
   const overlay = overlayFromRow(row);
-  return { overlay, stamp: overlay.stamp };
+  return { overlay, stamp: overlay.stamp, rev: row.rev ?? 0 };
 }

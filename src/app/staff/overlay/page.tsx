@@ -20,8 +20,16 @@ export default function OverlayDirectorPage() {
   const [status, setStatus] = useState("");
   const [stagedMatchId, setStagedMatchId] = useState<string | null | undefined>(undefined);
   const [stagedCat, setStagedCat] = useState<string | null | undefined>(undefined);
+  const [onAir, setOnAir] = useState<{
+    view: string;
+    visible: boolean;
+    activeMatchId: string | null;
+    activeCategory: string;
+  } | null>(null);
 
-  const o = data?.overlay;
+  const o = onAir && data?.overlay
+    ? { ...data.overlay, ...onAir }
+    : data?.overlay;
   const liveMatch = useMemo(() => {
     if (!data) return null;
     return data.matches.find((m) => m.id === (o?.activeMatchId ?? "")) ?? data.matches[0] ?? null;
@@ -52,7 +60,20 @@ export default function OverlayDirectorPage() {
           cache: "no-store",
           keepalive: true,
         });
-        if (res.ok) return true;
+        if (res.ok) {
+          const json = (await res.json()) as {
+            overlay?: { view: string; visible: boolean; activeMatchId: string | null; activeCategory: string };
+          };
+          if (json.overlay) {
+            setOnAir({
+              view: json.overlay.view,
+              visible: json.overlay.visible,
+              activeMatchId: json.overlay.activeMatchId,
+              activeCategory: json.overlay.activeCategory,
+            });
+          }
+          return true;
+        }
         last = `Failed (${res.status}) — tap again`;
       } catch {
         last = "Failed — tap again";
@@ -79,6 +100,12 @@ export default function OverlayDirectorPage() {
   }
 
   function goLive(view: string) {
+    setOnAir({
+      view,
+      visible: true,
+      activeMatchId: prepMatchId,
+      activeCategory: cat,
+    });
     void patchLive({
       view,
       activeMatchId: prepMatchId,
@@ -183,7 +210,15 @@ export default function OverlayDirectorPage() {
             ))}
             <button
               type="button"
-              onClick={() => void patchLive({ visible: !o.visible })}
+              onClick={() => {
+                setOnAir({
+                  view: o.view,
+                  visible: !o.visible,
+                  activeMatchId: o.activeMatchId,
+                  activeCategory: o.activeCategory,
+                });
+                void patchLive({ visible: !o.visible });
+              }}
               className="min-h-11 rounded-full bg-[var(--surface-strong)] px-4 py-2.5 ring-1 ring-[var(--line)]"
             >
               {o.visible ? "Hide overlay" : "Show overlay"}

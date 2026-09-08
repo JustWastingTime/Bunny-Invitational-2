@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireStaff } from "@/lib/auth";
 import { CATEGORIES } from "@/lib/constants";
-import { mergeRaceGates, parseOverlayBlob, stringifyOverlayBlob } from "@/lib/overlay-gates";
+import { mergeRaceGates, overlayFromRow, parseOverlayBlob, stringifyOverlayBlob } from "@/lib/overlay-gates";
 import { loadOverlayRow, persistOverlayRow } from "@/lib/overlay-store";
 import { noStoreHeaders } from "@/lib/no-store";
 
@@ -60,5 +60,5 @@ export async function PUT(request: Request) {
     visible: body.visible !== undefined ? body.visible : current.visible,
     gatesJson: stringifyOverlayBlob(gates, focus),
   });
-  return NextResponse.json({ ok: true, overlay, focus }, { headers: noStoreHeaders() });
+  return NextResponse.json({ ok: true, overlay: overlayFromRow(overlay), focus }, { headers: noStoreHeaders() });
 }

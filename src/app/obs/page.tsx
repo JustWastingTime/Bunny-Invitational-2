@@ -33,19 +33,40 @@ export default function ObsPage() {
   useEffect(() => {
     let stop = false;
     let stamp = "";
+    let lastRev = -1;
     let inFlight = false;
     let matchId = "";
+
+    function stampRev(value: string) {
+      const n = Number(String(value).split("|")[0]);
+      return Number.isFinite(n) ? n : 0;
+    }
 
     async function loadFull() {
       const res = await fetch(`/api/overlay?t=${Date.now()}`, { cache: "no-store" });
       if (!res.ok || stop) return;
-      const json = (await res.json()) as OverlayPayload;
-      matchId = json.match?.id ?? "";
-      setData({ ...json, matches: json.matches ?? [] });
+      const json = (await res.json()) as OverlayPayload & { overlay: OverlayPayload["overlay"] & { stamp?: string } };
+      setData((prev) => {
+        const matches = json.matches ?? [];
+        if (!prev) {
+          matchId = json.match?.id ?? "";
+          lastRev = Math.max(lastRev, stampRev(json.overlay.stamp ?? "0"));
+          return { ...json, matches };
+        }
+        const incoming = stampRev(json.overlay.stamp ?? "0");
+        const overlay = incoming < lastRev ? prev.overlay : json.overlay;
+        if (incoming >= lastRev) lastRev = incoming;
+        const match = matches.find((m) => m.id === overlay.activeMatchId) ?? json.match;
+        matchId = match?.id ?? "";
+        return { ...json, matches, overlay, match };
+      });
     }
 
     function applyLive(live: { stamp: string; overlay: OverlayPayload["overlay"] }) {
-      if (live.stamp === stamp) return;
+      const rev = stampRev(live.stamp);
+      if (rev < lastRev) return;
+      if (rev === lastRev && live.stamp === stamp) return;
+      lastRev = rev;
       stamp = live.stamp;
       const nextMatchId = live.overlay.activeMatchId ?? "";
       let needFull = false;

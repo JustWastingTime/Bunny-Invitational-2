@@ -93,10 +93,11 @@ export type OverlayRow = {
   view: string;
   visible: boolean;
   gatesJson: string;
+  rev?: number;
 };
 
 export function overlayStamp(row: OverlayRow) {
-  return `${row.visible ? 1 : 0}|${row.view}|${row.activeMatchId ?? ""}|${row.activeCategory}|${row.gatesJson}`;
+  return `${row.rev ?? 0}|${row.visible ? 1 : 0}|${row.view}|${row.activeMatchId ?? ""}|${row.activeCategory}|${row.gatesJson}`;
 }
 
 export function overlayFromRow(row: OverlayRow) {
