@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { StaffToastProvider } from "@/components/staff-toast";
 import { devBypass, getSession, isStaffSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +13,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="staff-desk flex min-h-full flex-col">
       <header className="bg-[color-mix(in_srgb,var(--paper)_90%,var(--lift))]">
         <div className="page-shell flex flex-wrap items-center gap-3 py-3">
           <Link href="/staff" className="font-[family-name:var(--font-display)] text-lg">
@@ -41,7 +42,9 @@ export default async function StaffLayout({ children }: { children: React.ReactN
           </div>
         </div>
       </header>
-      <main className="page-shell flex-1 py-6">{children}</main>
+      <StaffToastProvider>
+        <main className="page-shell flex-1 py-6">{children}</main>
+      </StaffToastProvider>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { CATEGORIES, CATEGORY_LABEL } from "@/lib/constants";
 import { defaultGate, gateKey } from "@/lib/overlay-gates";
 import { usePublicData } from "@/components/use-public-data";
 import { PlayInSchedule } from "@/components/tournament-ui";
+import { useStaffToast } from "@/components/staff-toast";
 import type { PublicMatch, PublicUma } from "@/lib/types";
 
 const VIEWS = [
@@ -18,6 +19,8 @@ const VIEWS = [
 export default function OverlayDirectorPage() {
   const { data } = usePublicData(4000, "staff");
   const [status, setStatus] = useState("");
+  const [busy, setBusy] = useState(false);
+  const toast = useStaffToast();
   const [stagedMatchId, setStagedMatchId] = useState<string | null | undefined>(undefined);
   const [stagedCat, setStagedCat] = useState<string | null | undefined>(undefined);
   const [onAir, setOnAir] = useState<{
@@ -86,9 +89,16 @@ export default function OverlayDirectorPage() {
 
   function patchLive(body: Record<string, unknown>) {
     liveQueue.current = liveQueue.current.then(async () => {
-      setStatus("Updating…");
+      setBusy(true);
+      toast.saving("Updating overlay…");
       const ok = await sendOverlay(body, 4);
-      if (ok) setStatus("Overlay updated.");
+      setBusy(false);
+      if (ok) {
+        setStatus("Overlay updated.");
+        toast.saved("Overlay updated");
+      } else {
+        toast.error("Overlay update failed");
+      }
     });
     return liveQueue.current;
   }
@@ -203,6 +213,8 @@ export default function OverlayDirectorPage() {
                 key={v.id}
                 type="button"
                 onClick={() => goLive(v.id)}
+                disabled={busy}
+                aria-pressed={o.visible && o.view === v.id && !pending}
                 className={`min-h-11 rounded-full px-4 py-2.5 ${o.visible && o.view === v.id && !pending ? "bg-[var(--gold)]" : "bg-[var(--surface-strong)] ring-1 ring-[var(--line)]"}`}
               >
                 {v.label}
@@ -219,6 +231,7 @@ export default function OverlayDirectorPage() {
                 });
                 void patchLive({ visible: !o.visible });
               }}
+              disabled={busy}
               className="min-h-11 rounded-full bg-[var(--surface-strong)] px-4 py-2.5 ring-1 ring-[var(--line)]"
             >
               {o.visible ? "Hide overlay" : "Show overlay"}

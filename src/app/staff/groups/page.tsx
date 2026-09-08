@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { GROUPS, TEAMS_PER_GROUP } from "@/lib/constants";
+import { useStaffToast } from "@/components/staff-toast";
 
 type TeamRow = {
   id: string;
@@ -20,6 +21,8 @@ export default function GroupsEditor() {
   const [teams, setTeams] = useState<TeamRow[]>([]);
   const [status, setStatus] = useState("");
   const [dragging, setDragging] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const toast = useStaffToast();
 
   async function reload() {
     const res = await fetch("/api/staff/groups");
@@ -58,7 +61,8 @@ export default function GroupsEditor() {
   }
 
   async function save() {
-    setStatus("Saving…");
+    setSaving(true);
+    toast.saving("Saving groups…");
     const res = await fetch("/api/staff/groups", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -66,8 +70,13 @@ export default function GroupsEditor() {
         assignments: teams.map((t) => ({ id: t.id, group: t.group, groupSlot: t.groupSlot })),
       }),
     });
-    setStatus(res.ok ? "Groups saved and matchups regenerated." : "Save failed");
-    if (res.ok) reload();
+    setSaving(false);
+    if (res.ok) {
+      toast.saved("Groups saved");
+      reload();
+    } else {
+      toast.error("Save failed");
+    }
   }
 
   const unassigned = sortColumn(teams.filter((t) => !t.group));
@@ -114,8 +123,13 @@ export default function GroupsEditor() {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => void save()} className="rounded-full bg-[var(--coral)] px-4 py-2 text-white">
-          Save & regenerate matches
+        <button
+          type="button"
+          onClick={() => void save()}
+          disabled={saving}
+          className="rounded-full bg-[var(--coral)] px-4 py-2 text-white"
+        >
+          {saving ? "Saving…" : "Save & regenerate matches"}
         </button>
         <span className="self-center text-sm text-[var(--ink-soft)]">{status}</span>
       </div>

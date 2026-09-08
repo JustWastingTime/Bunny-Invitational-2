@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { CATEGORIES, CATEGORY_LABEL } from "@/lib/constants";
 import { GroupTable } from "@/components/tournament-ui";
 import { usePublicData } from "@/components/use-public-data";
+import { useStaffToast } from "@/components/staff-toast";
 import type { PublicMatch, PublicPayload } from "@/lib/types";
 
 export default function ScoresPage() {
@@ -11,7 +12,8 @@ export default function ScoresPage() {
   const [matchId, setMatchId] = useState<string>("");
   const [category, setCategory] = useState<string>("sprint");
   const [places, setPlaces] = useState<Record<number, string>>({});
-  const [status, setStatus] = useState("");
+  const [saving, setSaving] = useState(false);
+  const toast = useStaffToast();
   const [preview, setPreview] = useState<{
     groups: PublicPayload["groups"];
     playIn: PublicPayload["playIn"];
@@ -56,7 +58,8 @@ export default function ScoresPage() {
 
   async function save() {
     if (!match) return;
-    setStatus("Saving…");
+    setSaving(true);
+    toast.saving("Saving race…");
     const placements = Object.entries(places)
       .map(([place, key]) => {
         const [teamId, slot] = key.split(":");
@@ -70,9 +73,10 @@ export default function ScoresPage() {
     });
     const json = await res.json();
     if (res.ok) {
-      setStatus("Saved. Points and qualification updated.");
+      toast.saved("Race saved");
       setPreview({ groups: json.groups ?? [], playIn: json.playIn });
-    } else setStatus(json.error ?? "Failed");
+    } else toast.error(json.error ?? "Failed");
+    setSaving(false);
   }
 
   if (!data) return <p>{error ?? "Loading scores desk…"}</p>;
@@ -171,10 +175,14 @@ export default function ScoresPage() {
               ))}
           </ul>
         ) : null}
-        <button type="button" onClick={save} className="mt-4 rounded-full bg-[var(--coral)] px-4 py-2 text-white">
-          Save race
+        <button
+          type="button"
+          onClick={save}
+          disabled={saving}
+          className="mt-4 rounded-full bg-[var(--coral)] px-4 py-2 text-white"
+        >
+          {saving ? "Saving…" : "Save race"}
         </button>
-        <p className="mt-2 text-sm text-[var(--ink-soft)]">{status}</p>
       </section>
 
       <div className="grid gap-4 lg:grid-cols-3">

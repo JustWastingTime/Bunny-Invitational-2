@@ -1,12 +1,13 @@
 "use client";
 
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { CATEGORIES, CATEGORY_LABEL, STYLES, STYLE_LABEL, TOURNAMENT_CATALOG_DATE, type Category } from "@/lib/constants";
 import { spriteFileName } from "@/lib/sprites";
 import type { PublicUma } from "@/lib/types";
 import type { CatalogSkill, CatalogUma, TazunaCatalog } from "@/lib/tazuna-types";
 import { SkillInput, UmaPicker, staffFieldClass as field } from "@/components/staff-pickers";
+import { useStaffToast } from "@/components/staff-toast";
 
 type FormUma = PublicUma;
 
@@ -96,9 +97,14 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
   const [bgUrl, setBgUrl] = useState("");
   const [roster, setRoster] = useState<FormUma[]>([]);
   const [status, setStatus] = useState("");
+  const [saveState, setSaveState] = useState<"idle" | "unsaved" | "saving" | "saved">("idle");
   const [tab, setTab] = useState<Category>("sprint");
   const [asOf, setAsOf] = useState(TOURNAMENT_CATALOG_DATE);
   const [catalog, setCatalog] = useState<TazunaCatalog | null>(null);
+  const toast = useStaffToast();
+  const ready = useRef(false);
+  const firstReady = useRef(true);
+  const saving = useRef(false);
 
   useEffect(() => {
     fetch("/api/public")
@@ -111,6 +117,7 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
         setColor(team.color);
         setBackgroundPath(team.backgroundPath ?? null);
         setRoster(padRoster(team.roster));
+        ready.current = true;
       });
   }, [id]);
 
@@ -146,7 +153,10 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
   }
 
   async function save() {
-    setStatus("Saving…");
+    if (saving.current) return;
+    saving.current = true;
+    setSaveState("saving");
+    toast.saving("Saving roster…");
     const res = await fetch("/api/staff/teams", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -176,50 +186,70 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
         })),
       }),
     });
-    setStatus(res.ok ? "Roster saved." : "Save failed");
+    saving.current = false;
+    if (res.ok) {
+      setSaveState("saved");
+      toast.saved("Roster saved");
+    } else {
+      setSaveState("unsaved");
+      toast.error("Roster save failed");
+    }
   }
+
+  useEffect(() => {
+    if (!ready.current) return;
+    if (firstReady.current) {
+      firstReady.current = false;
+      return;
+    }
+    setSaveState("unsaved");
+    const t = window.setTimeout(() => void save(), 900);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clubCode, tagline, color, roster]);
 
   async function uploadBackground(file: File) {
     setStatus("Uploading background…");
+    toast.saving("Uploading background…");
     const body = new FormData();
     body.set("teamId", id);
     body.set("file", file);
     const res = await fetch("/api/staff/teams/background", { method: "POST", body });
     const json = await res.json();
     if (!res.ok) {
-      setStatus(json.error ?? "Upload failed");
+      toast.error(json.error ?? "Upload failed");
       return;
     }
     setBackgroundPath(json.backgroundPath);
-    setStatus("Background saved.");
+    toast.saved("Background saved");
   }
 
   async function saveBackgroundUrl() {
     if (!bgUrl.trim()) return;
-    setStatus("Saving background…");
+    toast.saving("Saving background…");
     const body = new FormData();
     body.set("teamId", id);
     body.set("url", bgUrl.trim());
     const res = await fetch("/api/staff/teams/background", { method: "POST", body });
     const json = await res.json();
     if (!res.ok) {
-      setStatus(json.error ?? "Save failed");
+      toast.error(json.error ?? "Save failed");
       return;
     }
     setBackgroundPath(json.backgroundPath);
     setBgUrl("");
-    setStatus("Background saved.");
+    toast.saved("Background saved");
   }
 
   async function clearBackground() {
-    setStatus("Removing background…");
+    toast.saving("Removing background…");
     const res = await fetch(`/api/staff/teams/background?teamId=${encodeURIComponent(id)}`, { method: "DELETE" });
     if (!res.ok) {
-      setStatus("Could not remove background");
+      toast.error("Could not remove background");
       return;
     }
     setBackgroundPath(null);
-    setStatus("Background removed.");
+    toast.saved("Background removed");
   }
 
   const umas = catalog?.umas ?? [];
@@ -238,8 +268,13 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
           </Link>
           <h1 className="font-[family-name:var(--font-display)] text-3xl">Edit team</h1>
         </div>
-        <button type="button" onClick={() => void save()} className="rounded-full bg-[var(--coral)] px-5 py-2 text-white">
-          Save roster
+        <button
+          type="button"
+          onClick={() => void save()}
+          disabled={saveState === "saving"}
+          className="rounded-full bg-[var(--coral)] px-5 py-2 text-white"
+        >
+          {saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : saveState === "unsaved" ? "Save now" : "Save roster"}
         </button>
       </div>
 
@@ -347,7 +382,9 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
         </div>
       </section>
 
-      <p className="text-sm">{status}</p>
+      <p className="text-sm text-[var(--ink-soft)]">
+        {saveState === "unsaved" ? "Unsaved changes — autosaves in a moment." : status}
+      </p>
     </div>
   );
 }
