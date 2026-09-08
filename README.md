@@ -37,8 +37,7 @@ Staff access is **Discord accounts whose user IDs are listed in `DISCORD_STAFF_I
 | Name | Required | Notes |
 |---|---|---|
 | `DATABASE_URL` | yes | Neon **pooled** Postgres URL (`-pooler` in the host). SQLite will fail the Vercel build. |
-| `KV_REST_API_URL` / `KV_REST_API_TOKEN` | strongly recommended | Vercel KV / Upstash. Overlay director writes here so OBS does not wait on Postgres. |
-| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | alt | Same as KV if you create Upstash Redis instead of Vercel KV. |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | strongly recommended | Upstash Redis (not labeled “KV” in Vercel). Overlay director writes here so OBS does not wait on Postgres. |
 | `NEXTAUTH_SECRET` | yes | `openssl rand -base64 32` |
 | `NEXTAUTH_URL` | yes | Canonical site URL, e.g. `https://your-app.vercel.app` |
 | `DISCORD_CLIENT_ID` | yes for staff | Discord app OAuth2 |
@@ -61,17 +60,13 @@ Team background **file uploads** do not persist on Vercel’s filesystem. Use a 
 
 The OBS route stays independent of site dark mode so the browser source stays transparent.
 
-### Overlay director lag on Vercel
+### Overlay director lag
 
-Pooling Neon is not enough: every OBS poll used to **write** OverlayState, and staff clicks still hit Postgres across serverless instances.
+Vercel + Neon + Redis is a bad fit for a live director. Staff in Southeast Asia, functions in the US, and Redis HTTP on every click/poll will feel worse than local. **A $6 DigitalOcean droplet in Singapore** with `npm run build && npm start` (SQLite, no Redis) is the right host: one Node process, overlay state in memory, OBS and the phone hit the same machine.
 
-After deploy:
+You can leave the site on Vercel for the public pages and point OBS + `/staff/overlay` at the droplet, or move the whole app. Set `NEXTAUTH_URL` to the droplet URL and add that Discord redirect.
 
-1. Storage → create **KV** (Upstash) and reconnect env vars, **or** paste Upstash Redis REST URL + token.
-2. In Neon, turn **scale to zero off** for event day (cold starts are multi-second).
-3. Redeploy. OBS uses `/api/overlay/stream` (SSE). Staff Show writes KV first, then Postgres in the background.
-
-Without KV the overlay still only **reads** Postgres (no write-on-poll), but phone taps will not feel instant until KV is on.
+Skip Upstash on the droplet. Redis is only a workaround for serverless, not a speedup.
 
 ## Pages
 

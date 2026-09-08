@@ -1,4 +1,4 @@
-import { livePayload, loadOverlayRow, hasOverlayKv } from "@/lib/overlay-store";
+import { livePayload, loadOverlayRow, peekOverlay } from "@/lib/overlay-store";
 import { noStoreHeaders } from "@/lib/no-store";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const encoder = new TextEncoder();
   let last = "";
   let closed = false;
-  const interval = hasOverlayKv() ? 80 : 150;
+  let inFlight = false;
 
   const stream = new ReadableStream({
     start(controller) {
@@ -19,18 +19,27 @@ export async function GET(request: Request) {
       };
 
       const tick = async () => {
+        if (closed || inFlight) return;
+        inFlight = true;
         try {
+          const mem = peekOverlay();
+          if (mem && mem.stamp !== last) {
+            last = mem.stamp;
+            send(livePayload(mem.row));
+          }
           const live = livePayload(await loadOverlayRow());
           if (live.stamp === last) return;
           last = live.stamp;
           send(live);
         } catch {
           /* keep the stream */
+        } finally {
+          inFlight = false;
         }
       };
 
       void tick();
-      const poll = setInterval(() => void tick(), interval);
+      const poll = setInterval(() => void tick(), 250);
       const beat = setInterval(() => {
         if (closed) return;
         controller.enqueue(encoder.encode(`: ping\n\n`));

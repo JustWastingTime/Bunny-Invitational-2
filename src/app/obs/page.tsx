@@ -9,6 +9,7 @@ import type { Cue, GroupStandingRow, PublicMatch, PublicPayload, PublicTeam, Pub
 type OverlayPayload = {
   overlay: PublicPayload["overlay"];
   match: PublicMatch | null;
+  matches: PublicMatch[];
   teams: PublicTeam[];
   groups: PublicPayload["groups"];
   playIn: PublicPayload["playIn"];
@@ -40,18 +41,25 @@ export default function ObsPage() {
       if (!res.ok || stop) return;
       const json = (await res.json()) as OverlayPayload;
       matchId = json.match?.id ?? "";
-      setData(json);
+      setData({ ...json, matches: json.matches ?? [] });
     }
 
     function applyLive(live: { stamp: string; overlay: OverlayPayload["overlay"] }) {
       if (live.stamp === stamp) return;
       stamp = live.stamp;
       const nextMatchId = live.overlay.activeMatchId ?? "";
-      if (!matchId || nextMatchId !== matchId) {
-        void loadFull();
-        return;
-      }
-      setData((prev) => (prev ? { ...prev, overlay: live.overlay } : prev));
+      let needFull = false;
+      setData((prev) => {
+        if (!prev) {
+          needFull = true;
+          return prev;
+        }
+        const found = nextMatchId ? prev.matches.find((m) => m.id === nextMatchId) : prev.match;
+        if (nextMatchId && !found) needFull = true;
+        matchId = found?.id ?? nextMatchId;
+        return { ...prev, overlay: live.overlay, match: found ?? prev.match };
+      });
+      if (needFull) void loadFull();
     }
 
     async function tickLive() {
@@ -68,41 +76,32 @@ export default function ObsPage() {
       }
     }
 
-    const es = new EventSource("/api/overlay/stream");
-    let streamOk = false;
-    let streamFails = 0;
-    es.onmessage = (ev) => {
-      if (stop || !ev.data) return;
-      try {
-        applyLive(JSON.parse(ev.data) as { stamp: string; overlay: OverlayPayload["overlay"] });
-      } catch {
-        /* ignore malformed frames */
-      }
-    };
-    es.onopen = () => {
-      streamOk = true;
-      streamFails = 0;
-    };
-    es.onerror = () => {
-      streamFails += 1;
-      if (streamFails >= 4) {
-        streamOk = false;
-        es.close();
-      }
-    };
+    const preview = new URLSearchParams(window.location.search).has("preview");
+    const es = preview ? null : new EventSource("/api/overlay/stream");
+    if (es) {
+      let streamFails = 0;
+      es.onmessage = (ev) => {
+        if (stop || !ev.data) return;
+        try {
+          applyLive(JSON.parse(ev.data) as { stamp: string; overlay: OverlayPayload["overlay"] });
+        } catch {
+          /* ignore malformed frames */
+        }
+      };
+      es.onerror = () => {
+        streamFails += 1;
+        if (streamFails >= 8) es.close();
+      };
+    }
 
-    void loadFull().then(() => {
-      if (!streamOk) void tickLive();
-    });
-    const liveId = window.setInterval(() => {
-      if (!streamOk) void tickLive();
-    }, 400);
-    const fullId = window.setInterval(() => void loadFull(), 30000);
+    void loadFull().then(() => void tickLive());
+    const liveId = window.setInterval(() => void tickLive(), preview ? 2000 : 250);
+    const fullId = preview ? 0 : window.setInterval(() => void loadFull(), 30000);
     return () => {
       stop = true;
-      es.close();
+      es?.close();
       window.clearInterval(liveId);
-      window.clearInterval(fullId);
+      if (fullId) window.clearInterval(fullId);
     };
   }, []);
 

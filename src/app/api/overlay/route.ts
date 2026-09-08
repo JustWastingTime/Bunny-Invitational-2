@@ -13,6 +13,7 @@ export async function GET() {
       now: payload.now,
       next: payload.next,
       match: payload.matches.find((m) => m.id === payload.overlay.activeMatchId) ?? payload.matches[0] ?? null,
+      matches: payload.matches,
       teams: payload.teams,
       groups: payload.groups,
       playIn: payload.playIn,

@@ -35,17 +35,26 @@ export function peekOverlay() {
 async function kvCommand(command: unknown[]) {
   const creds = kvCreds();
   if (!creds) return null;
-  const res = await fetch(creds.url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${creds.token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(command),
-    cache: "no-store",
-  });
-  if (!res.ok) return null;
-  return (await res.json()) as { result?: unknown };
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 200);
+  try {
+    const res = await fetch(creds.url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${creds.token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(command),
+      cache: "no-store",
+      signal: ac.signal,
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as { result?: unknown };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function kvGet(): Promise<OverlayRow | null> {
@@ -95,11 +104,16 @@ async function writePrisma(next: OverlayRow) {
 }
 
 export async function loadOverlayRow(): Promise<OverlayRow> {
-  const cached = await kvGet();
-  if (cached) {
-    rememberOverlay(cached);
-    return cached;
+  const mem = peekOverlay();
+  if (hasOverlayKv()) {
+    const cached = await kvGet();
+    if (cached) {
+      rememberOverlay(cached);
+      return cached;
+    }
+    if (mem) return mem.row;
   }
+  if (mem) return mem.row;
   const row = await prisma.overlayState.findUnique({ where: { id: "default" } });
   const next = row ? asOverlayRow(row) : EMPTY_OVERLAY;
   rememberOverlay(next);
@@ -109,9 +123,11 @@ export async function loadOverlayRow(): Promise<OverlayRow> {
 export async function persistOverlayRow(next: OverlayRow): Promise<OverlayRow> {
   rememberOverlay(next);
   if (hasOverlayKv()) {
-    await kvSet(next);
     after(() => {
-      void writePrisma(next).catch(() => undefined);
+      void (async () => {
+        await kvSet(next);
+        await writePrisma(next);
+      })().catch(() => undefined);
     });
     return next;
   }

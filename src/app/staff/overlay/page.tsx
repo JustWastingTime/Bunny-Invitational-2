@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, startTransition, useMemo, useRef, useState } from "react";
 import { CATEGORIES, CATEGORY_LABEL } from "@/lib/constants";
 import { defaultGate, gateKey } from "@/lib/overlay-gates";
 import { usePublicData } from "@/components/use-public-data";
@@ -16,18 +16,10 @@ const VIEWS = [
 ] as const;
 
 export default function OverlayDirectorPage() {
-  const { data } = usePublicData(1500, "staff");
+  const { data } = usePublicData(4000, "staff");
   const [status, setStatus] = useState("");
-  const [stagedMatchId, setStagedMatchId] = useState<string | null>(null);
-  const [stagedCat, setStagedCat] = useState<string | null>(null);
-  const primed = useRef(false);
-
-  useEffect(() => {
-    if (!data || primed.current) return;
-    primed.current = true;
-    setStagedMatchId(data.overlay.activeMatchId);
-    setStagedCat(data.overlay.activeCategory || "sprint");
-  }, [data]);
+  const [stagedMatchId, setStagedMatchId] = useState<string | null | undefined>(undefined);
+  const [stagedCat, setStagedCat] = useState<string | null | undefined>(undefined);
 
   const o = data?.overlay;
   const liveMatch = useMemo(() => {
@@ -35,23 +27,23 @@ export default function OverlayDirectorPage() {
     return data.matches.find((m) => m.id === (o?.activeMatchId ?? "")) ?? data.matches[0] ?? null;
   }, [data, o?.activeMatchId]);
 
+  const prepMatchId = stagedMatchId === undefined ? o?.activeMatchId ?? null : stagedMatchId;
+  const cat = stagedCat === undefined ? o?.activeCategory ?? "sprint" : stagedCat;
+  const liveCat = o?.activeCategory ?? "sprint";
+
   const stagedMatch = useMemo(() => {
     if (!data) return null;
-    const id = stagedMatchId ?? o?.activeMatchId;
-    return data.matches.find((m) => m.id === id) ?? liveMatch;
-  }, [data, stagedMatchId, o?.activeMatchId, liveMatch]);
+    return data.matches.find((m) => m.id === (prepMatchId ?? "")) ?? liveMatch;
+  }, [data, prepMatchId, liveMatch]);
 
-  const cat = stagedCat ?? o?.activeCategory ?? "sprint";
-  const liveCat = o?.activeCategory ?? "sprint";
-  const pending = Boolean(
-    o && (stagedMatchId !== o.activeMatchId || cat !== liveCat),
-  );
+  const pending = Boolean(o && (prepMatchId !== o.activeMatchId || cat !== liveCat));
 
-  const patchQueue = useRef(Promise.resolve());
+  const liveQueue = useRef(Promise.resolve());
+  const gateQueue = useRef(Promise.resolve());
 
-  async function sendOverlay(body: Record<string, unknown>) {
+  async function sendOverlay(body: Record<string, unknown>, retries: number) {
     let last = "Failed — tap again";
-    for (let attempt = 0; attempt < 4; attempt++) {
+    for (let attempt = 0; attempt < retries; attempt++) {
       try {
         const res = await fetch("/api/staff/overlay", {
           method: "POST",
@@ -71,19 +63,25 @@ export default function OverlayDirectorPage() {
     return false;
   }
 
-  function patch(body: Record<string, unknown>) {
-    patchQueue.current = patchQueue.current.then(async () => {
+  function patchLive(body: Record<string, unknown>) {
+    liveQueue.current = liveQueue.current.then(async () => {
       setStatus("Updating…");
-      const ok = await sendOverlay(body);
+      const ok = await sendOverlay(body, 4);
       if (ok) setStatus("Overlay updated.");
     });
-    return patchQueue.current;
+    return liveQueue.current;
+  }
+
+  function patchGate(body: Record<string, unknown>) {
+    gateQueue.current = gateQueue.current.then(async () => {
+      await sendOverlay(body, 1);
+    });
   }
 
   function goLive(view: string) {
-    void patch({
+    void patchLive({
       view,
-      activeMatchId: stagedMatchId ?? o?.activeMatchId ?? null,
+      activeMatchId: prepMatchId,
       activeCategory: cat,
       visible: true,
       focus: null,
@@ -140,8 +138,11 @@ export default function OverlayDirectorPage() {
             Prep match
             <select
               className="rounded-2xl border border-[var(--line)] bg-[var(--surface-strong)] px-3 py-2"
-              value={stagedMatchId ?? ""}
-              onChange={(e) => setStagedMatchId(e.target.value || null)}
+              value={prepMatchId ?? ""}
+              onChange={(e) => {
+                const id = e.target.value || null;
+                startTransition(() => setStagedMatchId(id));
+              }}
             >
               <option value="">(auto)</option>
               {matchOptGroups(data.matches).map((group) => (
@@ -161,7 +162,7 @@ export default function OverlayDirectorPage() {
               <button
                 key={c}
                 type="button"
-                onClick={() => setStagedCat(c)}
+                onClick={() => startTransition(() => setStagedCat(c))}
                 className={`rounded-full px-4 py-2 text-sm ${cat === c ? "bg-[var(--coral)] text-white" : "bg-[var(--surface-strong)] ring-1 ring-[var(--line)]"}`}
               >
                 {CATEGORY_LABEL[c]}
@@ -182,7 +183,7 @@ export default function OverlayDirectorPage() {
             ))}
             <button
               type="button"
-              onClick={() => void patch({ visible: !o.visible })}
+              onClick={() => void patchLive({ visible: !o.visible })}
               className="min-h-11 rounded-full bg-[var(--surface-strong)] px-4 py-2.5 ring-1 ring-[var(--line)]"
             >
               {o.visible ? "Hide overlay" : "Show overlay"}
@@ -194,12 +195,7 @@ export default function OverlayDirectorPage() {
           <p className="text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">OBS preview</p>
           <div className="overflow-hidden rounded-2xl bg-black ring-1 ring-[var(--line)]">
             <div className="relative h-[270px] w-full">
-              <iframe
-                title="Overlay preview"
-                src="/obs"
-                className="pointer-events-none absolute left-0 top-0 origin-top-left border-0"
-                style={{ width: 1920, height: 1080, transform: "scale(0.25)" }}
-              />
+            <ObsPreview />
             </div>
           </div>
         </div>
@@ -212,8 +208,8 @@ export default function OverlayDirectorPage() {
           </p>
           <PlayInSchedule
             matches={data.matches.filter((m) => m.stage === "playin")}
-            nowId={stagedMatchId ?? o.activeMatchId}
-            onPick={setStagedMatchId}
+            nowId={prepMatchId ?? o.activeMatchId}
+            onPick={(id) => startTransition(() => setStagedMatchId(id))}
           />
         </section>
       ) : null}
@@ -225,7 +221,7 @@ export default function OverlayDirectorPage() {
             {o.focus ? (
               <button
                 type="button"
-                onClick={() => void patch({ view: "matchup", focus: null })}
+                onClick={() => void patchLive({ view: "matchup", focus: null })}
                 className="rounded-full bg-[var(--gold)] px-4 py-1.5 text-sm"
               >
                 Back to matchup
@@ -246,10 +242,10 @@ export default function OverlayDirectorPage() {
                   onClick={() => {
                     if (!row.teamId) return;
                     if (active) {
-                      void patch({ view: "matchup", focus: null });
+                      void patchLive({ view: "matchup", focus: null });
                       return;
                     }
-                    void patch({ view: "matchup", focus: { teamId: row.teamId, slot: row.slot } });
+                    void patchLive({ view: "matchup", focus: { teamId: row.teamId, slot: row.slot } });
                   }}
                   className={`flex items-center gap-2 rounded-2xl px-3 py-2 text-left ring-1 ${
                     active ? "bg-[var(--gold)]/50 ring-[var(--gold)]" : "bg-[var(--paper)] ring-[var(--line)]"
@@ -278,6 +274,7 @@ export default function OverlayDirectorPage() {
 
       {stagedMatch ? (
         <GatesCard
+          key={`${stagedMatch.id}-${cat}`}
           match={stagedMatch}
           cat={cat}
           teams={data.teams}
@@ -285,7 +282,7 @@ export default function OverlayDirectorPage() {
           liveMatchId={o.activeMatchId}
           liveCat={liveCat}
           onGate={(teamId, slot, gate) => {
-            void patch({
+            patchGate({
               gates: [{ teamId, slot, gate }],
               gateMatchId: stagedMatch.id,
               gateCategory: cat,
@@ -298,6 +295,17 @@ export default function OverlayDirectorPage() {
     </div>
   );
 }
+
+const ObsPreview = memo(function ObsPreview() {
+  return (
+    <iframe
+      title="Overlay preview"
+      src="/obs?preview=1"
+      className="pointer-events-none absolute left-0 top-0 origin-top-left border-0"
+      style={{ width: 1920, height: 1080, transform: "scale(0.25)" }}
+    />
+  );
+});
 
 function liveViewLabel(view: string) {
   if (view === "race") return "Race";
@@ -365,19 +373,14 @@ function GatesCard({
                         {uma?.umaName || `Slot ${slot + 1}`}{" "}
                         <span className="text-[var(--ink-soft)]">({uma?.trainer || "—"})</span>
                       </span>
-                      <input
-                        type="number"
-                        min={1}
-                        max={9}
-                        className="rounded-xl border border-[var(--line)] px-2 py-1"
+                      <GateField
+                        assigned={assigned}
                         placeholder={String(defaultGate(teamIndex, slot))}
-                        value={assigned ?? ""}
                         disabled={!t.teamId}
-                        onChange={(e) => {
+                        onCommit={(gate) => {
                           if (!t.teamId) return;
-                          const raw = e.target.value;
-                          const gate = raw === "" ? null : Number(raw);
-                          onGate(t.teamId, slot, gate && gate >= 1 && gate <= 9 ? gate : null);
+                          if (gate === (assigned ?? null)) return;
+                          onGate(t.teamId, slot, gate);
                         }}
                       />
                     </label>
@@ -389,5 +392,36 @@ function GatesCard({
         })}
       </div>
     </section>
+  );
+}
+
+function GateField({
+  assigned,
+  placeholder,
+  disabled,
+  onCommit,
+}: {
+  assigned: number | undefined;
+  placeholder: string;
+  disabled: boolean;
+  onCommit: (gate: number | null) => void;
+}) {
+  const [value, setValue] = useState(assigned != null ? String(assigned) : "");
+  return (
+    <input
+      type="number"
+      min={1}
+      max={9}
+      className="rounded-xl border border-[var(--line)] px-2 py-1"
+      placeholder={placeholder}
+      value={value}
+      disabled={disabled}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={() => {
+        const raw = value.trim();
+        const gate = raw === "" ? null : Number(raw);
+        onCommit(gate && gate >= 1 && gate <= 9 ? gate : null);
+      }}
+    />
   );
 }
