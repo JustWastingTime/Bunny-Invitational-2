@@ -1,6 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
+import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -31,11 +32,20 @@ const run = (cmd, args) => {
 };
 
 run("node", ["scripts/sync-prisma-provider.mjs"]);
+const schemaPath = path.join(root, "prisma", "schema.build.prisma");
+const copyClient = "../node_modules/.prisma-copy-client";
+writeFileSync(
+  schemaPath,
+  readFileSync(schemaPath, "utf8").replace(
+    /generator client \{[\s\S]*?\n\}/,
+    `generator client {\n  provider = "prisma-client-js"\n  output   = "${copyClient}"\n}`,
+  ),
+);
 run("npx", ["prisma", "generate", "--schema", "prisma/schema.build.prisma"]);
 run("npx", ["prisma", "db", "push", "--schema", "prisma/schema.build.prisma"]);
 
 const require = createRequire(import.meta.url);
-const { PrismaClient } = require("@prisma/client");
+const { PrismaClient } = require(path.join(root, "node_modules", ".prisma-copy-client"));
 const dest = new PrismaClient({ datasources: { db: { url: prodUrl } } });
 
 const asBool = (value) => value === true || value === 1 || value === "1";
@@ -65,11 +75,12 @@ await dest.$transaction(async (tx) => {
 await dest.$disconnect();
 
 const localEnv = { ...process.env, DATABASE_URL: "file:./dev.db" };
-const restore = (cmd, args) => {
-  const result = spawnSync(cmd, args, { cwd: root, env: localEnv, stdio: "inherit", shell: true });
-  if (result.status !== 0) process.exit(result.status ?? 1);
-};
-restore("node", ["scripts/sync-prisma-provider.mjs"]);
-restore("npx", ["prisma", "generate", "--schema", "prisma/schema.build.prisma"]);
+const restore = spawnSync("node", ["scripts/sync-prisma-provider.mjs"], {
+  cwd: root,
+  env: localEnv,
+  stdio: "inherit",
+  shell: true,
+});
+if (restore.status !== 0) process.exit(restore.status ?? 1);
 
-console.log("Production now matches local prisma/dev.db. Local Prisma client restored to SQLite.");
+console.log("Production now matches local prisma/dev.db.");

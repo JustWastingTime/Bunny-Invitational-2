@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { TEAM_KIND_PLAYIN } from "@/lib/constants";
-import { ensurePlayInTeams } from "@/lib/play-in";
 
 function chunk<T>(rows: T[], size: number) {
   const out: T[][] = [];
@@ -34,7 +33,6 @@ function TeamCard({
 }
 
 export default async function StaffHome() {
-  await ensurePlayInTeams();
   const teams = await prisma.team.findMany({ orderBy: [{ name: "asc" }] });
   const main = teams.filter((t) => t.kind !== TEAM_KIND_PLAYIN);
   const playIn = teams
