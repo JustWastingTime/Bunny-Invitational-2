@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { TEAM_KIND_PLAYIN } from "@/lib/constants";
+import { StaffSyncSlugs } from "@/components/staff-sync-slugs";
 
 function chunk<T>(rows: T[], size: number) {
   const out: T[][] = [];
@@ -62,9 +63,13 @@ export default async function StaffHome() {
       </div>
       <section>
         <h2 className="mb-4 font-[family-name:var(--font-display)] text-xl">Main rosters</h2>
-        <p className="mb-4 text-sm text-[var(--ink-soft)]">
-          Club code, color, motto, and umas. Group placement is on Groups — these columns are just layout.
-        </p>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-[var(--ink-soft)]">
+            Club code, color, motto, and umas. The URL slug is separate — change it on each team, or sync every URL
+            from the club code (DOMI → /staff/teams/domi).
+          </p>
+          <StaffSyncSlugs />
+        </div>
         <div className="grid gap-3 lg:grid-cols-3">
           {columns.map((col, i) => (
             <ul key={i} className="grid gap-3 content-start">

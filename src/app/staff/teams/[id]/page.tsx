@@ -8,6 +8,7 @@ import type { PublicUma } from "@/lib/types";
 import type { CatalogSkill, CatalogUma, TazunaCatalog } from "@/lib/tazuna-types";
 import { SkillInput, UmaPicker, staffFieldClass as field } from "@/components/staff-pickers";
 import { useStaffToast } from "@/components/staff-toast";
+import { suggestedTeamSlug } from "@/lib/team-slug";
 
 type FormUma = PublicUma;
 
@@ -91,6 +92,7 @@ function StatIcon({ kind }: { kind: (typeof STATS)[number]["key"] }) {
 export default function RosterEditor({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [clubCode, setClubCode] = useState("");
+  const [slug, setSlug] = useState(id);
   const [tagline, setTagline] = useState("");
   const [color, setColor] = useState("#e07a5f");
   const [backgroundPath, setBackgroundPath] = useState<string | null>(null);
@@ -109,18 +111,32 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
   const dirtyRef = useRef(false);
 
   useEffect(() => {
-    fetch("/api/public")
-      .then((r) => r.json())
-      .then((json) => {
-        const team = json.teams.find((t: { id: string }) => t.id === id);
-        if (!team) return;
+    ready.current = false;
+    firstReady.current = true;
+    fetch(`/api/staff/teams/${encodeURIComponent(id)}`)
+      .then(async (r) => {
+        const json = await r.json();
+        if (!r.ok) throw new Error(json.error ?? "Could not load team");
+        return json as {
+          id: string;
+          name: string;
+          shortName: string;
+          tagline: string | null;
+          color: string;
+          backgroundPath: string | null;
+          roster: FormUma[];
+        };
+      })
+      .then((team) => {
         setClubCode(team.shortName || team.name);
+        setSlug(team.id);
         setTagline(team.tagline ?? "");
         setColor(team.color);
         setBackgroundPath(team.backgroundPath ?? null);
         setRoster(padRoster(team.roster));
         ready.current = true;
-      });
+      })
+      .catch((err: Error) => setStatus(err.message));
   }, [id]);
 
   useEffect(() => {
@@ -165,6 +181,7 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id,
+          slug: slug.trim(),
           name: clubCode.trim(),
           shortName: clubCode.trim(),
           tagline,
@@ -189,13 +206,19 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
           })),
         }),
       });
+      const json = (await res.json().catch(() => ({}))) as { error?: string; id?: string };
       if (res.ok) {
         dirtyRef.current = false;
         setSaveState("saved");
         toast.saved("Roster saved");
+        const nextId = json.id ?? id;
+        if (nextId !== id) {
+          router.replace(`/staff/teams/${nextId}`);
+          router.refresh();
+        }
       } else {
         setSaveState("unsaved");
-        toast.error("Roster save failed");
+        toast.error(json.error ?? "Roster save failed");
       }
     } finally {
       savingRef.current = false;
@@ -210,7 +233,7 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
     }
     dirtyRef.current = true;
     setSaveState("unsaved");
-  }, [clubCode, tagline, color, roster]);
+  }, [clubCode, slug, tagline, color, roster]);
 
   function leaveMessage() {
     if (savingRef.current) return "Still saving. Wait until it finishes.";
@@ -369,6 +392,25 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
             <input className={field} value={clubCode} onChange={(e) => setClubCode(e.target.value)} placeholder="BUNS" />
           </label>
           <label className="grid gap-1">
+            <span className="text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">URL slug</span>
+            <input
+              className={field}
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              placeholder="domi"
+            />
+            <span className="flex flex-wrap items-center gap-2 text-xs text-[var(--ink-soft)]">
+              <span className="font-mono">/staff/teams/{suggestedTeamSlug(slug) || "…"}</span>
+              <button
+                type="button"
+                className="text-[var(--coral-ink)]"
+                onClick={() => setSlug(suggestedTeamSlug(clubCode))}
+              >
+                Use club code
+              </button>
+            </span>
+          </label>
+          <label className="grid gap-1 sm:col-span-2">
             <span className="text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">Motto</span>
             <input className={field} value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="Optional" />
           </label>

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireStaff } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CATEGORIES } from "@/lib/constants";
-import { seedKnockoutSlots } from "@/lib/advancement";
+import { renameTeamId, TeamRenameError } from "@/lib/rename-team";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +30,7 @@ export async function PUT(request: Request) {
   if (!gate.ok) return NextResponse.json({ error: "forbidden" }, { status: gate.status });
   const body = (await request.json()) as {
     id?: string;
+    slug?: string;
     name?: string;
     shortName?: string | null;
     tagline?: string | null;
@@ -39,11 +40,23 @@ export async function PUT(request: Request) {
   };
   if (!body.id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
+  let teamId = body.id;
+  if (body.slug && body.slug !== body.id) {
+    try {
+      teamId = await renameTeamId(body.id, body.slug);
+    } catch (err) {
+      if (err instanceof TeamRenameError) {
+        return NextResponse.json({ error: err.message }, { status: err.status });
+      }
+      throw err;
+    }
+  }
+
   await prisma.team.update({
-    where: { id: body.id },
+    where: { id: teamId },
     data: {
-          name: body.name,
-          shortName: body.shortName ?? body.name ?? "",
+      name: body.name,
+      shortName: body.shortName ?? body.name ?? "",
       tagline: body.tagline,
       color: body.color,
       ...(body.backgroundPath !== undefined ? { backgroundPath: body.backgroundPath || null } : {}),
@@ -51,51 +64,52 @@ export async function PUT(request: Request) {
   });
 
   if (body.roster) {
-    for (const row of body.roster) {
-      if (!CATEGORIES.includes(row.category as (typeof CATEGORIES)[number])) continue;
-      await prisma.umaEntry.upsert({
-        where: {
-          teamId_category_slot: { teamId: body.id, category: row.category, slot: row.slot },
-        },
-        create: {
-          teamId: body.id,
-          category: row.category,
-          slot: row.slot,
-          trainer: row.trainer ?? "",
-          umaName: row.umaName ?? "TBD",
-          spriteId: String(row.spriteId ?? ""),
-          rating: row.rating,
-          style: row.style,
-          aptTerrain: row.aptTerrain,
-          aptDistance: row.aptDistance,
-          aptStyle: row.aptStyle,
-          speed: row.speed ?? 0,
-          stamina: row.stamina ?? 0,
-          power: row.power ?? 0,
-          guts: row.guts ?? 0,
-          wisdom: row.wisdom ?? 0,
-          skillsJson: JSON.stringify(row.skills ?? []),
-        },
-        update: {
-          trainer: row.trainer ?? "",
-          umaName: row.umaName ?? "TBD",
-          spriteId: String(row.spriteId ?? ""),
-          rating: row.rating,
-          style: row.style,
-          aptTerrain: row.aptTerrain,
-          aptDistance: row.aptDistance,
-          aptStyle: row.aptStyle,
-          speed: row.speed ?? 0,
-          stamina: row.stamina ?? 0,
-          power: row.power ?? 0,
-          guts: row.guts ?? 0,
-          wisdom: row.wisdom ?? 0,
-          skillsJson: JSON.stringify(row.skills ?? []),
-        },
-      });
-    }
-    await seedKnockoutSlots();
+    const rows = body.roster.filter((row) => CATEGORIES.includes(row.category as (typeof CATEGORIES)[number]));
+    await prisma.$transaction(
+      rows.map((row) =>
+        prisma.umaEntry.upsert({
+          where: {
+            teamId_category_slot: { teamId, category: row.category, slot: row.slot },
+          },
+          create: {
+            teamId,
+            category: row.category,
+            slot: row.slot,
+            trainer: row.trainer ?? "",
+            umaName: row.umaName ?? "TBD",
+            spriteId: String(row.spriteId ?? ""),
+            rating: row.rating,
+            style: row.style,
+            aptTerrain: row.aptTerrain,
+            aptDistance: row.aptDistance,
+            aptStyle: row.aptStyle,
+            speed: row.speed ?? 0,
+            stamina: row.stamina ?? 0,
+            power: row.power ?? 0,
+            guts: row.guts ?? 0,
+            wisdom: row.wisdom ?? 0,
+            skillsJson: JSON.stringify(row.skills ?? []),
+          },
+          update: {
+            trainer: row.trainer ?? "",
+            umaName: row.umaName ?? "TBD",
+            spriteId: String(row.spriteId ?? ""),
+            rating: row.rating,
+            style: row.style,
+            aptTerrain: row.aptTerrain,
+            aptDistance: row.aptDistance,
+            aptStyle: row.aptStyle,
+            speed: row.speed ?? 0,
+            stamina: row.stamina ?? 0,
+            power: row.power ?? 0,
+            guts: row.guts ?? 0,
+            wisdom: row.wisdom ?? 0,
+            skillsJson: JSON.stringify(row.skills ?? []),
+          },
+        }),
+      ),
+    );
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, id: teamId });
 }
