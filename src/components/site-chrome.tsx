@@ -107,7 +107,7 @@ export function SiteFooter() {
     <footer className="mt-auto">
       <div className="page-shell flex flex-wrap items-center justify-between gap-2 py-6 text-sm text-[var(--ink-soft)]">
         <span>Bunny Invitational 2</span>
-        <span>3v3v3 · 21 teams · two days</span>
+        <span>This tournament is a non-commercial, fan-made project and is not affiliated with, authorized, endorsed, or sponsored by Cygames, Inc. or the Umamusume: Pretty Derby franchise.</span>
       </div>
     </footer>
   );
