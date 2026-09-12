@@ -328,10 +328,10 @@ function Matchup({
       </header>
       <div className="mu-body">
         <span className="mu-vs mu-vs-1" aria-hidden>
-          VS
+          <span>VS</span>
         </span>
         <span className="mu-vs mu-vs-2" aria-hidden>
-          VS
+          <span>VS</span>
         </span>
         {match.teams.map((t, teamIndex) => {
           const team = teams.find((x) => x.id === t.teamId);

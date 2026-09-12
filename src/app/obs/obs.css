@@ -244,11 +244,22 @@ body:has(.obs-root) {
 }
 
 .mu-vs {
-  --vs-rot: -10deg;
+  --vs-rot: -8deg;
   position: absolute;
-  top: 28px;
+  top: 36px;
   z-index: 6;
-  padding: 7px 12px 6px;
+  display: grid;
+  width: 58px;
+  height: 38px;
+  place-items: center;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.mu-vs span {
+  display: grid;
+  place-items: center;
+  padding: 8px 12px 7px;
   border-radius: 8px;
   font-family: var(--font-obs-display), sans-serif;
   font-size: 22px;
@@ -264,13 +275,16 @@ body:has(.obs-root) {
 }
 
 .mu-vs-1 {
-  left: 33.4%;
+  left: calc((100% + 80px) * 1.02 / 3.24);
 }
 
 .mu-vs-2 {
-  --vs-rot: 10deg;
-  left: 66.6%;
-  animation-delay: 0.65s;
+  --vs-rot: 8deg;
+  left: calc((100% + 80px) * 2.22 / 3.24 - 40px);
+}
+
+.mu-vs-2 span {
+  animation-delay: 0.1s;
 }
 
 .mu-panel {
@@ -285,7 +299,7 @@ body:has(.obs-root) {
   flex: 1.02;
   clip-path: polygon(0 0, 100% 0, calc(100% - 64px) 100%, 0 100%);
   --stack-shift: -18px;
-  --side-inset: 22px;
+  --side-inset: 32px;
 }
 
 .mu-panel-1 {
@@ -294,7 +308,7 @@ body:has(.obs-root) {
   margin-left: -40px;
   clip-path: polygon(56px 0, 100% 0, calc(100% - 56px) 100%, 0 100%);
   --stack-shift: 8px;
-  --side-inset: 78px;
+  --side-inset: 44px;
 }
 
 .mu-panel-2 {
@@ -303,7 +317,7 @@ body:has(.obs-root) {
   margin-left: -40px;
   clip-path: polygon(64px 0, 100% 0, 100% 100%, 0 100%);
   --stack-shift: 28px;
-  --side-inset: 92px;
+  --side-inset: 44px;
 }
 
 .mu-fill {
@@ -479,6 +493,7 @@ body:has(.obs-root) {
 .mu-side {
   position: absolute;
   left: var(--side-inset);
+  top: 20px;
   bottom: 28px;
   z-index: 3;
   display: flex;
@@ -487,11 +502,14 @@ body:has(.obs-root) {
   justify-content: flex-end;
   writing-mode: vertical-rl;
   transform: rotate(180deg);
+  transform-origin: center;
 }
 
 .mu-side-in {
   display: flex;
+  height: 100%;
   flex-direction: column;
+  justify-content: flex-end;
   animation: mu-name-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -520,14 +538,12 @@ body:has(.obs-root) {
 
 .mu-tag {
   margin: 16px 0 0;
-  max-height: 42%;
-  overflow: hidden;
   font-size: 22px;
   font-weight: 800;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.1em;
   line-height: 1.15;
   text-transform: uppercase;
-  text-wrap: balance;
+  text-wrap: nowrap;
   opacity: 0.9;
 }
 
@@ -706,12 +722,12 @@ body:has(.obs-root) {
 @keyframes mu-vs-in {
   from {
     opacity: 0;
-    transform: translateX(-50%) rotate(var(--vs-rot)) scale(0.25);
+    transform: rotate(var(--vs-rot)) scale(0.25);
     filter: blur(4px);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) rotate(var(--vs-rot)) scale(1);
+    transform: rotate(var(--vs-rot)) scale(1);
     filter: none;
   }
 }
