@@ -322,15 +322,24 @@ function Matchup({
     <div className="mu">
       <header className="mu-top">
         <h1>{match.label}</h1>
-        <p>{CATEGORY_LABEL[category as keyof typeof CATEGORY_LABEL] ?? category}</p>
+        <p className="mu-cat">
+          <span>{CATEGORY_LABEL[category as keyof typeof CATEGORY_LABEL] ?? category}</span>
+        </p>
       </header>
       <div className="mu-body">
+        <span className="mu-vs mu-vs-1" aria-hidden>
+          VS
+        </span>
+        <span className="mu-vs mu-vs-2" aria-hidden>
+          VS
+        </span>
         {match.teams.map((t, teamIndex) => {
           const team = teams.find((x) => x.id === t.teamId);
           const umas = team?.roster.filter((u) => u.category === category).sort((a, b) => a.slot - b.slot) ?? [];
           const racers = umas.length ? umas : placeholderUmas();
           const photo = team?.backgroundPath;
           const watermark = photo ? null : racers.find((u) => u.spritePath)?.spritePath;
+          const label = t.shortName || t.name;
           return (
             <section
               key={t.slot}
@@ -348,25 +357,23 @@ function Matchup({
                   ) : null}
                   <div className="mu-tint" />
                 </div>
+                <div className="mu-shine" />
+                <div className="mu-vignette" />
                 <div className="mu-content">
-                  <div className="mu-side">
-                    <h2 className="mu-name">{t.name}</h2>
-                    {team?.tagline ? <p className="mu-tag">{team.tagline}</p> : null}
-                  </div>
                   <div className="mu-stack">
                     {racers.slice(0, 3).map((u, umaIndex) => (
                       <div
                         key={u.slot ?? umaIndex}
-                        className="mu-racer"
+                        className={`mu-racer${u.spritePath ? "" : " mu-racer-empty"}`}
                         style={{
-                          animationDelay: `${920 + teamIndex * 140 + umaIndex * 100}ms`,
+                          animationDelay: `${720 + teamIndex * 90 + umaIndex * 90}ms`,
                         }}
                       >
                         {u.spritePath ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={u.spritePath} alt="" className="mu-sprite" />
                         ) : (
-                          <div className="mu-sprite" />
+                          <div className="mu-sprite mu-sprite-empty" />
                         )}
                         <div className="mu-plate">
                           <p className="mu-player">{u.trainer || "TBD"}</p>
@@ -374,13 +381,21 @@ function Matchup({
                       </div>
                     ))}
                   </div>
+                  <div className="mu-side">
+                    <div className="mu-side-in">
+                      <h2 className="mu-name">{label}</h2>
+                      {team?.tagline ? <p className="mu-tag">{team.tagline}</p> : null}
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
           );
         })}
       </div>
-      <footer className="mu-bot">Bunny Invitational 2</footer>
+      <footer className="mu-bot">
+        <span>Bunny Invitational 2</span>
+      </footer>
     </div>
   );
 }
