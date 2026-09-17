@@ -190,21 +190,46 @@ export function GroupSchedule({
 }
 
 export function PlayInSchedule({
+  title = "Play-in",
   matches,
   nowId,
   onPick,
 }: {
+  title?: string;
   matches: PublicMatch[];
   nowId?: string | null;
   onPick?: (matchId: string) => void;
 }) {
-  const rows = [...matches].sort((a, b) => a.sortOrder - b.sortOrder);
+  const rows = [...matches].sort((a, b) => a.day - b.day || a.sortOrder - b.sortOrder);
+  const byDay = new Map<number, PublicMatch[]>();
+  for (const match of rows) {
+    const list = byDay.get(match.day) ?? [];
+    list.push(match);
+    byDay.set(match.day, list);
+  }
+  const playIn = rows[0]?.stage === "playin";
   return (
     <section className="min-w-0">
-      <h3 className="mb-3 font-[family-name:var(--font-display)] text-2xl">Play-in</h3>
-      <DayColumn label={PLAY_IN_EVENT_LABEL} matches={rows} nowId={nowId} onPick={onPick} />
+      <h3 className="mb-3 font-[family-name:var(--font-display)] text-2xl">{title}</h3>
+      {[...byDay.entries()].map(([day, dayMatches], i) => (
+        <DayColumn
+          key={day}
+          label={playIn ? PLAY_IN_EVENT_LABEL : dayLabel(day, rows[0]?.stage)}
+          matches={dayMatches}
+          nowId={nowId}
+          onPick={onPick}
+          className={i ? "mt-5" : ""}
+        />
+      ))}
     </section>
   );
+}
+
+function dayLabel(day: number, stage?: string) {
+  if (stage === "qf" || stage === "semi" || stage === "gf") return "";
+  if (day === 1) return "Day 1";
+  if (day === 2) return "Day 2";
+  return `Day ${day}`;
 }
 
 function DayColumn({
@@ -223,7 +248,7 @@ function DayColumn({
   if (!matches.length) return null;
   return (
     <div className={className}>
-      <p className="kicker mb-2">{label}</p>
+      {label ? <p className="kicker mb-2">{label}</p> : null}
       <div className="grid gap-2">
         {matches.map((match) => {
           const card = <CompactMatch match={match} highlight={match.id === nowId} />;

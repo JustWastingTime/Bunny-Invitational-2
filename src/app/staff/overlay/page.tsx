@@ -142,6 +142,8 @@ export default function OverlayDirectorPage() {
       })
     : [];
 
+  const prepBoard = matchesForPrep(data.matches, stagedMatch);
+
   return (
     <div className="grid gap-6">
       <div>
@@ -249,21 +251,24 @@ export default function OverlayDirectorPage() {
         </div>
       </div>
 
-      {data.matches.some((m) => m.stage === "playin") ? (
+      <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
           <p className="mb-3 text-sm text-[var(--ink-soft)]">
-            Play-in uses the same Steiner triples as a group. Click a match to prep it — OBS stays put until you Show.
+            Matches for the prep desk. Click one to stage it — OBS stays put until you Show.
           </p>
-          <PlayInSchedule
-            matches={data.matches.filter((m) => m.stage === "playin")}
-            nowId={prepMatchId ?? o.activeMatchId}
-            onPick={(id) => startTransition(() => setStagedMatchId(id))}
-          />
+          {prepBoard.matches.length ? (
+            <PlayInSchedule
+              title={prepBoard.title}
+              matches={prepBoard.matches}
+              nowId={prepMatchId ?? o.activeMatchId}
+              onPick={(id) => startTransition(() => setStagedMatchId(id))}
+            />
+          ) : (
+            <p className="text-sm text-[var(--ink-soft)]">Pick a match in the dropdown to see its board.</p>
+          )}
         </section>
-      ) : null}
 
-      {o.view === "matchup" && o.visible ? (
-        <section className="grid gap-3 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+        <section className="grid content-start gap-3 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-[family-name:var(--font-display)] text-xl">Uma detail · on-air matchup</h2>
             {o.focus ? (
@@ -277,48 +282,52 @@ export default function OverlayDirectorPage() {
             ) : null}
           </div>
           <p className="text-sm text-[var(--ink-soft)]">
-            Pick a runner to swap the battle screen for a detail card. OBS fades back when you hit Back to matchup.
+            Pick a runner to swap the battle screen for a detail card. Works while Match Up is on air.
           </p>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {liveUmas.map((row) => {
-              const active = o.focus?.teamId === row.teamId && o.focus?.slot === row.slot;
-              return (
-                <button
-                  key={`${row.teamId ?? "x"}-${row.slot}`}
-                  type="button"
-                  disabled={!row.teamId}
-                  onClick={() => {
-                    if (!row.teamId) return;
-                    if (active) {
-                      void patchLive({ view: "matchup", focus: null });
-                      return;
-                    }
-                    void patchLive({ view: "matchup", focus: { teamId: row.teamId, slot: row.slot } });
-                  }}
-                  className={`flex items-center gap-2 rounded-2xl px-3 py-2 text-left ring-1 ${
-                    active ? "bg-[var(--gold)]/50 ring-[var(--gold)]" : "bg-[var(--paper)] ring-[var(--line)]"
-                  }`}
-                >
-                  <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-[var(--surface-strong)]">
-                    {row.uma?.spritePath ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={row.uma.spritePath} alt="" className="h-12 w-12 object-contain" />
-                    ) : (
-                      <span className="text-[0.65rem] text-[var(--ink-soft)]">?</span>
-                    )}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold">{row.uma?.umaName || `Slot ${row.slot + 1}`}</span>
-                    <span className="block truncate text-xs text-[var(--ink-soft)]">
-                      {row.teamName} · {row.uma?.trainer || "—"}
+          {o.view === "matchup" && o.visible ? (
+            <div className="grid gap-2 sm:grid-cols-3">
+              {liveUmas.map((row) => {
+                const active = o.focus?.teamId === row.teamId && o.focus?.slot === row.slot;
+                return (
+                  <button
+                    key={`${row.teamId ?? "x"}-${row.slot}`}
+                    type="button"
+                    disabled={!row.teamId}
+                    onClick={() => {
+                      if (!row.teamId) return;
+                      if (active) {
+                        void patchLive({ view: "matchup", focus: null });
+                        return;
+                      }
+                      void patchLive({ view: "matchup", focus: { teamId: row.teamId, slot: row.slot } });
+                    }}
+                    className={`flex items-center gap-2 rounded-2xl px-3 py-2 text-left ring-1 ${
+                      active ? "bg-[var(--gold)]/50 ring-[var(--gold)]" : "bg-[var(--paper)] ring-[var(--line)]"
+                    }`}
+                  >
+                    <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-[var(--surface-strong)]">
+                      {row.uma?.spritePath ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={row.uma.spritePath} alt="" className="h-12 w-12 object-contain" />
+                      ) : (
+                        <span className="text-[0.65rem] text-[var(--ink-soft)]">?</span>
+                      )}
                     </span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-semibold">{row.uma?.umaName || `Slot ${row.slot + 1}`}</span>
+                      <span className="block truncate text-xs text-[var(--ink-soft)]">
+                        {row.teamName} · {row.uma?.trainer || "—"}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-[var(--ink-soft)]">Show Match Up to pick a runner for the detail card.</p>
+          )}
         </section>
-      ) : null}
+      </div>
 
       {stagedMatch ? (
         <GatesCard
@@ -363,7 +372,28 @@ function liveViewLabel(view: string) {
   return "Match up";
 }
 
-function matchOptGroups(matches: PublicMatch[]) {
+function matchesForPrep(matches: PublicMatch[], prep: PublicMatch | null) {
+  if (!prep) return { title: "Matches", matches: [] as PublicMatch[] };
+  if (prep.stage === "playin") {
+    return { title: "Play-in", matches: matches.filter((m) => m.stage === "playin") };
+  }
+  if (prep.stage === "group" && prep.group) {
+    return {
+      title: `Group ${prep.group}`,
+      matches: matches.filter((m) => m.stage === "group" && m.group === prep.group),
+    };
+  }
+  if (prep.stage === "qf") {
+    return { title: "Last Chance Qualifiers", matches: matches.filter((m) => m.stage === "qf") };
+  }
+  if (prep.stage === "semi") {
+    return { title: "Semi Finals", matches: matches.filter((m) => m.stage === "semi") };
+  }
+  if (prep.stage === "gf") {
+    return { title: "Grand Finals", matches: matches.filter((m) => m.stage === "gf") };
+  }
+  return { title: prep.label, matches: matches.filter((m) => m.stage === prep.stage) };
+}
   const playin = matches.filter((m) => m.stage === "playin");
   const groups = ["A", "B", "C"].map((g) => ({
     label: `Group ${g}`,
