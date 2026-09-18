@@ -251,7 +251,7 @@ export default function OverlayDirectorPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-stretch">
         <section className="rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
           <p className="mb-3 text-sm text-[var(--ink-soft)]">
             Matches for the prep desk. Click one to stage it — OBS stays put until you Show.
@@ -268,7 +268,7 @@ export default function OverlayDirectorPage() {
           )}
         </section>
 
-        <section className="grid content-start gap-3 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+        <section className="flex min-h-full flex-col gap-3 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-[family-name:var(--font-display)] text-xl">Uma detail · on-air matchup</h2>
             {o.focus ? (
@@ -285,46 +285,73 @@ export default function OverlayDirectorPage() {
             Pick a runner to swap the battle screen for a detail card. Works while Match Up is on air.
           </p>
           {o.view === "matchup" && o.visible ? (
-            <div className="grid gap-2 sm:grid-cols-3">
-              {liveUmas.map((row) => {
-                const active = o.focus?.teamId === row.teamId && o.focus?.slot === row.slot;
+            <div className="grid min-h-[28rem] flex-1 grid-cols-1 gap-3 sm:grid-cols-3">
+              {[0, 1, 2].map((teamIndex) => {
+                const rows = liveUmas.filter((row) => row.teamIndex === teamIndex);
+                const team = rows[0];
                 return (
-                  <button
-                    key={`${row.teamId ?? "x"}-${row.slot}`}
-                    type="button"
-                    disabled={!row.teamId}
-                    onClick={() => {
-                      if (!row.teamId) return;
-                      if (active) {
-                        void patchLive({ view: "matchup", focus: null });
-                        return;
-                      }
-                      void patchLive({ view: "matchup", focus: { teamId: row.teamId, slot: row.slot } });
+                  <div
+                    key={teamIndex}
+                    className="flex min-h-0 flex-col gap-2 overflow-hidden rounded-2xl p-2 ring-1 ring-[var(--line)]"
+                    style={{
+                      ["--team" as string]: team?.color ?? "#e07a5f",
+                      background: "color-mix(in srgb, var(--team) 22%, var(--paper))",
                     }}
-                    className={`flex items-center gap-2 rounded-2xl px-3 py-2 text-left ring-1 ${
-                      active ? "bg-[var(--gold)]/50 ring-[var(--gold)]" : "bg-[var(--paper)] ring-[var(--line)]"
-                    }`}
                   >
-                    <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-[var(--surface-strong)]">
-                      {row.uma?.spritePath ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={row.uma.spritePath} alt="" className="h-12 w-12 object-contain" />
-                      ) : (
-                        <span className="text-[0.65rem] text-[var(--ink-soft)]">?</span>
-                      )}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-semibold">{row.uma?.umaName || `Slot ${row.slot + 1}`}</span>
-                      <span className="block truncate text-xs text-[var(--ink-soft)]">
-                        {row.teamName} · {row.uma?.trainer || "—"}
-                      </span>
-                    </span>
-                  </button>
+                    <p className="flex items-center gap-2 px-1 pt-1 text-xs font-extrabold uppercase tracking-wide">
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: team?.color }} />
+                      <span className="truncate">{team?.teamName ?? `Team ${teamIndex + 1}`}</span>
+                    </p>
+                    <div className="grid min-h-0 flex-1 grid-rows-3 gap-2">
+                      {rows.map((row) => {
+                        const active = o.focus?.teamId === row.teamId && o.focus?.slot === row.slot;
+                        return (
+                          <button
+                            key={`${row.teamId ?? "x"}-${row.slot}`}
+                            type="button"
+                            disabled={!row.teamId}
+                            onClick={() => {
+                              if (!row.teamId) return;
+                              if (active) {
+                                void patchLive({ view: "matchup", focus: null });
+                                return;
+                              }
+                              void patchLive({ view: "matchup", focus: { teamId: row.teamId, slot: row.slot } });
+                            }}
+                            className={`flex h-full min-h-0 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-center ring-1 ${
+                              active
+                                ? "bg-[var(--gold)]/55 ring-[var(--gold)]"
+                                : "bg-[var(--surface-strong)]/85 ring-transparent"
+                            }`}
+                          >
+                            <span className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-[var(--paper)]">
+                              {row.uma?.spritePath ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={row.uma.spritePath} alt="" className="h-16 w-16 object-contain" />
+                              ) : (
+                                <span className="text-[0.65rem] text-[var(--ink-soft)]">?</span>
+                              )}
+                            </span>
+                            <span className="min-w-0 w-full">
+                              <span className="block truncate text-sm font-semibold leading-tight">
+                                {row.uma?.umaName || `Slot ${row.slot + 1}`}
+                              </span>
+                              <span className="block truncate text-xs text-[var(--ink-soft)]">
+                                {row.uma?.trainer || "—"}
+                              </span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 );
               })}
             </div>
           ) : (
-            <p className="text-sm text-[var(--ink-soft)]">Show Match Up to pick a runner for the detail card.</p>
+            <p className="flex flex-1 items-center text-sm text-[var(--ink-soft)]">
+              Show Match Up to pick a runner for the detail card.
+            </p>
           )}
         </section>
       </div>
