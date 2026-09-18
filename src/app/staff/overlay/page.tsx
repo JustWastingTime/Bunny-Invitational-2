@@ -394,6 +394,8 @@ function matchesForPrep(matches: PublicMatch[], prep: PublicMatch | null) {
   }
   return { title: prep.label, matches: matches.filter((m) => m.stage === prep.stage) };
 }
+
+function matchOptGroups(matches: PublicMatch[]) {
   const playin = matches.filter((m) => m.stage === "playin");
   const groups = ["A", "B", "C"].map((g) => ({
     label: `Group ${g}`,
