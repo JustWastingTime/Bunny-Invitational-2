@@ -6,7 +6,7 @@ import { defaultGate, gateKey } from "@/lib/overlay-gates";
 import { usePublicData } from "@/components/use-public-data";
 import { PlayInSchedule } from "@/components/tournament-ui";
 import { useStaffToast } from "@/components/staff-toast";
-import type { PublicMatch, PublicUma } from "@/lib/types";
+import type { PublicMatch, PublicRace, PublicTeam, PublicUma } from "@/lib/types";
 
 const VIEWS = [
   { id: "matchup", label: "Show Match Up" },
@@ -148,18 +148,19 @@ export default function OverlayDirectorPage() {
   const prepBoard = matchesForPrep(data.matches, stagedMatch);
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-4">
       <div>
-        <h1 className="font-[family-name:var(--font-display)] text-3xl">Overlay director</h1>
+        <h1 className="display-lg text-2xl">Overlay director</h1>
         <p className="text-sm text-[var(--ink-soft)]">
-          OBS browser source: <code className="rounded bg-[var(--peach)] px-1">/obs</code>. Distance and match below are
-          a prep desk — OBS only changes when you hit a Show button.
+          OBS browser source: <code className="rounded bg-[var(--peach)] px-1">/obs</code>. Match and distance below are
+          a prep desk — OBS only changes when you hit a Show button. Gates and the race result both apply to that same
+          staged match.
         </p>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_30rem]">
-        <div className="grid gap-4">
-          <div className="rounded-3xl bg-[var(--surface-strong)] p-4 ring-1 ring-[var(--line)]">
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_30rem]">
+        <div className="grid gap-3">
+          <div className="rounded-3xl bg-[var(--surface-strong)] p-3 ring-1 ring-[var(--line)]">
             <p className="text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">On air</p>
             <p className="mt-1 font-[family-name:var(--font-display)] text-xl">
               {o.visible === false
@@ -259,9 +260,9 @@ export default function OverlayDirectorPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2 lg:items-stretch">
-        <section className="rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-          <p className="mb-3 text-sm text-[var(--ink-soft)]">
+      <div className="grid gap-3 lg:grid-cols-2 lg:items-start">
+        <section className="rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-3">
+          <p className="mb-2 text-sm text-[var(--ink-soft)]">
             Matches for the prep desk. Click one to stage it — OBS stays put until you Show.
           </p>
           {prepBoard.matches.length ? (
@@ -276,7 +277,7 @@ export default function OverlayDirectorPage() {
           )}
         </section>
 
-        <section className="flex min-h-full flex-col gap-3 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+        <section className="flex flex-col gap-2 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-[family-name:var(--font-display)] text-xl">Uma detail · on-air matchup</h2>
             {o.focus ? (
@@ -293,7 +294,7 @@ export default function OverlayDirectorPage() {
             Pick a runner to swap the battle screen for a detail card. Works while Match Up is on air.
           </p>
           {o.view === "matchup" && o.visible ? (
-            <div className="grid min-h-[28rem] flex-1 grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="grid min-h-[15rem] grid-cols-1 gap-2 sm:grid-cols-3">
               {[0, 1, 2].map((teamIndex) => {
                 const rows = liveUmas.filter((row) => row.teamIndex === teamIndex);
                 const team = rows[0];
@@ -357,9 +358,7 @@ export default function OverlayDirectorPage() {
               })}
             </div>
           ) : (
-            <p className="flex flex-1 items-center text-sm text-[var(--ink-soft)]">
-              Show Match Up to pick a runner for the detail card.
-            </p>
+            <p className="text-sm text-[var(--ink-soft)]">Show Match Up to pick a runner for the detail card.</p>
           )}
         </section>
       </div>
@@ -383,7 +382,17 @@ export default function OverlayDirectorPage() {
         />
       ) : null}
 
-      <p className="text-sm text-[var(--ink-soft)]">{status}</p>
+      {stagedMatch ? (
+        <ScoresCard
+          key={`scores-${stagedMatch.id}-${cat}`}
+          match={stagedMatch}
+          cat={cat}
+          teams={data.teams}
+          existing={stagedMatch.races.find((r) => r.category === cat)}
+        />
+      ) : null}
+
+      {status ? <p className="text-sm text-[var(--ink-soft)]">{status}</p> : null}
     </div>
   );
 }
@@ -464,15 +473,15 @@ function GatesCard({
 }) {
   const liveGates = match.id === liveMatchId && cat === liveCat;
   return (
-    <section className="grid gap-3 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-      <h2 className="font-[family-name:var(--font-display)] text-xl">
+    <section className="grid gap-3 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-3">
+      <h2 className="display-lg text-lg">
         Gates · {match.label} · {CATEGORY_LABEL[cat as keyof typeof CATEGORY_LABEL] ?? cat}
       </h2>
       <p className="text-sm text-[var(--ink-soft)]">
         1–9, Japanese gate colors. Saving gates does not change the on-air overlay.
         {liveGates ? " These are the live race’s gates." : " Preparing a different race than OBS."}
       </p>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-3">
         {match.teams.map((t, teamIndex) => {
           const team = teams.find((x) => x.id === t.teamId);
           const umas = team?.roster.filter((u) => u.category === cat).sort((a, b) => a.slot - b.slot) ?? [];
@@ -539,5 +548,155 @@ function GateField({
         onCommit(gate && gate >= 1 && gate <= 9 ? gate : null);
       }}
     />
+  );
+}
+
+// Race result entry. Lives here rather than on its own page because whoever
+// calls the race on stream is the one holding the placements, and it reuses the
+// staged match / distance picked above instead of asking for them twice.
+function ScoresCard({
+  match,
+  cat,
+  teams,
+  existing,
+}: {
+  match: PublicMatch;
+  cat: string;
+  teams: PublicTeam[];
+  existing: PublicRace | undefined;
+}) {
+  const toast = useStaffToast();
+  const [places, setPlaces] = useState<Record<number, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState<PublicRace | null>(null);
+
+  const racers = useMemo(() => {
+    const out: { key: string; label: string }[] = [];
+    for (const t of match.teams) {
+      if (!t.teamId) continue;
+      const team = teams.find((x) => x.id === t.teamId);
+      for (let slot = 0; slot < 3; slot++) {
+        const uma = team?.roster.find((u) => u.category === cat && u.slot === slot);
+        out.push({
+          key: `${t.teamId}:${slot}`,
+          label: `${t.name} · ${uma?.umaName ?? `slot ${slot + 1}`} (${uma?.trainer || "—"})`,
+        });
+      }
+    }
+    return out;
+  }, [match, teams, cat]);
+
+  const shown = saved ?? existing;
+  const dirty = Object.keys(places).length > 0;
+
+  function placeKey(p?: { teamId: string; slot: number }) {
+    return p ? `${p.teamId}:${p.slot}` : "";
+  }
+
+  function setPlace(place: number, key: string) {
+    setPlaces((prev) => {
+      const next = { ...prev };
+      for (const [p, v] of Object.entries(next)) {
+        if (v === key) delete next[Number(p)];
+      }
+      if (key) next[place] = key;
+      else delete next[place];
+      return next;
+    });
+  }
+
+  async function save() {
+    setSaving(true);
+    toast.saving("Saving race…");
+    const placements = Object.entries(places)
+      .map(([place, key]) => {
+        const [teamId, slot] = key.split(":");
+        return { place: Number(place), teamId, slot: Number(slot) };
+      })
+      .filter((p) => p.teamId);
+    try {
+      const res = await fetch("/api/staff/placements", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ matchId: match.id, category: cat, placements }),
+      });
+      const json = (await res.json()) as { error?: string; match?: PublicMatch };
+      if (res.ok) {
+        setSaved(json.match?.races.find((r) => r.category === cat) ?? null);
+        setPlaces({});
+        toast.saved("Race saved");
+      } else {
+        toast.error(json.error ?? "Failed");
+      }
+    } catch {
+      toast.error("Failed — tap again");
+    }
+    setSaving(false);
+  }
+
+  return (
+    <section className="grid gap-3 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="display-lg text-lg">
+          Result · {match.label} · {CATEGORY_LABEL[cat as keyof typeof CATEGORY_LABEL] ?? cat}
+        </h2>
+        <span className="text-xs text-[var(--ink-soft)]">
+          {match.teams.map((t) => `${t.shortName || t.name} ${t.points}`).join(" · ")}
+        </span>
+      </div>
+      <p className="text-sm text-[var(--ink-soft)]">
+        Places 1–5 for the match staged above. Everyone else is scored from their own placement automatically.
+      </p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {[1, 2, 3, 4, 5].map((place) => (
+          <label key={place} className="grid grid-cols-[2rem_1fr] items-center gap-2 text-sm">
+            <span className="font-semibold">{place}</span>
+            <select
+              className="rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] px-2 py-1.5"
+              value={places[place] ?? placeKey(shown?.placements.find((p) => p.place === place))}
+              onChange={(e) => setPlace(place, e.target.value)}
+            >
+              <option value="">—</option>
+              {racers.map((r) => (
+                <option key={r.key} value={r.key}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        ))}
+      </div>
+      {shown?.placements.length ? (
+        <ul className="grid gap-0.5 text-sm text-[var(--ink-soft)] sm:grid-cols-2">
+          {shown.placements
+            .filter((p) => p.place <= 5)
+            .map((p) => (
+              <li key={`in-${p.place}-${p.teamId}-${p.slot}`}>
+                {p.place}. {p.umaName} → {p.net} pts
+                {p.penalty ? ` (${p.penalty} pop)` : ""}
+                {p.uniqueBonus ? ` (+${p.uniqueBonus} unique)` : ""}
+              </li>
+            ))}
+          {shown.placements
+            .filter((p) => p.place > 5 && p.penalty)
+            .map((p) => (
+              <li key={`out-${p.teamId}-${p.slot}`}>
+                Outside top 5 · {p.umaName} → {p.net} pts ({p.penalty} pop)
+              </li>
+            ))}
+        </ul>
+      ) : null}
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={() => void save()}
+          disabled={saving}
+          className="min-h-11 rounded-full bg-[var(--coral)] px-5 py-2 text-white disabled:opacity-45"
+        >
+          {saving ? "Saving…" : "Save race"}
+        </button>
+        {dirty ? <span className="text-xs text-[var(--coral-ink)]">Unsaved changes</span> : null}
+      </div>
+    </section>
   );
 }

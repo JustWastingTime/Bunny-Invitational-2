@@ -24,7 +24,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
               Groups
             </Link>
             <Link className="border-b border-[var(--line-strong)] pb-0.5" href="/staff/scores">
-              Scores
+              Standings
             </Link>
             <Link className="border-b border-[var(--line-strong)] pb-0.5" href="/staff/overlay">
               Overlay

@@ -53,12 +53,16 @@ export default async function StaffHome() {
           <p className="text-sm text-[var(--ink-soft)]">Drag 21 teams into A/B/C and regenerate matchups.</p>
         </Link>
         <Link href="/staff/scores" className="rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-          <h2 className="font-[family-name:var(--font-display)] text-xl">Scores</h2>
-          <p className="text-sm text-[var(--ink-soft)]">Enter 1st–5th. Points and advancement update immediately.</p>
+          <h2 className="font-[family-name:var(--font-display)] text-xl">Standings</h2>
+          <p className="text-sm text-[var(--ink-soft)]">
+            Read-only tables. Race results are entered on the Overlay director.
+          </p>
         </Link>
         <Link href="/staff/overlay" className="rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-4">
           <h2 className="font-[family-name:var(--font-display)] text-xl">Overlay director</h2>
-          <p className="text-sm text-[var(--ink-soft)]">Pick the live match and flip matchup / scoreboard for OBS.</p>
+          <p className="text-sm text-[var(--ink-soft)]">
+            Stage the match, set gates, enter the 1st–5th result, and flip the OBS view.
+          </p>
         </Link>
       </div>
       <section>
