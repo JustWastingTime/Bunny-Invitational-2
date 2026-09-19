@@ -146,10 +146,12 @@ export default function ObsPage() {
       return;
     }
     setPhase("out");
+    // Bringing the race up waits for OBS: the scene transition has to finish and
+    // the race has to start before the rows rise in.
     const t = window.setTimeout(() => {
       setShown(nextShown);
       setPhase("in");
-    }, 380);
+    }, view === "race" ? 2000 : 380);
     return () => window.clearTimeout(t);
   }, [viewKey]);
 

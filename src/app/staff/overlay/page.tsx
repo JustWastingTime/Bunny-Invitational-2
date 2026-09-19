@@ -149,9 +149,8 @@ export default function OverlayDirectorPage() {
       <div>
         <h1 className="font-[family-name:var(--font-display)] text-3xl">Overlay director</h1>
         <p className="text-sm text-[var(--ink-soft)]">
-          OBS browser source: <code className="rounded bg-[var(--peach)] px-1">/obs</code>. While the overlay is off air
-          this desk only prepares — nothing goes live until you hit a Show button. On air, a distance click swaps
-          straight to that distance.
+          OBS browser source: <code className="rounded bg-[var(--peach)] px-1">/obs</code>. Distance and match below are
+          a prep desk — OBS only changes when you hit a Show button.
         </p>
       </div>
 
@@ -202,11 +201,7 @@ export default function OverlayDirectorPage() {
               <button
                 key={c}
                 type="button"
-                onClick={() => {
-                  startTransition(() => setStagedCat(c));
-                  // On air, swap the live distance too so OBS sources follow the click.
-                  if (o.visible) void patchLive({ activeCategory: c });
-                }}
+                onClick={() => startTransition(() => setStagedCat(c))}
                 className={`rounded-full px-4 py-2 text-sm ${cat === c ? "bg-[var(--coral)] text-white" : "bg-[var(--surface-strong)] ring-1 ring-[var(--line)]"}`}
               >
                 {CATEGORY_LABEL[c]}
