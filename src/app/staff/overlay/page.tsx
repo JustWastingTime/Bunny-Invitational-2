@@ -11,6 +11,9 @@ import type { PublicMatch, PublicUma } from "@/lib/types";
 const VIEWS = [
   { id: "matchup", label: "Show Match Up" },
   { id: "race", label: "Show Race" },
+  // The gates strip only makes sense on the race scene, so this one stays
+  // locked until Show Race has put us there.
+  { id: "gates", label: "Show Gates", needsRace: true },
   { id: "scoreboard", label: "Show Scoreboard" },
   { id: "groups", label: "Show Group Table" },
   { id: "pause", label: "Show Pause" },
@@ -210,18 +213,23 @@ export default function OverlayDirectorPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {VIEWS.map((v) => (
-              <button
-                key={v.id}
-                type="button"
-                onClick={() => goLive(v.id)}
-                disabled={busy}
-                aria-pressed={o.visible && o.view === v.id && !pending}
-                className={`min-h-11 rounded-full px-4 py-2.5 ${o.visible && o.view === v.id && !pending ? "bg-[var(--gold)]" : "bg-[var(--surface-strong)] ring-1 ring-[var(--line)]"}`}
-              >
-                {v.label}
-              </button>
-            ))}
+            {VIEWS.map((v) => {
+              const locked = "needsRace" in v && !(o.view === "race" || o.view === "gates");
+              const on = o.visible && o.view === v.id && !pending;
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => goLive(v.id)}
+                  disabled={busy || locked}
+                  aria-pressed={on}
+                  title={locked ? "Show Race first" : undefined}
+                  className={`min-h-11 rounded-full px-4 py-2.5 ${on ? "bg-[var(--gold)]" : "bg-[var(--surface-strong)] ring-1 ring-[var(--line)]"} ${locked ? "cursor-not-allowed opacity-45" : ""}`}
+                >
+                  {v.label}
+                </button>
+              );
+            })}
             <button
               type="button"
               onClick={() => {
@@ -393,6 +401,7 @@ const ObsPreview = memo(function ObsPreview() {
 
 function liveViewLabel(view: string) {
   if (view === "race") return "Race";
+  if (view === "gates") return "Gates";
   if (view === "scoreboard") return "Scoreboard";
   if (view === "groups") return "Group table";
   if (view === "pause") return "Pause";

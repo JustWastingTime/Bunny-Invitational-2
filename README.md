@@ -80,12 +80,17 @@ internet. Something must run **on the streaming PC**.
 
 | Director action | OBS result |
 |---|---|
-| Show Race | program scene -> **Uma** |
+| Show Race | program scene -> **Uma**, race panel hidden so the game capture is clear |
+| Show Gates | the uma/name/gate strip over the same scene, no scene change |
 | Show Match Up | program scene -> **Cast** |
+| Show Scoreboard / Show Group Table / Show Pause | program scene -> **Cast** |
 | Sprint / Mile / Medium / Long / Dirt | that category's source on, the other four off, in both **Uma** and **Cast** |
 
-Show Scoreboard, Show Group Table, and Show Pause are left alone until you map
-them (see `OBS_SCENE_MAP`). Hiding the overlay leaves OBS as-is.
+Only Show Race moves OBS to **Uma**; every other view lands on **Cast**. Show
+Gates deliberately leaves the scene alone — it stays locked in the director
+until Show Race has put OBS on the race scene, so there is nothing to switch.
+Hiding the overlay leaves OBS as-is. A view you leave out of `OBS_SCENE_MAP` is
+left alone entirely.
 
 One-time OBS setup:
 
@@ -116,7 +121,7 @@ Node 22+.
 | `OBS_STATE_URL` | `$APP_URL/api/overlay/live` | Full override of the state URL |
 | `OBS_URL` | `ws://127.0.0.1:4455` | obs-websocket endpoint |
 | `OBS_PASSWORD` | empty | Required if OBS has a password set |
-| `OBS_SCENE_MAP` | `{"race":"Uma","matchup":"Cast"}` | View -> scene; add `"scoreboard"`, `"groups"`, `"pause"` entries to map those too |
+| `OBS_SCENE_MAP` | `{"race":"Uma","matchup":"Cast","scoreboard":"Cast","groups":"Cast","pause":"Cast"}` | View -> scene |
 | `OBS_CATEGORY_SOURCES` | `{"sprint":["Sprint"],...}` | Category -> source names; a category may list several names |
 | `OBS_TOGGLE_SCENES` | the mapped scenes | Which scenes get the category sources |
 | `OBS_POLL_MS` | `750` | State poll interval |

@@ -13,8 +13,12 @@
  * overlay state (the same state the /obs browser source renders) and mirrors it
  * onto OBS scenes and sources:
  *
- *   view "race"     -> scene "Uma"
- *   view "matchup"  -> scene "Cast"
+ *   view "race"                   -> scene "Uma"
+ *   view "matchup" | "scoreboard"
+ *     | "groups" | "pause"        -> scene "Cast"
+ *   view "gates"                  -> scene left alone: the gates strip only
+ *                                    appears once "race" already owns Uma, so
+ *                                    a gates press never moves OBS
  *   activeCategory  -> that category's source on in every toggle scene, and all
  *                      the other category sources off
  *
@@ -28,7 +32,7 @@
  *   OBS_STATE_URL         full live-state URL; overrides APP_URL
  *   OBS_URL               obs-websocket URL (default ws://127.0.0.1:4455)
  *   OBS_PASSWORD          obs-websocket password (Tools -> WebSocket Server Settings)
- *   OBS_SCENE_MAP         JSON view -> scene (default {"race":"Uma","matchup":"Cast"})
+ *   OBS_SCENE_MAP         JSON view -> scene (default: race -> Uma, everything else -> Cast)
  *   OBS_CATEGORY_SOURCES  JSON category -> source names to switch
  *   OBS_TOGGLE_SCENES     JSON array of scenes to toggle sources in
  *   OBS_POLL_MS           state poll interval (default 750)
@@ -40,7 +44,13 @@
 import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
 
-export const DEFAULT_SCENE_MAP = { race: "Uma", matchup: "Cast" };
+export const DEFAULT_SCENE_MAP = {
+  race: "Uma",
+  matchup: "Cast",
+  scoreboard: "Cast",
+  groups: "Cast",
+  pause: "Cast",
+};
 export const DEFAULT_CATEGORY_SOURCES = {
   sprint: ["Sprint"],
   mile: ["Mile"],

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { CATEGORIES, CATEGORY_LABEL, STYLE_LABEL } from "@/lib/constants";
+import { CATEGORIES, CATEGORY_LABEL, RACE_MAPS, STYLE_LABEL } from "@/lib/constants";
 import { defaultGate } from "@/lib/overlay-gates";
 import type { Cue, GroupStandingRow, PublicMatch, PublicPayload, PublicTeam, PublicUma } from "@/lib/types";
 
@@ -181,15 +181,7 @@ export default function ObsPage() {
   if (view === "pause") {
     return (
       <div className="obs-root">
-        {wrap(
-          <PauseOverlay
-            match={liveMatch}
-            teams={data.teams}
-            category={cat}
-            now={data.now}
-            next={data.next}
-          />,
-        )}
+        {wrap(<PauseOverlay match={liveMatch} now={data.now} next={data.next} />)}
       </div>
     );
   }
@@ -227,13 +219,14 @@ export default function ObsPage() {
     <div className="obs-root">
       {view === "matchup"
         ? wrap(<Matchup match={liveMatch} teams={data.teams} category={cat} />)
-        : view === "race"
+        : view === "race" || view === "gates"
           ? wrap(
               <RaceOverlay
                 match={liveMatch}
                 teams={data.teams}
                 category={cat}
                 gates={data.overlay.gates ?? []}
+                showGates={view === "gates"}
               />,
             )
           : view === "groups"
@@ -243,26 +236,7 @@ export default function ObsPage() {
   );
 }
 
-function PauseOverlay({
-  match,
-  teams,
-  category,
-  now,
-  next,
-}: {
-  match: PublicMatch | null;
-  teams: PublicTeam[];
-  category: string;
-  now: Cue;
-  next: Cue;
-}) {
-  const sprites = (match?.teams ?? []).flatMap((t) => {
-    const team = teams.find((x) => x.id === t.teamId);
-    return (team?.roster.filter((u) => u.category === category && u.spritePath) ?? [])
-      .sort((a, b) => a.slot - b.slot)
-      .slice(0, 3)
-      .map((u) => ({ src: u.spritePath as string, color: t.color }));
-  });
+function PauseOverlay({ match, now, next }: { match: PublicMatch | null; now: Cue; next: Cue }) {
   const cue = now ?? next;
   return (
     <div className="pause">
@@ -274,18 +248,6 @@ function PauseOverlay({
       <div className="pause-ring pause-ring-1" />
       <div className="pause-ring pause-ring-2" />
       <div className="pause-ring pause-ring-3" />
-      <div className="pause-sprites" aria-hidden>
-        {sprites.map((s, i) => (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            key={`${s.src}-${i}`}
-            src={s.src}
-            alt=""
-            className={`pause-sprite pause-sprite-${i}`}
-            style={{ ["--team" as string]: s.color }}
-          />
-        ))}
-      </div>
       <div className="pause-core">
         <p className="pause-kicker">Bunny Invitational 2</p>
         <h1 className="pause-title">PAUSE</h1>
@@ -320,13 +282,25 @@ function Matchup({
   teams: PublicTeam[];
   category: string;
 }) {
+  const map = RACE_MAPS.find((m) => m.category === category);
   return (
     <div className="mu">
       <header className="mu-top">
         <h1>{match.label}</h1>
-        <p className="mu-cat">
-          <span>{CATEGORY_LABEL[category as keyof typeof CATEGORY_LABEL] ?? category}</span>
-        </p>
+        <div className="mu-meta">
+          <p className="mu-cat">
+            <span>{CATEGORY_LABEL[category as keyof typeof CATEGORY_LABEL] ?? category}</span>
+          </p>
+          {map ? (
+            <div className="mu-mapinfo">
+              <p className="mu-map">
+                {map.venue}
+                <span>{map.distanceM}m</span>
+              </p>
+              <p className="mu-cond">{[map.surface, map.season, map.weather, map.going].join(" · ")}</p>
+            </div>
+          ) : null}
+        </div>
       </header>
       <div className="mu-body">
         <span className="mu-vs mu-vs-1" aria-hidden>
@@ -414,14 +388,17 @@ function RaceOverlay({
   teams,
   category,
   gates,
+  showGates,
 }: {
   match: PublicMatch;
   teams: PublicTeam[];
   category: string;
   gates: { teamId: string; slot: number; gate: number }[];
+  /** Show Race alone keeps the panel off so the game capture stays clear. */
+  showGates: boolean;
 }) {
   return (
-    <div className="race">
+    <div className={`race${showGates ? "" : " race-bare"}`}>
       <header className="race-top">
         <h1>{match.label}</h1>
         <p>{CATEGORY_LABEL[category as keyof typeof CATEGORY_LABEL] ?? category}</p>
