@@ -68,6 +68,60 @@ You can leave the site on Vercel for the public pages and point OBS + `/staff/ov
 
 Skip Upstash on the droplet. Redis is only a workaround for serverless, not a speedup.
 
+### OBS scene switching (director on Vercel)
+
+The director can't touch OBS directly: a page served over HTTPS is not allowed to
+open an insecure `ws://127.0.0.1:4455` socket, and OBS's browser source has the
+same restriction. It also can't be a Vercel function, because OBS is not on the
+internet. Something must run **on the streaming PC**.
+
+`scripts/obs-bridge.mjs` is that piece. It reads the same public on-air state the
+`/obs` browser source renders and mirrors it onto OBS:
+
+| Director action | OBS result |
+|---|---|
+| Show Race | program scene -> **Uma** |
+| Show Match Up | program scene -> **Cast** |
+| Sprint / Mile / Medium / Long / Dirt | that category's source on, the other four off, in both **Uma** and **Cast** |
+
+Show Scoreboard, Show Group Table, and Show Pause are left alone until you map
+them (see `OBS_SCENE_MAP`). Hiding the overlay leaves OBS as-is.
+
+One-time OBS setup:
+
+1. **Tools -> WebSocket Server Settings** -> tick *Enable WebSocket server*. Note
+   the port (4455) and password.
+2. Have scenes named exactly **Uma** and **Cast**.
+3. In each scene, have one source per distance named exactly **Sprint**, **Mile**,
+   **Medium**, **Long**, **Dirt**. Groups are fine — the bridge looks inside them.
+   Different names? Point `OBS_CATEGORY_SOURCES` at yours.
+
+Then, on the streaming PC:
+
+```powershell
+$env:APP_URL="https://your-app.vercel.app"
+$env:OBS_PASSWORD="the-password-from-step-1"
+npm run obs:bridge
+```
+
+Verify it before a show with `npm run obs:bridge -- --once`, which applies one
+state and exits non-zero if OBS is unreachable. Leave the plain command running
+during the event (keep the terminal open, or register it in Task Scheduler / pm2).
+The bridge has no dependencies — it uses the built-in WebSocket and crypto in
+Node 22+.
+
+| Env | Default | Purpose |
+|---|---|---|
+| `APP_URL` | `http://localhost:3000` | Where the live state is read from |
+| `OBS_STATE_URL` | `$APP_URL/api/overlay/live` | Full override of the state URL |
+| `OBS_URL` | `ws://127.0.0.1:4455` | obs-websocket endpoint |
+| `OBS_PASSWORD` | empty | Required if OBS has a password set |
+| `OBS_SCENE_MAP` | `{"race":"Uma","matchup":"Cast"}` | View -> scene; add `"scoreboard"`, `"groups"`, `"pause"` entries to map those too |
+| `OBS_CATEGORY_SOURCES` | `{"sprint":["Sprint"],...}` | Category -> source names; a category may list several names |
+| `OBS_TOGGLE_SCENES` | the mapped scenes | Which scenes get the category sources |
+| `OBS_POLL_MS` | `750` | State poll interval |
+
+
 ## Pages
 
 | Path | Who |
