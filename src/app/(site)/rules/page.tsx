@@ -45,10 +45,10 @@ function RulesTabButton({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`rounded-full px-4 py-1.5 text-sm ${
+      className={`px-4 py-1.5 text-sm font-bold uppercase tracking-[0.09em] ${
         active
-          ? "bg-[var(--accent-solid)] font-semibold text-[var(--accent-on-solid)]"
-          : "bg-[var(--surface-2)] text-[var(--ink-soft)]"
+          ? "slant bg-[var(--accent-solid)] text-[var(--accent-on-solid)]"
+          : "bg-[var(--surface-2)] text-[var(--ink-soft)] ring-1 ring-[var(--line)] hover:text-[var(--ink)]"
       }`}
     >
       {children}
@@ -60,8 +60,8 @@ function SimplifiedRules() {
   return (
     <div className="grid gap-x-12 gap-y-10 md:grid-cols-2">
       <section>
-        <p className="kicker">1a</p>
-        <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Joining as a team</h2>
+        <p className="tote mb-2">1a</p>
+        <h2 className="mt-1 mb-3 display-lg text-3xl">Joining as a team</h2>
         <ul className="space-y-2 text-[var(--ink-soft)]">
           <li>
             Your team must have 15 <strong className="font-extrabold text-[var(--ink)]">unique</strong> players; 3 on
@@ -80,8 +80,8 @@ function SimplifiedRules() {
       </section>
 
       <section>
-        <p className="kicker">1b</p>
-        <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Joining as a free player</h2>
+        <p className="tote mb-2">1b</p>
+        <h2 className="mt-1 mb-3 display-lg text-3xl">Joining as a free player</h2>
         <ul className="space-y-2 text-[var(--ink-soft)]">
           <li>
             If you do not have a team, you can still join us as a{" "}
@@ -96,8 +96,8 @@ function SimplifiedRules() {
       </section>
 
       <section>
-        <p className="kicker">2</p>
-        <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Maps</h2>
+        <p className="tote mb-2">2</p>
+        <h2 className="mt-1 mb-3 display-lg text-3xl">Maps</h2>
         <ul className="space-y-2 text-[var(--ink-soft)]">
           <li>
             Maps are locked. Venue, distance, season, weather, and going are on the{" "}
@@ -112,8 +112,8 @@ function SimplifiedRules() {
       </section>
 
       <section>
-        <p className="kicker">3</p>
-        <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Submission</h2>
+        <p className="tote mb-2">3</p>
+        <h2 className="mt-1 mb-3 display-lg text-3xl">Submission</h2>
         <ul className="space-y-2 text-[var(--ink-soft)]">
           <li>
             Every team will be pinged to submit their uma screenshot 3 days before tournament starts. Please submit a
@@ -127,8 +127,8 @@ function SimplifiedRules() {
       </section>
 
       <section>
-        <p className="kicker">4</p>
-        <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Bans</h2>
+        <p className="tote mb-2">4</p>
+        <h2 className="mt-1 mb-3 display-lg text-3xl">Bans</h2>
         <ul className="space-y-2 text-[var(--ink-soft)]">
           <li>
             <strong className="font-extrabold text-[var(--ink)]">No</strong> umas are banned.
@@ -144,8 +144,8 @@ function SimplifiedRules() {
       </section>
 
       <section>
-        <p className="kicker">5</p>
-        <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Scoring</h2>
+        <p className="tote mb-2">5</p>
+        <h2 className="mt-1 mb-3 display-lg text-3xl">Scoring</h2>
         <PlaceTable />
         <ScoringNotes />
       </section>
@@ -205,8 +205,8 @@ function AdvancedRules() {
   return (
     <div className="grid gap-x-12 gap-y-10 md:grid-cols-2">
       <section className="md:col-span-2">
-        <p className="kicker">1</p>
-        <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">What you must know</h2>
+        <p className="tote mb-2">1</p>
+        <h2 className="mt-1 mb-3 display-lg text-3xl">What you must know</h2>
         <ul className="space-y-2 text-[var(--ink-soft)]">
           <li>
             Similar to Bunny Invitational 1, each team must have{" "}
@@ -245,8 +245,8 @@ function AdvancedRules() {
       </section>
 
       <section>
-        <p className="kicker">2</p>
-        <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Maps</h2>
+        <p className="tote mb-2">2</p>
+        <h2 className="mt-1 mb-3 display-lg text-3xl">Maps</h2>
         <ul className="space-y-2 text-[var(--ink-soft)]">
           <li>
             Maps and conditions are locked. Cards are on the{" "}
@@ -264,8 +264,8 @@ function AdvancedRules() {
       </section>
 
       <section>
-        <p className="kicker">3</p>
-        <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Submission</h2>
+        <p className="tote mb-2">3</p>
+        <h2 className="mt-1 mb-3 display-lg text-3xl">Submission</h2>
         <ul className="space-y-2 text-[var(--ink-soft)]">
           <li>
             All teams will be pinged on <When>Wed 7 Oct 2026, 10:00 PM ICT</When>. Submit your umas as a{" "}
@@ -287,8 +287,8 @@ function AdvancedRules() {
       </section>
 
       <section>
-        <p className="kicker">4</p>
-        <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Bans</h2>
+        <p className="tote mb-2">4</p>
+        <h2 className="mt-1 mb-3 display-lg text-3xl">Bans</h2>
         <ul className="space-y-2 text-[var(--ink-soft)]">
           <li>
             <strong className="font-extrabold text-[var(--ink)]">No</strong> umas are banned.
@@ -307,15 +307,15 @@ function AdvancedRules() {
       </section>
 
       <section>
-        <p className="kicker">5</p>
-        <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Scoring</h2>
+        <p className="tote mb-2">5</p>
+        <h2 className="mt-1 mb-3 display-lg text-3xl">Scoring</h2>
         <PlaceTable />
         <ScoringNotes />
       </section>
 
       <section>
-        <p className="kicker">6</p>
-        <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Brackets</h2>
+        <p className="tote mb-2">6</p>
+        <h2 className="mt-1 mb-3 display-lg text-3xl">Brackets</h2>
         <ul className="space-y-2 text-[var(--ink-soft)]">
           <li>
             21 <strong className="font-extrabold text-[var(--ink)]">main teams</strong> split into 3 groups of 7. Each
@@ -336,8 +336,8 @@ function AdvancedRules() {
       </section>
 
       <section>
-        <p className="kicker">7</p>
-        <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Group stage tiebreakers</h2>
+        <p className="tote mb-2">7</p>
+        <h2 className="mt-1 mb-3 display-lg text-3xl">Group stage tiebreakers</h2>
         <p className="mb-3 text-[var(--ink-soft)]">Teams in groups are sorted by:</p>
         <ol className="list-decimal space-y-2 pl-5 text-[var(--ink-soft)]">
           <li>Total points</li>
@@ -351,8 +351,8 @@ function AdvancedRules() {
       </section>
 
       <section>
-        <p className="kicker">8</p>
-        <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Play-in teams</h2>
+        <p className="tote mb-2">8</p>
+        <h2 className="mt-1 mb-3 display-lg text-3xl">Play-in teams</h2>
         <ul className="space-y-2 text-[var(--ink-soft)]">
           <li>
             Clubs / networks that want a second team do not get a guaranteed group-stage slot. Second teams play a
@@ -370,8 +370,8 @@ function AdvancedRules() {
       </section>
 
       <section>
-        <p className="kicker">9</p>
-        <h2 className="mt-1 mb-3 font-[family-name:var(--font-display)] text-3xl">Missing players / umas</h2>
+        <p className="tote mb-2">9</p>
+        <h2 className="mt-1 mb-3 display-lg text-3xl">Missing players / umas</h2>
         <ul className="space-y-2 text-[var(--ink-soft)]">
           <li>
             Please do not change your in-game name after submission. If your uma cannot be found due to a name change

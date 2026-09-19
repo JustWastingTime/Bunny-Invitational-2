@@ -1,4 +1,4 @@
-import { SiteFooter, SiteHeader } from "@/components/site-chrome";
+import { Pennants, SiteFooter, SiteHeader } from "@/components/site-chrome";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -9,6 +9,8 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       >
         Skip to content
       </a>
+      <div className="site-grain" aria-hidden />
+      <Pennants />
       <SiteHeader />
       <main id="main" className="page-shell flex-1 py-8 lg:py-10">
         {children}

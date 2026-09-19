@@ -50,10 +50,10 @@ export default function StatsPage() {
             type="button"
             onClick={() => setTab(key)}
             aria-pressed={tab === key}
-            className={`rounded-full px-4 py-1.5 text-sm ${
+            className={`px-4 py-1.5 text-sm font-bold uppercase tracking-[0.09em] ${
               tab === key
-                ? "bg-[var(--accent-solid)] font-semibold text-[var(--accent-on-solid)]"
-                : "bg-[var(--surface-2)] text-[var(--ink-soft)]"
+                ? "slant bg-[var(--accent-solid)] text-[var(--accent-on-solid)]"
+                : "bg-[var(--surface-2)] text-[var(--ink-soft)] ring-1 ring-[var(--line)] hover:text-[var(--ink)]"
             }`}
           >
             {key === "umas" ? "Uma population" : key === "teams" ? "Team strength" : "Skill meta"}

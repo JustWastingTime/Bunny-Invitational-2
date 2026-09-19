@@ -42,11 +42,11 @@ export default function ScoreboardPage() {
 
       <section className="min-w-0">
         <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <h2 className="font-[family-name:var(--font-display)] text-3xl">Who scored</h2>
-          <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-[var(--ink-soft)] sm:items-end">
+          <h2 className="display-lg text-3xl">Who scored</h2>
+          <label className="flex min-w-0 flex-col gap-1 text-xs font-extrabold uppercase tracking-[0.09em] text-[var(--ink-soft)] sm:items-end">
             Match
             <select
-              className="w-full max-w-full truncate rounded-full bg-[var(--surface-2)] px-3 py-2 text-base font-normal text-[var(--ink)] sm:w-auto sm:text-sm"
+              className="w-full max-w-full truncate rounded-[3px] bg-[var(--surface-2)] px-3 py-2 text-base font-normal normal-case tracking-normal text-[var(--ink)] ring-1 ring-[var(--line)] sm:w-auto sm:text-sm"
               value={selected?.id ?? ""}
               onChange={(e) => setMatchId(e.target.value)}
             >

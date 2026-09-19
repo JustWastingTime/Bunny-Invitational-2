@@ -243,3 +243,225 @@ html.dark .ink-table tbody tr.playoff td {
     animation: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Race-day programme
+   ---------------------------------------------------------------------------
+   Public site only. The OBS browser source needs a transparent background and
+   the staff desk needs to stay quiet, so anything that repaints the page is
+   guarded with :not([data-obs]) and the decorative layers are rendered from
+   the (site) layout rather than globally.
+--------------------------------------------------------------------------- */
+
+:root {
+  --pennant-a: #e07a5f;
+  --pennant-b: #f2c14e;
+  --pennant-c: #417a56;
+  --pennant-d: #7c9cbf;
+  /* Ink hue as raw channels, so every shadow carries the palette instead of
+     reading as pure black dropped on warm paper. */
+  --shadow-tint: 61 42 36;
+  --tote-bg: #3d2a24;
+  --tote-ink: #fff4ea;
+}
+
+html.dark {
+  --shadow-tint: 12 6 12;
+  --tote-bg: #fff6ee;
+  --tote-ink: #3a2432;
+}
+
+/* Heavy, tightly-tracked display type. Fraunces is a variable font, so the
+   weight axis is real rather than a synthesised bold. */
+.display-xl {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 900;
+  line-height: 0.84;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.display-lg {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+/* Bunting. Pure CSS triangles so there is no asset to load or cache-bust. */
+.pennants {
+  display: flex;
+  gap: 7px;
+  overflow: hidden;
+  padding-bottom: 2px;
+}
+
+.pennants i {
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 15px solid var(--pennant, var(--pennant-a));
+  transform-origin: top center;
+  animation: pennant-flutter 4.2s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * -0.37s);
+}
+
+.pennants i:nth-child(4n + 1) {
+  --pennant: var(--pennant-a);
+}
+
+.pennants i:nth-child(4n + 2) {
+  --pennant: var(--pennant-b);
+}
+
+.pennants i:nth-child(4n + 3) {
+  --pennant: var(--pennant-c);
+}
+
+.pennants i:nth-child(4n + 4) {
+  --pennant: var(--pennant-d);
+}
+
+@keyframes pennant-flutter {
+  0%,
+  100% {
+    transform: rotate(0deg) scaleY(1);
+  }
+  50% {
+    transform: rotate(3.5deg) scaleY(0.94);
+  }
+}
+
+/* A single fixed grain plate kills the flat-vector look. It sits above content
+   but never takes pointer events, and stays off the OBS route. */
+.site-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  opacity: 0.42;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+html.dark .site-grain {
+  opacity: 0.3;
+  mix-blend-mode: screen;
+}
+
+/* Ticket / flag end for primary actions. Angular, so it reads as signage
+   rather than another pill. */
+.flag-end {
+  clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%);
+  padding-right: 1.75rem;
+}
+
+.slant {
+  clip-path: polygon(11px 0, 100% 0, calc(100% - 11px) 100%, 0 100%);
+}
+
+/* Split-flap-ish plate for a single number: standings rank, lane, gate. */
+.tote {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.6rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.3rem;
+  background: var(--tote-bg);
+  color: var(--tote-ink);
+  font-size: 0.95rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  box-shadow:
+    inset 0 -2px 0 rgb(0 0 0 / 0.18),
+    inset 0 1px 0 rgb(255 255 255 / 0.18);
+}
+
+.tote-gold {
+  background: var(--gold);
+  color: var(--chip-ink);
+}
+
+.tote-coral {
+  background: var(--coral);
+  color: #fff4ea;
+}
+
+/* Even-odd stripe wash. Reads as mown turf / track markings under headings. */
+.track-stripes {
+  background-image: repeating-linear-gradient(
+    115deg,
+    rgb(var(--shadow-tint) / 0.055) 0 9px,
+    transparent 9px 21px
+  );
+}
+
+/* Staggered entry. Each child sets --i, so a list cascades instead of every
+   card mounting at once. */
+.rise {
+  animation: rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 65ms);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.lift {
+  transition:
+    transform 0.18s cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 0.18s ease-out,
+    background-color 0.18s ease-out;
+  box-shadow: 0 1px 0 rgb(var(--shadow-tint) / 0.07);
+}
+
+.lift:hover {
+  transform: translateY(-3px) rotate(-0.35deg);
+  box-shadow: 0 16px 30px -14px rgb(var(--shadow-tint) / 0.42);
+}
+
+.ticker {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ticker-track {
+  display: inline-flex;
+  width: max-content;
+  animation: ticker 30s linear infinite;
+}
+
+.ticker:hover .ticker-track {
+  animation-play-state: paused;
+}
+
+@keyframes ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pennants i,
+  .rise,
+  .ticker-track {
+    animation: none;
+  }
+
+  .lift:hover {
+    transform: none;
+  }
+}

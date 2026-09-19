@@ -16,13 +16,13 @@ export function GroupTable({
   const playIn = group === "Play-in" || group === "P";
   return (
     <section className="min-w-0">
-      <div className="mb-2 flex items-baseline justify-between gap-3">
-        <h3 className="font-[family-name:var(--font-display)] text-2xl">{playIn ? "Play-in" : `Group ${group}`}</h3>
+      <div className="mb-2 flex items-baseline justify-between gap-3 border-b border-[var(--line)] pb-1.5">
+        <h3 className="display-lg text-2xl">{playIn ? "Play-in" : `Group ${group}`}</h3>
         <p className="text-xs text-[var(--ink-soft)]">
           {note ?? (playIn ? "Own oshi & popularity pool" : "Top 2 Semis · 3–5 LCQ")}
         </p>
       </div>
-      <div className="overflow-x-auto rounded-2xl bg-[var(--surface)]">
+      <div className="overflow-x-auto bg-[var(--surface)] ring-1 ring-[var(--line)]">
         <table className="ink-table min-w-[22rem]">
           <thead>
             <tr>
@@ -40,7 +40,9 @@ export function GroupTable({
               const outcome = playIn ? null : row.rank <= 2 ? "Semis" : row.rank <= 5 ? "LCQ" : null;
               return (
                 <tr key={row.teamId} className={outcome === "Semis" ? "qualify" : outcome === "LCQ" ? "playoff" : ""}>
-                  <td className="font-semibold">{row.rank}</td>
+                  <td>
+                    <span className="tote">{row.rank}</span>
+                  </td>
                   <td>
                     <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={{ background: row.color }} />
                     {row.name}
@@ -76,7 +78,7 @@ export function GroupTable({
 
 function OutcomeTag({ children }: { children: string }) {
   return (
-    <span className="inline-block whitespace-nowrap rounded-full bg-[var(--chip-base)] px-2 py-0.5 text-xs font-extrabold uppercase tracking-wide text-[var(--chip-ink)]">
+    <span className="inline-block whitespace-nowrap rounded-[3px] border border-black/15 bg-[var(--chip-base)] px-2 py-0.5 text-[0.68rem] font-extrabold uppercase tracking-[0.08em] text-[var(--chip-ink)]">
       {children}
     </span>
   );
@@ -272,12 +274,12 @@ export function ScorerList({ match }: { match: PublicMatch }) {
   );
   if (!scorers.length)
     return (
-      <p className="rounded-2xl bg-[var(--surface)] px-5 py-4 text-sm text-[var(--ink-soft)]">
+      <p className="border-l-4 border-[var(--gold)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--ink-soft)]">
         No points scored yet. Placements appear here as each race is called in.
       </p>
     );
   return (
-    <div className="min-w-0 overflow-x-auto rounded-2xl bg-[var(--surface)]">
+    <div className="min-w-0 overflow-x-auto bg-[var(--surface)] ring-1 ring-[var(--line)]">
       <table className="ink-table">
         <thead>
           <tr>

@@ -87,12 +87,12 @@ function BoardTab({
       disabled={disabled}
       aria-pressed={disabled ? undefined : active}
       onClick={onClick}
-      className={`rounded-full px-4 py-1.5 text-sm ${
+      className={`px-4 py-1.5 text-sm font-bold uppercase tracking-[0.09em] ${
         disabled
           ? "cursor-not-allowed bg-[var(--surface-2)] text-[var(--ink-soft)] opacity-45"
           : active
-            ? "bg-[var(--accent-solid)] font-semibold text-[var(--accent-on-solid)]"
-            : "bg-[var(--surface-2)] text-[var(--ink-soft)]"
+            ? "slant bg-[var(--accent-solid)] text-[var(--accent-on-solid)]"
+            : "bg-[var(--surface-2)] text-[var(--ink-soft)] ring-1 ring-[var(--line)] hover:text-[var(--ink)]"
       }`}
     >
       {children}
