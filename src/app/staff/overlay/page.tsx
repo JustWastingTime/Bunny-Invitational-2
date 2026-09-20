@@ -277,9 +277,28 @@ export default function OverlayDirectorPage() {
           )}
         </section>
 
+        {stagedMatch ? (
+          <GatesCard
+            key={`${stagedMatch.id}-${cat}`}
+            match={stagedMatch}
+            cat={cat}
+            teams={data.teams}
+            gatesAll={o.gatesAll ?? {}}
+            liveMatchId={o.activeMatchId}
+            liveCat={liveCat}
+            onGate={(teamId, slot, gate) => {
+              patchGate({
+                gates: [{ teamId, slot, gate }],
+                gateMatchId: stagedMatch.id,
+                gateCategory: cat,
+              });
+            }}
+          />
+        ) : null}
+
         <section className="flex flex-col gap-2 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="font-[family-name:var(--font-display)] text-xl">Uma detail · on-air matchup</h2>
+            <h2 className="display-lg text-lg">Uma detail · on-air matchup</h2>
             {o.focus ? (
               <button
                 type="button"
@@ -361,36 +380,17 @@ export default function OverlayDirectorPage() {
             <p className="text-sm text-[var(--ink-soft)]">Show Match Up to pick a runner for the detail card.</p>
           )}
         </section>
+
+        {stagedMatch ? (
+          <ScoresCard
+            key={`scores-${stagedMatch.id}-${cat}`}
+            match={stagedMatch}
+            cat={cat}
+            teams={data.teams}
+            existing={stagedMatch.races.find((r) => r.category === cat)}
+          />
+        ) : null}
       </div>
-
-      {stagedMatch ? (
-        <GatesCard
-          key={`${stagedMatch.id}-${cat}`}
-          match={stagedMatch}
-          cat={cat}
-          teams={data.teams}
-          gatesAll={o.gatesAll ?? {}}
-          liveMatchId={o.activeMatchId}
-          liveCat={liveCat}
-          onGate={(teamId, slot, gate) => {
-            patchGate({
-              gates: [{ teamId, slot, gate }],
-              gateMatchId: stagedMatch.id,
-              gateCategory: cat,
-            });
-          }}
-        />
-      ) : null}
-
-      {stagedMatch ? (
-        <ScoresCard
-          key={`scores-${stagedMatch.id}-${cat}`}
-          match={stagedMatch}
-          cat={cat}
-          teams={data.teams}
-          existing={stagedMatch.races.find((r) => r.category === cat)}
-        />
-      ) : null}
 
       {status ? <p className="text-sm text-[var(--ink-soft)]">{status}</p> : null}
     </div>
@@ -481,7 +481,7 @@ function GatesCard({
         1–9, Japanese gate colors. Saving gates does not change the on-air overlay.
         {liveGates ? " These are the live race’s gates." : " Preparing a different race than OBS."}
       </p>
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {match.teams.map((t, teamIndex) => {
           const team = teams.find((x) => x.id === t.teamId);
           const umas = team?.roster.filter((u) => u.category === cat).sort((a, b) => a.slot - b.slot) ?? [];
