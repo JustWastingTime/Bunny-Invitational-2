@@ -260,8 +260,11 @@ export default function OverlayDirectorPage() {
         </div>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-2 lg:items-start">
-        <section className="rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-3">
+      {/* Bento: the match list runs the full height of the left column, the short
+          cards stack beside it, and result entry gets the full width underneath.
+          Placement is explicit at lg, so DOM order only decides the mobile stack. */}
+      <div className="grid gap-3 lg:grid-cols-2">
+        <section className="rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-3 lg:col-start-1 lg:row-start-1 lg:row-span-2">
           <p className="mb-2 text-sm text-[var(--ink-soft)]">
             Matches for the prep desk. Click one to stage it — OBS stays put until you Show.
           </p>
@@ -277,26 +280,7 @@ export default function OverlayDirectorPage() {
           )}
         </section>
 
-        {stagedMatch ? (
-          <GatesCard
-            key={`${stagedMatch.id}-${cat}`}
-            match={stagedMatch}
-            cat={cat}
-            teams={data.teams}
-            gatesAll={o.gatesAll ?? {}}
-            liveMatchId={o.activeMatchId}
-            liveCat={liveCat}
-            onGate={(teamId, slot, gate) => {
-              patchGate({
-                gates: [{ teamId, slot, gate }],
-                gateMatchId: stagedMatch.id,
-                gateCategory: cat,
-              });
-            }}
-          />
-        ) : null}
-
-        <section className="flex flex-col gap-2 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-3">
+        <section className="flex flex-col gap-2 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-3 lg:col-start-2 lg:row-start-1">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="display-lg text-lg">Uma detail · on-air matchup</h2>
             {o.focus ? (
@@ -382,13 +366,36 @@ export default function OverlayDirectorPage() {
         </section>
 
         {stagedMatch ? (
-          <ScoresCard
-            key={`scores-${stagedMatch.id}-${cat}`}
-            match={stagedMatch}
-            cat={cat}
-            teams={data.teams}
-            existing={stagedMatch.races.find((r) => r.category === cat)}
-          />
+          <div className="lg:col-start-2 lg:row-start-2">
+            <GatesCard
+              key={`${stagedMatch.id}-${cat}`}
+              match={stagedMatch}
+              cat={cat}
+              teams={data.teams}
+              gatesAll={o.gatesAll ?? {}}
+              liveMatchId={o.activeMatchId}
+              liveCat={liveCat}
+              onGate={(teamId, slot, gate) => {
+                patchGate({
+                  gates: [{ teamId, slot, gate }],
+                  gateMatchId: stagedMatch.id,
+                  gateCategory: cat,
+                });
+              }}
+            />
+          </div>
+        ) : null}
+
+        {stagedMatch ? (
+          <div className="lg:col-span-2 lg:row-start-3">
+            <ScoresCard
+              key={`scores-${stagedMatch.id}-${cat}`}
+              match={stagedMatch}
+              cat={cat}
+              teams={data.teams}
+              existing={stagedMatch.races.find((r) => r.category === cat)}
+            />
+          </div>
         ) : null}
       </div>
 
@@ -647,7 +654,7 @@ function ScoresCard({
       <p className="text-sm text-[var(--ink-soft)]">
         Places 1–5 for the match staged above. Everyone else is scored from their own placement automatically.
       </p>
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
         {[1, 2, 3, 4, 5].map((place) => (
           <label key={place} className="grid grid-cols-[2rem_1fr] items-center gap-2 text-sm">
             <span className="font-semibold">{place}</span>
@@ -667,7 +674,7 @@ function ScoresCard({
         ))}
       </div>
       {shown?.placements.length ? (
-        <ul className="grid gap-0.5 text-sm text-[var(--ink-soft)] sm:grid-cols-2">
+        <ul className="grid gap-0.5 text-sm text-[var(--ink-soft)] sm:grid-cols-2 lg:grid-cols-3">
           {shown.placements
             .filter((p) => p.place <= 5)
             .map((p) => (
