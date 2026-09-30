@@ -1,0 +1,120 @@
+[{ "category": "sprint", "name": "Hanshin 1200m (inner) (clockwise)", "cid": "10901", "length": 1200, "elevationScale": 8, "statThreshold": "", "positionKeep": [500],
+ "elevation": [
+ { "start": 0, "end": 400, "label": "Flat", "type": "flat" },
+ { "start": 400, "end": 995, "label": "Donwhill", "type": "downhill", "change": -1 },
+ { "start": 995, "end": 1000, "label": "Flat", "type": "flat" },
+ { "start": 1000, "end": 1125, "label": "Uphill", "type": "uphill", "change": 2 },
+ { "start": 1125, "end": 1200, "label": "Flat", "type": "flat" }
+ ],
+ "layout": [
+ { "start": 0, "end": 250, "label": "Straight" },
+ { "start": 250, "end": 550, "label": "Corner 3" },
+ { "start": 550, "end": 844, "label": "Corner 4" },
+ { "start": 844, "end": 1200, "label": "Straight" }
+ ],
+ "zones": [
+ { "start": 0, "end": 200, "label": "Early Race" },
+ { "start": 200, "end": 800, "label": "Mid Race" },
+ { "start": 800, "end": 1000, "label": "Late Race" },
+ { "start": 1000, "end": 1200, "label": "Last spurt" }
+ ]
+},
+{ "category": "mile", "name": "Kyoto 1600m (outer) (clockwise)", "cid": "10805", "length": 1600, "elevationScale": 8, "statThreshold": "Speed", "positionKeep": [667],
+ "elevation": [
+ { "start": 0, "end": 450, "label": "Flat", "type": "flat" },
+ { "start": 450, "end": 550, "label": "Uphill", "type": "uphill", "change": 2 },
+ { "start": 550, "end": 775, "label": "Uphill", "type": "uphill", "change": 1 },
+ { "start": 775, "end": 925, "label": "Downhill", "type": "downhill", "change": -2 },
+ { "start": 925, "end": 1600, "label": "Flat", "type": "flat" }
+ ],
+ "layout": [
+ { "start": 0, "end": 200 },
+ { "start": 200, "end": 700, "label": "Straight" },
+ { "start": 700, "end": 950, "label": "Corner 3" },
+ { "start": 950, "end": 1197, "label": "Corner 4" },
+ { "start": 1197, "end": 1600, "label": "Straight" }
+ ],
+ "zones": [
+ { "start": 0, "end": 267, "label": "Early Race" },
+ { "start": 267, "end": 1067, "label": "Mid Race" },
+ { "start": 1067, "end": 1333, "label": "Late Race" },
+ { "start": 1333, "end": 1600, "label": "Last spurt" }
+ ]
+},
+{ "category": "medium", "name": "Chukyo 2200m (counterclockwise)", "cid": "10705", "length": 2200, "elevationScale": 9, "statThreshold": "Stamina", "positionKeep": [917],
+ "elevation": [
+ { "start": 0, "end": 150, "label": "Downhill", "type": "downhill", "change": -1 },
+ { "start": 150, "end": 250, "label": "Uphill", "type": "uphill", "change": 2 },
+ { "start": 250, "end": 1100, "label": "Flat", "type": "flat" },
+ { "start": 1100, "end": 1875, "label": "Downhill", "type": "downhill", "change": -1 },
+ { "start": 1875, "end": 1975, "label": "Uphill", "type": "uphill", "change": 2 },
+ { "start": 1975, "end": 2200, "label": "Flat", "type": "flat" }
+ ],
+ "layout": [
+ { "start": 0, "end": 500, "label": "Straight" },
+ { "start": 500, "end": 700, "label": "Corner 1" },
+ { "start": 700, "end": 900, "label": "Corner 2" },
+ { "start": 900, "end": 1300, "label": "Straight" },
+ { "start": 1300, "end": 1550, "label": "Corner 3" },
+ { "start": 1550, "end": 1788, "label": "Corner 4" },
+ { "start": 1788, "end": 2200, "label": "Straight" }
+ ],
+ "zones": [
+ { "start": 0, "end": 367, "label": "Early Race" },
+ { "start": 367, "end": 1467, "label": "Mid Race" },
+ { "start": 1467, "end": 1833, "label": "Late Race" },
+ { "start": 1833, "end": 2200, "label": "Last spurt" }
+ ]
+},
+{ "category": "long", "name": "Nakayama 2500m (inner) (clockwise)", "cid": "10506", "length": 2500, "elevationScale": 7, "statThreshold": "", "positionKeep": [1042],
+ "elevation": [
+ { "start": 0, "end": 621, "label": "Flat", "type": "flat" },
+ { "start": 621, "end": 731, "label": "Uphill", "type": "uphill", "change": 2 },
+ { "start": 731, "end": 825, "label": "Flat", "type": "flat" },
+ { "start": 825, "end": 1025, "label": "Uphill", "type": "uphill", "change": 1.5 },
+ { "start": 1025, "end": 1125, "label": "Flat", "type": "flat" },
+ { "start": 1125, "end": 1525, "label": "Downhill", "type": "downhill", "change": -1.5 },
+ { "start": 1525, "end": 2325, "label": "Flat", "type": "flat" },
+ { "start": 2325, "end": 2435, "label": "Uphill", "type": "uphill", "change": 2 },
+ { "start": 2435, "end": 2500, "label": "Flat", "type": "flat" }
+ ],
+ "layout": [
+ { "start": 0, "end": 100 },
+ { "start": 100, "end": 246, "label": "Corner 3" },
+ { "start": 246, "end": 496, "label": "Corner 4" },
+ { "start": 496, "end": 875, "label": "Straight" },
+ { "start": 875, "end": 1125, "label": "Corner 1" },
+ { "start": 1125, "end": 1375, "label": "Corner 2" },
+ { "start": 1375, "end": 1700, "label": "Straight" },
+ { "start": 1700, "end": 1950, "label": "Corner 3" },
+ { "start": 1950, "end": 2190, "label": "Corner 4" },
+ { "start": 2190, "end": 2500, "label": "Straight" }
+ ],
+ "zones": [
+ { "start": 0, "end": 417, "label": "Early Race" },
+ { "start": 417, "end": 1667, "label": "Mid Race" },
+ { "start": 1667, "end": 2083, "label": "Late Race" },
+ { "start": 2083, "end": 2500, "label": "Last spurt" }
+ ]
+},
+{ "category": "dirt", "name": "Sapporo 1700m (clockwise) (dirt)", "cid": "10107", "length": 1700, "elevationScale": null, "statThreshold": "Speed", "positionKeep": [708],
+ "elevation": [
+ { "start": 0, "end": 1700, "label": "Flat", "type": "flat" }
+ ],
+ "layout": [
+ { "start": 0, "end": 240, "label": "Straight" },
+ { "start": 240, "end": 470, "label": "Corner 1" },
+ { "start": 470, "end": 700, "label": "Corner 2" },
+ { "start": 700, "end": 980, "label": "Straight" },
+ { "start": 980, "end": 1210, "label": "Corner 3" },
+ { "start": 1210, "end": 1436, "label": "Corner 4" },
+ { "start": 1436, "end": 1700, "label": "Straight" }
+ ],
+ "zones": [
+ { "start": 0, "end": 283, "label": "Early Race" },
+ { "start": 283, "end": 1133, "label": "Mid Race" },
+ { "start": 1133, "end": 1417, "label": "Late Race" },
+ { "start": 1417, "end": 1700, "label": "Last spurt" }
+ ]
+}
+]

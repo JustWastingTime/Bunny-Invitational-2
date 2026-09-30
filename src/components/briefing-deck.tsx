@@ -2,25 +2,20 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CATEGORY_LABEL, RACE_MAPS, TOURNAMENT_NAME, type Category, type RaceMap } from "@/lib/constants";
+import { courseProfile } from "@/lib/course-profiles";
+import { spriteFileName, spriteLocalPath } from "@/lib/sprites";
+import { COURSE_COLORS, CourseMap } from "@/components/course-map";
 import {
   BRIEF_POINTS,
   briefSlideLabel,
   signed,
+  type BriefClub,
   type BriefPool,
   type BriefRunner,
   type BriefSlide,
-  type BriefStats,
   type BriefUma,
 } from "@/lib/briefing-slides";
 import "./briefing-deck.css";
-
-const STATS: { key: keyof BriefStats; label: string }[] = [
-  { key: "speed", label: "SPD" },
-  { key: "stamina", label: "STA" },
-  { key: "power", label: "POW" },
-  { key: "guts", label: "GUT" },
-  { key: "wisdom", label: "WIT" },
-];
 
 export function BriefingFrame({ label, children }: { label: string; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -92,7 +87,7 @@ function kickerFor(slide: BriefSlide) {
 function bodyFor(slide: BriefSlide) {
   switch (slide.kind) {
     case "title":
-      return <TitleSlide pool={slide.pool} />;
+      return <TitleSlide pool={slide.pool} groups={slide.groups} />;
     case "maps":
       return <MapsSlide />;
     case "map":
@@ -112,33 +107,72 @@ function bodyFor(slide: BriefSlide) {
   }
 }
 
-function TitleSlide({ pool }: { pool: BriefPool }) {
+function TitleSlide({ pool, groups }: { pool: BriefPool; groups: { id: string; label: string; teams: BriefClub[] }[] }) {
+  const playin = pool === "playin";
+  const clubs = groups[0]?.teams ?? [];
   return (
-    <div className="brief-title">
-      <h1>{pool === "playin" ? "Play-in" : "Main tournament"}</h1>
+    <div className="brief-title brief-welcome">
+      <h1>{playin ? "Play-in" : "Main tournament"}</h1>
       <p className="brief-lede">
-        {pool === "playin"
-          ? "Popularity is counted only among the play-in clubs, across every distance."
-          : "Popularity is counted only among the main-field clubs, across every distance."}
+        {playin
+          ? "Seven clubs. Popularity is counted only inside this pool, across every distance."
+          : "Three groups of seven. Popularity is counted across the main field, on every distance."}
       </p>
-      <div className="brief-tiles">
-        <article className="brief-tile">
-          <span>Place</span>
-          <strong>{BRIEF_POINTS.place[1]}</strong>
-          <em>1st, then 5, 3, 2, and 1</em>
-        </article>
-        <article className="brief-tile">
-          <span>Oshi</span>
-          <strong>{signed(BRIEF_POINTS.unique)}</strong>
-          <em>only you bring it, in the top 5. {signed(BRIEF_POINTS.pair)} if one other trainer does</em>
-        </article>
-        <article className="brief-tile is-hot">
-          <span>Meta</span>
-          <strong>{signed(BRIEF_POINTS.first)}</strong>
-          <em>most-used variant. {signed(BRIEF_POINTS.second)} for 2nd and 3rd</em>
-        </article>
-      </div>
+      {playin ? (
+        clubs.length ? (
+          <div className="brief-clubs">
+            {clubs.map((team) => (
+              <ClubCard key={team.id} team={team} />
+            ))}
+          </div>
+        ) : (
+          <p className="brief-note">Play-in clubs are not on the board yet.</p>
+        )
+      ) : (
+        <div className="brief-groups">
+          {groups.map((group) => (
+            <section key={group.id} className="brief-group">
+              <h2>{group.label}</h2>
+              {group.teams.length ? (
+                <ol>
+                  {group.teams.map((team) => (
+                    <li key={team.id}>
+                      <ClubRow team={team} />
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="brief-note">No clubs yet.</p>
+              )}
+            </section>
+          ))}
+        </div>
+      )}
     </div>
+  );
+}
+
+function ClubCard({ team }: { team: BriefClub }) {
+  return (
+    <article className="brief-club-card">
+      <i style={{ background: team.color }} />
+      <div>
+        <strong>{team.short}</strong>
+        {team.name !== team.short ? <span>{team.name}</span> : null}
+      </div>
+    </article>
+  );
+}
+
+function ClubRow({ team }: { team: BriefClub }) {
+  return (
+    <span className="brief-club">
+      <i style={{ background: team.color }} />
+      <span>
+        <strong>{team.short}</strong>
+        {team.name !== team.short ? <em>{team.name}</em> : null}
+      </span>
+    </span>
   );
 }
 
@@ -157,7 +191,7 @@ function MapsSlide() {
               {map.distanceM}m
             </h2>
             <p>{mapLine(map)}</p>
-            <Track map={map} />
+            <CourseFrame category={map.category} compact />
           </article>
         ))}
       </div>
@@ -178,25 +212,29 @@ function MapSlide({ category }: { category: Category }) {
   ];
   return (
     <div className="brief-map-detail">
-      <div>
-        <h1>
-          {map.venue} {map.distanceM}m
-        </h1>
-        <ul className="brief-facts">
-          {facts.map((fact) => (
-            <li key={fact}>{fact}</li>
-          ))}
-        </ul>
-        <div className="brief-legend">
-          <span>
-            <i className="is-straight" /> Straight
-          </span>
-          <span>
-            <i className="is-corner" /> Corner
-          </span>
-        </div>
+      <ul className="brief-facts">
+        {facts.map((fact) => (
+          <li key={fact}>{fact}</li>
+        ))}
+      </ul>
+      <div className="brief-legend">
+        <span><i style={{ background: COURSE_COLORS.flat }} /> Flat</span>
+        <span><i style={{ background: COURSE_COLORS.uphill }} /> Uphill</span>
+        <span><i style={{ background: COURSE_COLORS.downhill }} /> Downhill</span>
+        <span><i style={{ background: COURSE_COLORS.straight }} /> Straight</span>
+        <span><i style={{ background: COURSE_COLORS.corner }} /> Corner</span>
       </div>
-      <Track map={map} labeled />
+      <CourseFrame category={map.category} />
+    </div>
+  );
+}
+
+function CourseFrame({ category, compact = false }: { category: Category; compact?: boolean }) {
+  const profile = courseProfile(category);
+  if (!profile) return null;
+  return (
+    <div className={compact ? "brief-course is-compact" : "brief-course"}>
+      <CourseMap profile={profile} compact={compact} />
     </div>
   );
 }
@@ -316,23 +354,20 @@ function CostumeSlide({ slide }: { slide: Extract<BriefSlide, { kind: "costume" 
   return (
     <div className="brief-stack">
       <div className="brief-costume-head">
-        <Sprite src={uma.spritePath} name={uma.name} />
+        <Sprite spriteId={uma.spriteId} name={uma.name} />
         <div>
           <h1>{uma.name}</h1>
           <Badges uma={uma} />
           <p className="brief-lede">{uma.count} {uma.count === 1 ? "trainer" : "trainers"} in this pool</p>
         </div>
       </div>
-      {uma.runners.length <= 6 ? (
+      {uma.runners.length <= 8 ? (
       <table className="brief-table">
         <thead>
           <tr>
             <th>Team</th>
             <th>Distance</th>
             <th>Trainer</th>
-            {STATS.map((stat) => (
-              <th key={stat.key}>{stat.label}</th>
-            ))}
           </tr>
         </thead>
         <tbody>
@@ -344,9 +379,6 @@ function CostumeSlide({ slide }: { slide: Extract<BriefSlide, { kind: "costume" 
               </td>
               <td>{runner.distance}</td>
               <td>{runner.trainer}</td>
-              {STATS.map((stat) => (
-                <td key={stat.key}>{statText(runner.stats[stat.key])}</td>
-              ))}
             </tr>
           ))}
         </tbody>
@@ -356,7 +388,7 @@ function CostumeSlide({ slide }: { slide: Extract<BriefSlide, { kind: "costume" 
           {uma.runners.slice(0, 28).map((runner, i) => (
             <span key={`${runner.short}-${runner.distance}-${runner.trainer}-${i}`}>
               <i className="brief-dot" style={{ background: runner.color }} />
-              {runner.short} · {runner.distance}
+              {runner.short} · {runner.distance} · {runner.trainer}
             </span>
           ))}
           {uma.runners.length > 28 ? <span>+{uma.runners.length - 28} more</span> : null}
@@ -373,7 +405,7 @@ function CostumesSlide({ slide }: { slide: Extract<BriefSlide, { kind: "costumes
       <div className={`brief-grid ${slide.tone === "unique" ? "brief-grid-unique" : "brief-grid-pair"}`}>
         {slide.umas.map((uma) => (
           <article key={uma.spriteId} className="brief-card">
-            <Sprite src={uma.spritePath} name={uma.name} />
+            <Sprite spriteId={uma.spriteId} name={uma.name} />
             <div className="brief-card-copy">
               <h2>{uma.name}</h2>
               <Badges uma={uma} />
@@ -396,20 +428,10 @@ function CostumesSlide({ slide }: { slide: Extract<BriefSlide, { kind: "costumes
 
 function RunnerLine({ runner }: { runner: BriefRunner }) {
   return (
-    <>
-      <p className="brief-runner">
-        <i className="brief-dot" style={{ background: runner.color }} />
-        {runner.short} · {runner.distance} · {runner.trainer}
-      </p>
-      <p className="brief-statline">
-        {STATS.map((stat) => (
-          <span key={stat.key}>
-            <i>{stat.label}</i>
-            {statText(runner.stats[stat.key])}
-          </span>
-        ))}
-      </p>
-    </>
+    <p className="brief-runner">
+      <i className="brief-dot" style={{ background: runner.color }} />
+      {runner.short} · {runner.distance} · {runner.trainer}
+    </p>
   );
 }
 
@@ -422,21 +444,18 @@ function Badges({ uma }: { uma: BriefUma }) {
   );
 }
 
-function Sprite({ src, name }: { src: string | null; name: string }) {
-  const [ok, setOk] = useState(true);
-  if (!src || !ok) return <span className="brief-fallback">{name.slice(0, 1)}</span>;
-  return <img src={src} alt="" className="brief-sprite" onError={() => setOk(false)} />;
-}
-
-function Track({ map, labeled = false }: { map: RaceMap; labeled?: boolean }) {
+function Sprite({ spriteId, name }: { spriteId: string; name: string }) {
+  const remote = spriteFileName(spriteId);
+  const local = spriteLocalPath(spriteId);
+  const [src, setSrc] = useState(remote);
+  if (!src) return <span className="brief-fallback">{name.slice(0, 1)}</span>;
   return (
-    <div className={labeled ? "brief-track brief-track-tall" : "brief-track"} aria-hidden>
-      {map.layout.map((piece, i) => (
-        <div key={`${piece.label}-${i}`} className={piece.kind === "corner" ? "is-corner" : "is-straight"}>
-          {labeled ? <span>{piece.label}</span> : null}
-        </div>
-      ))}
-    </div>
+    <img
+      src={src}
+      alt=""
+      className="brief-sprite"
+      onError={() => setSrc((current) => (local && current !== local ? local : null))}
+    />
   );
 }
 
@@ -458,6 +477,3 @@ function countPhrase(count: number, noun: string) {
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
 
-function statText(value: number) {
-  return value > 0 ? String(value) : "—";
-}

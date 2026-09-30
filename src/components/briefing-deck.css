@@ -116,6 +116,113 @@
   font-size: 112px;
 }
 
+.brief-welcome h1 {
+  font-size: 84px;
+}
+
+.brief-welcome .brief-lede {
+  max-width: 1400px;
+}
+
+.brief-groups {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  margin-top: 28px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.brief-group {
+  min-width: 0;
+  border: 1px solid rgba(255, 246, 238, 0.16);
+  border-radius: 28px;
+  background: rgba(255, 246, 238, 0.07);
+  padding: 20px 20px 14px;
+}
+
+.brief-group h2 {
+  margin: 0 0 12px;
+  font-size: 32px;
+}
+
+.brief-group ol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.brief-club {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.brief-club i,
+.brief-club-card i {
+  display: block;
+  flex: none;
+  border-radius: 999px;
+}
+
+.brief-club i {
+  width: 12px;
+  height: 36px;
+}
+
+.brief-club strong,
+.brief-club-card strong {
+  display: block;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.brief-club em,
+.brief-club-card span {
+  display: block;
+  margin-top: 2px;
+  font-style: normal;
+  font-size: 16px;
+  font-weight: 700;
+  color: rgba(255, 246, 238, 0.68);
+}
+
+.brief-clubs {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  margin-top: 32px;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 14px;
+}
+
+.brief-club-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(255, 246, 238, 0.16);
+  border-radius: 28px;
+  background: rgba(255, 246, 238, 0.07);
+}
+
+.brief-club-card i {
+  height: 16px;
+}
+
+.brief-club-card div {
+  padding: 18px 14px 16px;
+}
+
+.brief-club-card strong {
+  font-size: 30px;
+}
+
 .brief-tiles,
 .brief-split,
 .brief-places,
@@ -327,11 +434,42 @@
 }
 
 .brief-map-detail {
-  display: grid;
+  display: flex;
   height: 100%;
-  grid-template-columns: 0.8fr 1.2fr;
-  gap: 36px;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.brief-course {
+  display: flex;
+  flex: 1;
   align-items: center;
+  min-height: 0;
+  margin-top: 18px;
+  border-radius: 28px;
+  background: #2b2d31;
+  padding: 6px 10px 2px;
+}
+
+.brief-course.is-compact {
+  flex: none;
+  margin-top: auto;
+  border-radius: 16px;
+  padding: 4px 4px 0;
+}
+
+.course-map {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.course-map text {
+  font-family: var(--font-obs-ui), var(--font-body), "Segoe UI", sans-serif;
+}
+
+.course-map .course-title {
+  font-family: var(--font-obs-display), var(--font-display), sans-serif;
 }
 
 .brief-badges {
@@ -410,12 +548,6 @@
   padding: 11px 12px;
   border-top: 1px solid rgba(255, 246, 238, 0.12);
   font-weight: 800;
-}
-
-.brief-table th:nth-child(n + 4),
-.brief-table td:nth-child(n + 4) {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
 }
 
 .brief-dot {

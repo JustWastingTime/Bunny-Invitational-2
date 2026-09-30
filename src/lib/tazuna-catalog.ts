@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { TOURNAMENT_CATALOG_DATE } from "./constants";
-import { spriteFileName } from "./sprites";
+import { spriteFileName, spriteLocalPath } from "./sprites";
 import type { CatalogSkill, CatalogUma, TazunaCatalog } from "./tazuna-types";
 
 export type { CatalogSkill, CatalogUma, TazunaCatalog } from "./tazuna-types";
@@ -9,7 +9,7 @@ export type { CatalogSkill, CatalogUma, TazunaCatalog } from "./tazuna-types";
 const REPO = "JustWastingTime/TazunaDiscordBot";
 const CHAR_PATH = "assets/character.json";
 const SKILL_PATH = "assets/skill.json";
-const CACHE_VERSION = "3";
+const CACHE_VERSION = "4";
 const FETCH_MS = 8_000;
 const memory = new Map<string, TazunaCatalog>();
 
@@ -67,7 +67,6 @@ function normalizeUma(row: CharRaw): CatalogUma | null {
   if (!row.character_name || !row.id) return null;
   const spriteId = spriteIdFromRow(row);
   const type = row.type || "Original";
-  const local = spriteFileName(spriteId);
   return {
     id: row.id,
     spriteId,
@@ -76,8 +75,8 @@ function normalizeUma(row: CharRaw): CatalogUma | null {
     type,
     costume: row.costume ?? "",
     aliases: asStringList(row.aliases),
-    thumbnail: local ?? row.thumbnail ?? "",
-    fallbackThumb: row.thumbnail ?? "",
+    thumbnail: row.thumbnail || spriteFileName(spriteId) || "",
+    fallbackThumb: spriteLocalPath(spriteId) ?? "",
   };
 }
 

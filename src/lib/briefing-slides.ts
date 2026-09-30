@@ -1,6 +1,7 @@
 import {
   CATEGORIES,
   CATEGORY_LABEL,
+  GROUPS,
   PAIR_BONUS,
   PLACE_POINTS,
   PLAY_IN_STAGE,
@@ -44,8 +45,21 @@ export type BriefUma = {
   runners: BriefRunner[];
 };
 
+export type BriefClub = {
+  id: string;
+  name: string;
+  short: string;
+  color: string;
+};
+
+export type BriefGroup = {
+  id: string;
+  label: string;
+  teams: BriefClub[];
+};
+
 export type BriefSlide =
-  | { id: string; kind: "title"; pool: BriefPool }
+  | { id: string; kind: "title"; pool: BriefPool; groups: BriefGroup[] }
   | { id: string; kind: "maps" }
   | { id: string; kind: "map"; category: Category }
   | { id: string; kind: "places" }
@@ -66,6 +80,7 @@ export function briefingPool(stage: string | null | undefined): BriefPool {
 export function briefSlideGroup(slide: BriefSlide) {
   switch (slide.kind) {
     case "title":
+      return "Welcome";
     case "maps":
     case "map":
       return "Maps";
@@ -125,7 +140,7 @@ export function buildBriefingSlides(teams: PublicTeam[], pool: BriefPool): Brief
   const top = topCount > 0 ? umas.filter((uma) => uma.count === topCount).sort(byName).slice(0, 4) : [];
 
   const slides: BriefSlide[] = [
-    { id: "title", kind: "title", pool },
+    { id: "title", kind: "title", pool, groups: welcomeGroups(teams, pool) },
     { id: "maps", kind: "maps" },
     ...RACE_MAPS.filter((map) => CATEGORIES.includes(map.category)).map((map) => ({
       id: `map-${map.category}`,
@@ -189,6 +204,27 @@ export const BRIEF_POINTS = {
   first: POPULAR_PENALTY_FIRST,
   second: POPULAR_PENALTY_SECOND_THIRD,
 };
+
+function welcomeGroups(teams: PublicTeam[], pool: BriefPool): BriefGroup[] {
+  const kind = pool === "playin" ? TEAM_KIND_PLAYIN : TEAM_KIND_MAIN;
+  const clubs = teams.filter((team) => team.kind === kind).sort(bySlot);
+  const club = (team: PublicTeam): BriefClub => ({
+    id: team.id,
+    name: team.name,
+    short: team.shortName || team.name,
+    color: team.color || "#ffd56a",
+  });
+  if (pool === "playin") return [{ id: "playin", label: "Play-in", teams: clubs.map(club) }];
+  return GROUPS.map((group) => ({
+    id: group,
+    label: `Group ${group}`,
+    teams: clubs.filter((team) => team.group === group).map(club),
+  }));
+}
+
+function bySlot(a: PublicTeam, b: PublicTeam) {
+  return (a.groupSlot ?? 99) - (b.groupSlot ?? 99) || a.name.localeCompare(b.name);
+}
 
 function costumesInPool(teams: PublicTeam[], pool: BriefPool): BriefUma[] {
   const kind = pool === "playin" ? TEAM_KIND_PLAYIN : TEAM_KIND_MAIN;
