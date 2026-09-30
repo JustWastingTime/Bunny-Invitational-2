@@ -1,30 +1,29 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { use, useMemo } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import { CATEGORY_LABEL, CATEGORIES, PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
 import { ComingSoon, DataError, Loading } from "@/components/site-chrome";
+import { UmaRosterCard } from "@/components/uma-roster-card";
 import { usePublicData } from "@/components/use-public-data";
+import { addFinish, emptyFinish } from "@/lib/uma-finish";
 
 export default function TeamDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { data, error } = usePublicData(15000);
-  const team = data?.teams.find((t) => t.id === id);
+  const skillRarity = useSkillRarity(PUBLIC_TOURNAMENT_LIVE);
 
-  const records = useMemo(() => {
-    const map = new Map<string, { starts: number; wins: number; top5: number }>();
+  const finishes = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof emptyFinish>>();
     if (!data) return map;
     for (const match of data.matches) {
       for (const race of match.races) {
-        for (const p of race.placements) {
-          if (p.teamId !== id) continue;
-          const key = `${race.category}:${p.slot}`;
-          const cur = map.get(key) ?? { starts: 0, wins: 0, top5: 0 };
-          cur.starts += 1;
-          if (p.place === 1) cur.wins += 1;
-          if (p.place <= 5) cur.top5 += 1;
-          map.set(key, cur);
+        for (const placement of race.placements) {
+          if (placement.teamId !== id) continue;
+          const key = `${race.category}:${placement.slot}`;
+          const record = map.get(key) ?? emptyFinish();
+          addFinish(record, placement.place, placement.net);
+          map.set(key, record);
         }
       }
     }
@@ -39,6 +38,7 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
     );
   }
   if (!data) return error ? <DataError what="team" /> : <Loading what="team" />;
+  const team = data.teams.find((row) => row.id === id);
   if (!team)
     return (
       <div className="rounded-2xl bg-[var(--surface)] px-5 py-4">
@@ -58,7 +58,7 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
       <header className="grid gap-2 sm:grid-cols-[auto_1fr] sm:items-end sm:gap-4">
         <span className="h-10 w-10 rounded-full" style={{ background: team.color }} />
         <div>
-          <p className="kicker">Group {team.group}</p>
+          <p className="kicker">{team.kind === "playin" ? "Play-in" : `Group ${team.group}`}</p>
           <h1 className="font-[family-name:var(--font-display)] text-5xl leading-none">{team.name}</h1>
           {team.tagline ? <p className="mt-1 text-[var(--ink-soft)]">{team.tagline}</p> : null}
         </div>
@@ -69,52 +69,42 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
           <h2 className="mb-3 font-[family-name:var(--font-display)] text-2xl">{CATEGORY_LABEL[cat]}</h2>
           <div className="grid gap-4 lg:grid-cols-3">
             {team.roster
-              .filter((u) => u.category === cat)
+              .filter((uma) => uma.category === cat)
               .sort((a, b) => a.slot - b.slot)
-              .map((u) => {
-                const rec = records.get(`${u.category}:${u.slot}`) ?? { starts: 0, wins: 0, top5: 0 };
-                const winRate = rec.starts ? Math.round((rec.wins / rec.starts) * 100) : 0;
-                return (
-                  <article key={`${u.category}-${u.slot}`} className="rounded-2xl bg-[var(--surface)] p-3">
-                    <div className="flex gap-3">
-                      <div className="grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-xl bg-[var(--paper-2)]">
-                        {u.spritePath ? (
-                          <Image src={u.spritePath} alt={u.umaName} width={96} height={96} className="h-24 w-24 object-contain" />
-                        ) : (
-                          <span className="text-xs text-[var(--ink-soft)]">no art</span>
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="font-[family-name:var(--font-display)] text-xl leading-tight">{u.umaName}</h3>
-                        <p className="text-sm text-[var(--ink-soft)]">
-                          {u.trainer} · {u.rating ?? "—"} · {u.styleLabel ?? "—"}
-                        </p>
-                        <p className="mt-1 text-xs">
-                          {u.isUnique ? <span className="mr-2 font-semibold text-[var(--mint)]">Unique</span> : null}
-                          {u.popularityRank && u.popularityRank <= 3 && u.pickCount > 1 ? (
-                            <span className="mr-2 font-semibold">Popular #{u.popularityRank}</span>
-                          ) : null}
-                          Apt {u.aptitudes.terrain ?? "—"}/{u.aptitudes.distance ?? "—"}/{u.aptitudes.style ?? "—"} · Win {winRate}%
-                        </p>
-                      </div>
-                    </div>
-                    <dl className="mt-3 grid grid-cols-5 gap-px bg-[var(--line)] text-center text-xs">
-                      {Object.entries(u.stats).map(([k, v]) => (
-                        <div key={k} className="bg-[var(--paper)] py-1">
-                          <dt className="uppercase text-[var(--ink-soft)]">{k.slice(0, 3)}</dt>
-                          <dd className="font-semibold">{v}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                    {u.skills.length ? (
-                      <p className="mt-2 text-xs text-[var(--ink-soft)]">{u.skills.join(" · ")}</p>
-                    ) : null}
-                  </article>
-                );
-              })}
+              .map((uma) => (
+                <UmaRosterCard
+                  key={`${uma.category}-${uma.slot}`}
+                  uma={uma}
+                  finish={finishes.get(`${uma.category}:${uma.slot}`)}
+                  skillRarity={skillRarity}
+                />
+              ))}
           </div>
         </section>
       ))}
     </div>
   );
+}
+
+function useSkillRarity(enabled: boolean) {
+  const [rarity, setRarity] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    fetch("/api/skill-rarity", { cache: "no-store" })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("skills");
+        return res.json() as Promise<{ rarity?: Record<string, string> }>;
+      })
+      .then((json) => {
+        if (!cancelled) setRarity(json.rarity ?? {});
+      })
+      .catch(() => {
+        /* white chips, first skill still rainbow */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled]);
+  return rarity;
 }

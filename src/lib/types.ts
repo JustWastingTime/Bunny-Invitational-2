@@ -44,6 +44,11 @@ export type PublicMatch = {
   races: PublicRace[];
 };
 
+export type UmaFinishRecord = {
+  places: [number, number, number, number, number];
+  points: number;
+};
+
 export type PublicUma = {
   category: string;
   slot: number;
@@ -138,4 +143,12 @@ export type PublicPayload = {
     teamPowerBySkills: { teamId: string; name: string; shortName: string; color: string; totalStats: number; skills: number; uniquePicks: number }[];
     mostUniqueTeam: { teamId: string; name: string; uniquePicks: number } | null;
   };
+};
+
+export type PlayInPayload = {
+  updatedAt: string;
+  teams: PublicTeam[];
+  skillRarity: Record<string, string>;
+  finishes: Record<string, UmaFinishRecord>;
+  stats: PublicPayload["stats"];
 };

@@ -314,7 +314,7 @@ function umaBaseName(name: string) {
   return name.replace(/\s*\(.*\)\s*$/, "").trim();
 }
 
-function buildStats(
+export function buildStats(
   teams: {
     id: string;
     name: string;

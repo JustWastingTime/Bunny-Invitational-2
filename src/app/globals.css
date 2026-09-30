@@ -465,3 +465,25 @@ html.dark .site-grain {
     transform: none;
   }
 }
+
+.skill-chip {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0.12rem 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--chip-ink);
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.skill-chip-rare {
+  background: var(--gold);
+  box-shadow: none;
+}
+
+.skill-chip-unique {
+  background: linear-gradient(100deg, #ff9ec4 0%, #ffe08a 32%, #b6f0c8 58%, #9ecbff 78%, #e4b6ff 100%);
+  box-shadow: none;
+}

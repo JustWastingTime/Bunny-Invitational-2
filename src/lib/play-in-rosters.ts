@@ -1,8 +1,14 @@
-import { CATEGORIES, STYLE_LABEL, TEAM_KIND_PLAYIN } from "./constants";
+import { CATEGORIES, PLAY_IN_STAGE, STYLE_LABEL, TEAM_KIND_PLAYIN } from "./constants";
 import { prisma } from "./prisma";
 import { popularityFromRosters } from "./scoring";
 import { parseSkills, spriteFileName } from "./sprites";
-import type { PublicTeam, PublicUma } from "./types";
+import { scoreMatch } from "./standings";
+import { getTazunaCatalog } from "./tazuna-catalog";
+import { buildStats } from "./tournament";
+import type { PlayInPayload, PublicTeam, PublicUma, UmaFinishRecord } from "./types";
+import { addFinish, emptyFinish, finishKey } from "./uma-finish";
+
+export type { PlayInPayload };
 
 function blankUma(category: string, slot: number): PublicUma {
   return {
@@ -24,18 +30,65 @@ function blankUma(category: string, slot: number): PublicUma {
   };
 }
 
-export async function buildPlayInRosters(): Promise<{ updatedAt: string; teams: PublicTeam[] }> {
-  const teams = await prisma.team.findMany({
-    where: { kind: TEAM_KIND_PLAYIN },
-    include: { umaEntries: true },
-  });
+export async function buildPlayInRosters(): Promise<PlayInPayload> {
+  const [teams, matches] = await Promise.all([
+    prisma.team.findMany({
+      where: { kind: TEAM_KIND_PLAYIN },
+      include: { umaEntries: true },
+    }),
+    prisma.match.findMany({
+      where: { stage: PLAY_IN_STAGE },
+      include: { teams: true, races: { include: { placements: true } } },
+      orderBy: { sortOrder: "asc" },
+    }),
+  ]);
   teams.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
 
-  const pop = popularityFromRosters(teams.flatMap((team) => team.umaEntries));
+  const rosterEntries = teams.flatMap((team) =>
+    team.umaEntries.map((entry) => ({
+      teamId: team.id,
+      category: entry.category,
+      slot: entry.slot,
+      spriteId: entry.spriteId,
+    })),
+  );
+  const pop = popularityFromRosters(rosterEntries);
+  const finishes: Record<string, UmaFinishRecord> = {};
+  const scoredMatches = matches.map((match) =>
+    scoreMatch(
+      {
+        id: match.id,
+        stage: match.stage,
+        group: match.group,
+        day: match.day,
+        sortOrder: match.sortOrder,
+        label: match.label,
+        setNumber: match.setNumber,
+        teams: match.teams.map((team) => ({ slot: team.slot, teamId: team.teamId })),
+        races: match.races.map((race) => ({
+          category: race.category,
+          placements: race.placements.map((placement) => ({
+            place: placement.place,
+            teamId: placement.teamId,
+            slot: placement.slot,
+          })),
+        })),
+      },
+      rosterEntries,
+      pop,
+    ),
+  );
 
-  return {
-    updatedAt: new Date().toISOString(),
-    teams: teams.map((team) => ({
+  for (const scored of scoredMatches) {
+    for (const racer of scored.racers) {
+      const key = finishKey(racer.teamId, racer.category, racer.slot);
+      const record = finishes[key] ?? emptyFinish();
+      addFinish(record, racer.place, racer.net);
+      finishes[key] = record;
+    }
+  }
+
+  const publicTeams: PublicTeam[] = teams.map((team) => ({
       id: team.id,
       name: team.name,
       shortName: team.shortName ?? team.name,
@@ -75,6 +128,51 @@ export async function buildPlayInRosters(): Promise<{ updatedAt: string; teams: 
           } satisfies PublicUma;
         }),
       ),
+    }));
+
+  const usedSkills = new Set(publicTeams.flatMap((team) => team.roster.flatMap((uma) => uma.skills)));
+  const skillRarity: Record<string, string> = {};
+  try {
+    const catalog = await getTazunaCatalog();
+    for (const skill of catalog.skills) {
+      if (usedSkills.has(skill.name)) skillRarity[skill.name] = skill.rarity || "normal";
+    }
+  } catch {
+    /* chips fall back to white, and the first skill stays rainbow */
+  }
+
+  const stats = buildStats(
+    publicTeams.map((team) => ({
+      ...team,
+      roster: team.roster.filter((uma) => uma.spriteId),
     })),
+    CATEGORIES.map((category) => ({
+      races: [
+        {
+          category,
+          placements: scoredMatches.flatMap((scored) =>
+            scored.racers
+              .filter((racer) => racer.category === category)
+              .map((racer) => ({
+                place: racer.place,
+                teamId: racer.teamId,
+                slot: racer.slot,
+                umaName: "",
+                spriteId: racer.spriteId,
+                net: racer.net,
+              })),
+          ),
+        },
+      ],
+    })),
+    pop,
+  );
+
+  return {
+    updatedAt: new Date().toISOString(),
+    teams: publicTeams,
+    skillRarity,
+    finishes,
+    stats,
   };
 }
