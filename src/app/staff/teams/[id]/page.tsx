@@ -47,9 +47,13 @@ function emptyUma(category: string, slot: number): FormUma {
   };
 }
 
-function padRoster(rows: PublicUma[]): FormUma[] {
+function padRoster(rows: (PublicUma & { entered?: boolean })[]): FormUma[] {
   return CATEGORIES.flatMap((cat) =>
-    [0, 1, 2].map((slot) => rows.find((u) => u.category === cat && u.slot === slot) ?? emptyUma(cat, slot)),
+    [0, 1, 2].map((slot) => {
+      const found = rows.find((u) => u.category === cat && u.slot === slot);
+      if (!found) return emptyUma(cat, slot);
+      return { ...found, entered: Boolean(found.entered) };
+    }),
   );
 }
 
