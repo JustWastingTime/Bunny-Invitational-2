@@ -9,7 +9,7 @@ export type { CatalogSkill, CatalogUma, TazunaCatalog } from "./tazuna-types";
 const REPO = "JustWastingTime/TazunaDiscordBot";
 const CHAR_PATH = "assets/character.json";
 const SKILL_PATH = "assets/skill.json";
-const CACHE_VERSION = "2";
+const CACHE_VERSION = "3";
 const FETCH_MS = 8_000;
 const memory = new Map<string, TazunaCatalog>();
 
@@ -82,7 +82,9 @@ function normalizeUma(row: CharRaw): CatalogUma | null {
 }
 
 function normalizeSkill(row: SkillRaw): CatalogSkill | null {
-  if (!row.skill_name || row.note) return null;
+  // `note` is a section banner Tazuna attaches to the first skill in a group
+  // (Right-Handed, Professor of Curvature, and the rest of those lead-ins).
+  if (!row.skill_name) return null;
   return {
     name: row.skill_name,
     aliases: asStringList(row.aliases),
@@ -115,14 +117,13 @@ async function fetchRawJson(filePath: string, sha: string | null) {
 }
 
 async function readCached(asOf: string): Promise<TazunaCatalog | null> {
-  const dir = cacheDir(asOf);
-  for (const name of [`catalog-v${CACHE_VERSION}.json`, "catalog.json"]) {
-    try {
-      const cached = JSON.parse(await readFile(path.join(dir, name), "utf8")) as TazunaCatalog;
-      if (cached?.umas?.length && cached?.skills?.length) return cached;
-    } catch {
-      /* miss */
-    }
+  try {
+    const cached = JSON.parse(
+      await readFile(path.join(cacheDir(asOf), `catalog-v${CACHE_VERSION}.json`), "utf8"),
+    ) as TazunaCatalog;
+    if (cached?.umas?.length && cached?.skills?.length) return cached;
+  } catch {
+    /* miss — older caches dropped section-leading skills */
   }
   return null;
 }

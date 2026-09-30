@@ -37,6 +37,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       aptitudes: { terrain: e.aptTerrain, distance: e.aptDistance, style: e.aptStyle },
       stats: { speed: e.speed, stamina: e.stamina, power: e.power, guts: e.guts, wisdom: e.wisdom },
       skills: parseSkills(e.skillsJson),
+      entered: e.entered,
       isUnique: false,
       popularityRank: null,
       pickCount: 0,

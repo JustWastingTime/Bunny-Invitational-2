@@ -10,7 +10,7 @@ import { SkillInput, UmaPicker, staffFieldClass as field } from "@/components/st
 import { useStaffToast } from "@/components/staff-toast";
 import { suggestedTeamSlug } from "@/lib/team-slug";
 
-type FormUma = PublicUma;
+type FormUma = PublicUma & { entered: boolean };
 
 const STATS = [
   { key: "speed", label: "Speed" },
@@ -40,6 +40,7 @@ function emptyUma(category: string, slot: number): FormUma {
     aptitudes: { terrain: "", distance: "", style: "" },
     stats: { speed: 0, stamina: 0, power: 0, guts: 0, wisdom: 0 },
     skills: [],
+    entered: false,
     isUnique: false,
     popularityRank: null,
     pickCount: 0,
@@ -203,6 +204,7 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
             guts: u.stats.guts,
             wisdom: u.stats.wisdom,
             skills: u.skills,
+            entered: u.entered,
           })),
         }),
       });
@@ -360,6 +362,7 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
     () => roster.filter((u) => u.category === tab).sort((a, b) => a.slot - b.slot),
     [roster, tab],
   );
+  const inputted = roster.filter((u) => u.entered).length;
 
   return (
     <div className="grid gap-6">
@@ -463,18 +466,28 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
       </section>
 
       <section className="grid gap-4">
+        <p className="text-sm text-[var(--ink-soft)]">
+          <span className="font-extrabold text-[var(--ink)]">
+            {inputted}/{roster.length || 15}
+          </span>{" "}
+          players marked inputted
+          {roster.length && inputted < roster.length ? ` · ${roster.length - inputted} still open on this team` : roster.length ? " · this team is locked in" : ""}
+        </p>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setTab(cat)}
-                className={`rounded-full px-4 py-1.5 text-sm ${tab === cat ? "bg-[var(--coral)] text-white" : "bg-[var(--surface-2)] text-[var(--ink-soft)]"}`}
-              >
-                {CATEGORY_LABEL[cat]}
-              </button>
-            ))}
+            {CATEGORIES.map((cat) => {
+              const done = roster.filter((u) => u.category === cat && u.entered).length;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setTab(cat)}
+                  className={`rounded-full px-4 py-1.5 text-sm ${tab === cat ? "bg-[var(--coral)] text-white" : "bg-[var(--surface-2)] text-[var(--ink-soft)]"}`}
+                >
+                  {CATEGORY_LABEL[cat]} {done}/3
+                </button>
+              );
+            })}
           </div>
           <label className="flex items-center gap-2 text-xs text-[var(--ink-soft)]">
             Tazuna snapshot
@@ -530,10 +543,37 @@ function UmaCard({
 }) {
   const thumb = uma.spritePath || spriteFileName(uma.spriteId);
   return (
-    <article className="rounded-3xl bg-[var(--surface-strong)] p-4 ring-1 ring-[var(--line)]">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-[family-name:var(--font-display)] text-xl">Uma {uma.slot + 1}</h2>
-        {uma.spriteId ? <span className="font-mono text-xs text-[var(--ink-soft)]">{uma.spriteId}</span> : null}
+    <article
+      className={`rounded-3xl bg-[var(--surface-strong)] p-4 ring-1 ${uma.entered ? "ring-[var(--mint)]" : "ring-[var(--line)]"}`}
+    >
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-[family-name:var(--font-display)] text-xl">
+          {uma.trainer.trim() || `Uma ${uma.slot + 1}`}
+        </h2>
+        <div className="flex items-center gap-3">
+          {uma.spriteId ? <span className="font-mono text-xs text-[var(--ink-soft)]">{uma.spriteId}</span> : null}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={uma.entered}
+            onClick={() => onChange({ entered: !uma.entered })}
+            className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-extrabold ${
+              uma.entered
+                ? "bg-[var(--mint)] text-[var(--paper)]"
+                : "bg-[var(--surface-2)] text-[var(--ink-soft)] ring-1 ring-[var(--line)]"
+            }`}
+          >
+            <span
+              className={`relative h-5 w-9 rounded-full ${uma.entered ? "bg-black/15" : "bg-[var(--line-strong)]"}`}
+              aria-hidden
+            >
+              <span
+                className={`absolute top-0.5 h-4 w-4 rounded-full bg-[var(--paper)] ${uma.entered ? "left-4" : "left-0.5"}`}
+              />
+            </span>
+            {uma.entered ? "Inputted" : "Not inputted"}
+          </button>
+        </div>
       </div>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <div className="grid gap-3">

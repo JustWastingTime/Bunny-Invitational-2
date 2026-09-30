@@ -42,6 +42,7 @@ model UmaEntry {
   guts        Int    @default(0)
   wisdom      Int    @default(0)
   skillsJson  String @default("[]")
+  entered     Boolean @default(false)
 
   @@unique([teamId, category, slot])
 }

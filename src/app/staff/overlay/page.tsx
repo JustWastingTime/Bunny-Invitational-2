@@ -654,12 +654,15 @@ function ScoresCard({
       <p className="text-sm text-[var(--ink-soft)]">
         Places 1–5 for the match staged above. Everyone else is scored from their own placement automatically.
       </p>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+      {/* minmax(0,1fr) and min-w-0 let the native selects actually shrink: a bare
+          1fr resolves to minmax(auto,1fr), and a select refuses to go below the
+          intrinsic width set by its longest option, so the column overflows. */}
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {[1, 2, 3, 4, 5].map((place) => (
-          <label key={place} className="grid grid-cols-[2rem_1fr] items-center gap-2 text-sm">
+          <label key={place} className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center gap-2 text-sm">
             <span className="font-semibold">{place}</span>
             <select
-              className="rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] px-2 py-1.5"
+              className="w-full min-w-0 rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] px-2 py-1.5"
               value={places[place] ?? placeKey(shown?.placements.find((p) => p.place === place))}
               onChange={(e) => setPlace(place, e.target.value)}
             >
