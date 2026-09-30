@@ -112,6 +112,7 @@ export type PublicPayload = {
     gates: { teamId: string; slot: number; gate: number }[];
     gatesAll: Record<string, number>;
     focus: { teamId: string; slot: number } | null;
+    slide: number;
   };
   now: Cue;
   next: Cue;

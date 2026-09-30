@@ -17,7 +17,7 @@ export function suggestedTeamSlug(clubCode: string | null | undefined, name?: st
 
 export function rewriteOverlayTeamIds(gatesJson: string, oldId: string, newId: string) {
   if (oldId === newId) return gatesJson;
-  const { gates, focus } = parseOverlayBlob(gatesJson);
+  const { gates, focus, slide } = parseOverlayBlob(gatesJson);
   const next: Record<string, number> = {};
   for (const [key, gate] of Object.entries(gates)) {
     const last = key.lastIndexOf("|");
@@ -40,5 +40,5 @@ export function rewriteOverlayTeamIds(gatesJson: string, oldId: string, newId: s
     next[rewritten] = gate;
   }
   const nextFocus = focus && focus.teamId === oldId ? { teamId: newId, slot: focus.slot } : focus;
-  return stringifyOverlayBlob(next, nextFocus);
+  return stringifyOverlayBlob(next, nextFocus, slide);
 }

@@ -8,7 +8,7 @@ import { noStoreHeaders } from "@/lib/no-store";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const VIEWS = ["scoreboard", "matchup", "race", "gates", "groups", "pause"] as const;
+const VIEWS = ["scoreboard", "matchup", "race", "gates", "groups", "pause", "slides"] as const;
 
 export async function POST(request: Request) {
   return PUT(request);
@@ -26,6 +26,7 @@ export async function PUT(request: Request) {
     gateMatchId?: string | null;
     gateCategory?: string;
     focus?: { teamId: string; slot: number } | null;
+    slide?: number;
   };
   const category = body.activeCategory && CATEGORIES.includes(body.activeCategory as (typeof CATEGORIES)[number])
     ? body.activeCategory
@@ -44,6 +45,7 @@ export async function PUT(request: Request) {
   const blob = parseOverlayBlob(current.gatesJson);
   let gates = blob.gates;
   let focus = blob.focus;
+  let slide = blob.slide;
   if (body.gates && gateMatchId) {
     gates = mergeRaceGates(gates, gateMatchId, gateCat, body.gates);
   }
@@ -52,13 +54,16 @@ export async function PUT(request: Request) {
   } else if (body.focus) {
     focus = body.focus;
   }
+  if (body.slide !== undefined && Number.isFinite(Number(body.slide))) {
+    slide = Math.max(0, Math.min(500, Math.trunc(Number(body.slide))));
+  }
 
   const overlay = await persistOverlayRow({
     activeMatchId: body.activeMatchId !== undefined ? body.activeMatchId : current.activeMatchId,
     activeCategory: category ?? current.activeCategory,
     view: view ?? current.view,
     visible: body.visible !== undefined ? body.visible : current.visible,
-    gatesJson: stringifyOverlayBlob(gates, focus),
+    gatesJson: stringifyOverlayBlob(gates, focus, slide),
   });
   return NextResponse.json({ ok: true, overlay: overlayFromRow(overlay), focus }, { headers: noStoreHeaders() });
 }

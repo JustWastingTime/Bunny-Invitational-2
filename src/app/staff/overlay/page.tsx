@@ -1,6 +1,8 @@
 "use client";
 
-import { memo, startTransition, useMemo, useRef, useState } from "react";
+import { memo, startTransition, useEffect, useMemo, useRef, useState } from "react";
+import { BriefingDeck, BriefingFrame } from "@/components/briefing-deck";
+import { briefSlideGroup, briefSlideLabel, briefingPool, buildBriefingSlides } from "@/lib/briefing-slides";
 import { CATEGORIES, CATEGORY_LABEL } from "@/lib/constants";
 import { defaultGate, gateKey } from "@/lib/overlay-gates";
 import { usePublicData } from "@/components/use-public-data";
@@ -17,6 +19,7 @@ const VIEWS = [
   { id: "scoreboard", label: "Show Scoreboard" },
   { id: "groups", label: "Show Group Table" },
   { id: "pause", label: "Show Pause" },
+  { id: "slides", label: "Show Slides" },
 ] as const;
 
 export default function OverlayDirectorPage() {
@@ -26,6 +29,8 @@ export default function OverlayDirectorPage() {
   const toast = useStaffToast();
   const [stagedMatchId, setStagedMatchId] = useState<string | null | undefined>(undefined);
   const [stagedCat, setStagedCat] = useState<string | null | undefined>(undefined);
+  const [cueSlide, setCueSlide] = useState<number | null>(null);
+  const [sentSlide, setSentSlide] = useState<number | null>(null);
   const [onAir, setOnAir] = useState<{
     view: string;
     visible: boolean;
@@ -51,6 +56,23 @@ export default function OverlayDirectorPage() {
   }, [data, prepMatchId, liveMatch]);
 
   const pending = Boolean(o && (prepMatchId !== o.activeMatchId || cat !== liveCat));
+  const cuePool = briefingPool(stagedMatch?.stage);
+  const airPool = briefingPool(liveMatch?.stage);
+  const deck = useMemo(() => buildBriefingSlides(data?.teams ?? [], cuePool), [data?.teams, cuePool]);
+  const airDeck = useMemo(() => buildBriefingSlides(data?.teams ?? [], airPool), [data?.teams, airPool]);
+  const rawCue = cueSlide ?? data?.overlay.slide ?? 0;
+  const index = deck.length ? Math.min(Math.max(0, rawCue), deck.length - 1) : 0;
+  const airSlide = sentSlide ?? data?.overlay.slide ?? 0;
+  const airIndex = airDeck.length ? Math.min(Math.max(0, airSlide), airDeck.length - 1) : 0;
+  const resolvedPrepId = stagedMatch?.id ?? null;
+  const slidesPending = Boolean(o && resolvedPrepId !== (o.activeMatchId ?? null));
+  const cue = deck[index];
+  const airBrief = airDeck[airIndex];
+
+  useEffect(() => {
+    if (sentSlide == null) return;
+    if ((data?.overlay.slide ?? 0) === sentSlide) setSentSlide(null);
+  }, [data?.overlay.slide, sentSlide]);
 
   const liveQueue = useRef(Promise.resolve());
   const gateQueue = useRef(Promise.resolve());
@@ -130,6 +152,40 @@ export default function OverlayDirectorPage() {
 
   if (!data || !o) return <p>Loading overlay director…</p>;
 
+  const showSlide = (i: number) => {
+    const next = clampSlide(i, deck.length);
+    setCueSlide(next);
+    setSentSlide(next);
+    setOnAir({
+      view: "slides",
+      visible: true,
+      activeMatchId: resolvedPrepId,
+      activeCategory: o.activeCategory,
+    });
+    void patchLive({
+      view: "slides",
+      slide: next,
+      activeMatchId: resolvedPrepId,
+      visible: true,
+      focus: null,
+    });
+  };
+
+  const cueSlideTo = (i: number) => {
+    const next = clampSlide(i, deck.length);
+    setCueSlide(next);
+    if (o.view === "slides" && o.visible && !slidesPending) {
+      setSentSlide(next);
+      setOnAir({
+        view: "slides",
+        visible: true,
+        activeMatchId: o.activeMatchId,
+        activeCategory: o.activeCategory,
+      });
+      void patchLive({ view: "slides", slide: next });
+    }
+  };
+
   const liveUmas = liveMatch
     ? liveMatch.teams.flatMap((t, teamIndex) => {
         const team = data.teams.find((x) => x.id === t.teamId);
@@ -153,8 +209,8 @@ export default function OverlayDirectorPage() {
         <h1 className="display-lg text-2xl">Overlay director</h1>
         <p className="text-sm text-[var(--ink-soft)]">
           OBS browser source: <code className="rounded bg-[var(--peach)] px-1">/obs</code>. Match and distance below are
-          a prep desk — OBS only changes when you hit a Show button. Gates and the race result both apply to that same
-          staged match.
+          a prep desk — OBS only changes when you hit a Show button. The briefing deck follows the prep match, and
+          Previous / Next update OBS while slides are already on air.
         </p>
       </div>
 
@@ -165,9 +221,11 @@ export default function OverlayDirectorPage() {
             <p className="mt-1 font-[family-name:var(--font-display)] text-xl">
               {o.visible === false
                 ? "Hidden"
-                : `${liveMatch?.label ?? "No match"} · ${CATEGORY_LABEL[liveCat as keyof typeof CATEGORY_LABEL] ?? liveCat} · ${liveViewLabel(o.view)}${
-                    o.focus ? " · uma detail" : ""
-                  }`}
+                : o.view === "slides"
+                  ? `${liveMatch?.label ?? "No match"} · Slides · ${airBrief ? briefSlideLabel(airBrief) : "Briefing"} · ${airIndex + 1}/${Math.max(airDeck.length, 1)}`
+                  : `${liveMatch?.label ?? "No match"} · ${CATEGORY_LABEL[liveCat as keyof typeof CATEGORY_LABEL] ?? liveCat} · ${liveViewLabel(o.view)}${
+                      o.focus ? " · uma detail" : ""
+                    }`}
             </p>
             {pending ? (
               <p className="mt-1 text-sm text-[var(--coral-ink)]">
@@ -216,12 +274,15 @@ export default function OverlayDirectorPage() {
           <div className="flex flex-wrap gap-2">
             {VIEWS.map((v) => {
               const locked = "needsRace" in v && !(o.view === "race" || o.view === "gates");
-              const on = o.visible && o.view === v.id && !pending;
+              const on =
+                v.id === "slides"
+                  ? Boolean(o.visible && o.view === "slides" && !slidesPending)
+                  : o.visible && o.view === v.id && !pending;
               return (
                 <button
                   key={v.id}
                   type="button"
-                  onClick={() => goLive(v.id)}
+                  onClick={() => (v.id === "slides" ? showSlide(index) : goLive(v.id))}
                   disabled={busy || locked}
                   aria-pressed={on}
                   title={locked ? "Show Race first" : undefined}
@@ -259,6 +320,18 @@ export default function OverlayDirectorPage() {
           </div>
         </div>
       </div>
+
+      <BriefingDesk
+        deck={deck}
+        index={index}
+        pool={cuePool}
+        cue={cue}
+        busy={busy}
+        live={Boolean(o.visible && o.view === "slides" && !slidesPending && airIndex === index && cuePool === airPool)}
+        detached={slidesPending}
+        onCue={cueSlideTo}
+        onShow={() => showSlide(index)}
+      />
 
       {/* Bento: the match list runs the full height of the left column, the short
           cards stack beside it, and result entry gets the full width underneath.
@@ -421,7 +494,107 @@ function liveViewLabel(view: string) {
   if (view === "scoreboard") return "Scoreboard";
   if (view === "groups") return "Group table";
   if (view === "pause") return "Pause";
+  if (view === "slides") return "Slides";
   return "Match up";
+}
+
+function clampSlide(index: number, length: number) {
+  if (length <= 0) return 0;
+  return Math.min(Math.max(0, index), length - 1);
+}
+
+function BriefingDesk({
+  deck,
+  index,
+  pool,
+  cue,
+  busy,
+  live,
+  detached,
+  onCue,
+  onShow,
+}: {
+  deck: ReturnType<typeof buildBriefingSlides>;
+  index: number;
+  pool: ReturnType<typeof briefingPool>;
+  cue: ReturnType<typeof buildBriefingSlides>[number] | undefined;
+  busy: boolean;
+  live: boolean;
+  detached: boolean;
+  onCue: (index: number) => void;
+  onShow: () => void;
+}) {
+  let group = "";
+  return (
+    <section
+      className="grid gap-3 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-3"
+      aria-label="Stream briefing"
+      onKeyDown={(event) => {
+        if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+        const tag = (event.target as HTMLElement).tagName;
+        if (tag === "SELECT" || tag === "INPUT" || tag === "TEXTAREA") return;
+        event.preventDefault();
+        onCue(index + (event.key === "ArrowRight" ? 1 : -1));
+      }}
+    >
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">Stream briefing</p>
+          <h2 className="font-[family-name:var(--font-display)] text-2xl">{cue ? briefSlideLabel(cue) : "Briefing"}</h2>
+          <p className="max-w-3xl text-sm text-[var(--ink-soft)]">
+            {pool === "playin" ? "Play-in pool" : "Main field"}. Built from the current rosters, so a submission change
+            updates the penalized and oshi variants. While slides are on air, Previous and Next update OBS. Otherwise
+            they only move this preview.
+            {detached ? " The prep match differs from OBS, so the arrows stay on this preview until you show the slide." : ""}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="min-h-11 rounded-full bg-[var(--surface)] px-4 py-2 ring-1 ring-[var(--line)]" onClick={() => onCue(index - 1)} disabled={busy || index <= 0}>
+            Previous
+          </button>
+          <button
+            type="button"
+            className="min-h-11 rounded-full bg-[var(--surface)] px-4 py-2 ring-1 ring-[var(--line)]"
+            onClick={() => onCue(index + 1)}
+            disabled={busy || index >= deck.length - 1}
+          >
+            Next
+          </button>
+          <button type="button" className="min-h-11 rounded-full bg-[var(--gold)] px-4 py-2" onClick={onShow} disabled={busy || !cue} aria-pressed={live}>
+            {live ? "On air" : "Show this slide"}
+          </button>
+        </div>
+      </div>
+      <div className="grid items-start gap-3 lg:grid-cols-[18rem_minmax(0,1fr)]">
+        <div className="grid max-h-[32rem] content-start gap-1 overflow-auto pr-1">
+          {deck.map((slide, i) => {
+            const nextGroup = briefSlideGroup(slide);
+            const showGroup = nextGroup !== group;
+            group = nextGroup;
+            return (
+              <div key={slide.id} className="grid gap-1">
+                {showGroup ? <p className="mt-2 px-1 text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">{nextGroup}</p> : null}
+                <button
+                  id={`brief-slide-${i}`}
+                  type="button"
+                  aria-current={i === index ? "true" : undefined}
+                  onClick={() => onCue(i)}
+                  className={`rounded-xl px-3 py-2 text-left text-sm ${i === index ? "bg-[var(--gold)]" : "bg-[var(--surface)]"}`}
+                >
+                  {briefSlideLabel(slide)}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+        {cue ? (
+          <BriefingFrame label={briefSlideLabel(cue)}>
+            <BriefingDeck slide={cue} index={index} total={deck.length} pool={pool} />
+          </BriefingFrame>
+        ) : null}
+      </div>
+    </section>
+  );
 }
 
 function matchesForPrep(matches: PublicMatch[], prep: PublicMatch | null) {

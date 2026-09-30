@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { BriefingDeck } from "@/components/briefing-deck";
+import { briefingPool, buildBriefingSlides } from "@/lib/briefing-slides";
 import { CATEGORIES, CATEGORY_LABEL, RACE_MAPS, STYLE_LABEL } from "@/lib/constants";
 import { defaultGate } from "@/lib/overlay-gates";
 import type { Cue, GroupStandingRow, PublicMatch, PublicPayload, PublicTeam, PublicUma } from "@/lib/types";
@@ -25,6 +27,7 @@ export default function ObsPage() {
     category: string;
     matchId: string;
     focus: string;
+    slide: string;
   } | null>(null);
   const [phase, setPhase] = useState<"in" | "out">("in");
   const shownRef = useRef(shown);
@@ -127,22 +130,29 @@ export default function ObsPage() {
   }, []);
 
   const viewKey = data
-    ? `${data.overlay.view}|${data.overlay.activeCategory || "sprint"}|${data.match?.id ?? ""}|${data.overlay.focus ? `${data.overlay.focus.teamId}:${data.overlay.focus.slot}` : ""}`
+    ? `${data.overlay.view}|${data.overlay.activeCategory || "sprint"}|${data.match?.id ?? ""}|${data.overlay.focus ? `${data.overlay.focus.teamId}:${data.overlay.focus.slot}` : ""}|${data.overlay.slide ?? 0}`
     : "";
 
   useEffect(() => {
     if (!viewKey) return;
-    const [view, category, matchId, focus] = viewKey.split("|");
-    if (!matchId && view !== "pause") return;
-    const shownMatchId = matchId || "pause";
-    const nextShown = { view, category, matchId: shownMatchId, focus: focus || "" };
+    const [view, category, matchId, focus, slide = "0"] = viewKey.split("|");
+    if (!matchId && view !== "pause" && view !== "slides") return;
+    const shownMatchId = matchId || (view === "slides" ? "slides" : "pause");
+    const nextSlide = slide || "0";
+    const nextShown = { view, category, matchId: shownMatchId, focus: focus || "", slide: nextSlide };
     const current = shownRef.current;
     if (!current) {
       setShown(nextShown);
       setPhase("in");
       return;
     }
-    if (current.view === view && current.category === category && current.matchId === shownMatchId && current.focus === (focus || "")) {
+    if (
+      current.view === view &&
+      current.category === category &&
+      current.matchId === shownMatchId &&
+      current.focus === (focus || "") &&
+      current.slide === nextSlide
+    ) {
       return;
     }
     setPhase("out");
@@ -182,6 +192,21 @@ export default function ObsPage() {
     return (
       <div className="obs-root">
         {wrap(<PauseOverlay match={liveMatch} now={data.now} next={data.next} />)}
+      </div>
+    );
+  }
+
+  if (view === "slides") {
+    const briefingMatch = data.matches.find((m) => m.id === shown.matchId) ?? null;
+    const pool = briefingPool(briefingMatch?.stage);
+    const slides = buildBriefingSlides(data.teams, pool);
+    const slideIndex = Math.min(Math.max(0, Number(shown.slide) || 0), Math.max(0, slides.length - 1));
+    const slide = slides[slideIndex];
+    return (
+      <div className="obs-root">
+        <div className={`brief-host ${phase === "out" ? "obs-view-out" : "obs-view-in"}`}>
+          {slide ? <BriefingDeck slide={slide} index={slideIndex} total={slides.length} pool={pool} /> : null}
+        </div>
       </div>
     );
   }

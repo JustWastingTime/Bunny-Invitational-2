@@ -2,6 +2,7 @@ export type GateAssignment = { teamId: string; slot: number; gate: number };
 export type OverlayFocus = { teamId: string; slot: number };
 
 const FOCUS_KEY = "__focus";
+const SLIDE_KEY = "__slide";
 
 export function parseGatesJson(raw: string | null | undefined): Record<string, number> {
   return parseOverlayBlob(raw).gates;
@@ -14,11 +15,13 @@ export function parseFocusJson(raw: string | null | undefined): OverlayFocus | n
 export function parseOverlayBlob(raw: string | null | undefined): {
   gates: Record<string, number>;
   focus: OverlayFocus | null;
+  slide: number;
 } {
   try {
     const parsed = JSON.parse(raw || "{}") as Record<string, unknown>;
     const gates: Record<string, number> = {};
     let focus: OverlayFocus | null = null;
+    let slide = 0;
     for (const [key, value] of Object.entries(parsed)) {
       if (key === FOCUS_KEY && typeof value === "string") {
         const split = value.lastIndexOf("|");
@@ -29,18 +32,24 @@ export function parseOverlayBlob(raw: string | null | undefined): {
         }
         continue;
       }
+      if (key === SLIDE_KEY) {
+        const n = Number(value);
+        if (Number.isInteger(n) && n >= 0) slide = n;
+        continue;
+      }
       const n = Number(value);
       if (Number.isInteger(n) && n >= 1 && n <= 9) gates[key] = n;
     }
-    return { gates, focus };
+    return { gates, focus, slide };
   } catch {
-    return { gates: {}, focus: null };
+    return { gates: {}, focus: null, slide: 0 };
   }
 }
 
-export function stringifyOverlayBlob(gates: Record<string, number>, focus: OverlayFocus | null) {
+export function stringifyOverlayBlob(gates: Record<string, number>, focus: OverlayFocus | null, slide = 0) {
   const out: Record<string, number | string> = { ...gates };
   if (focus) out[FOCUS_KEY] = `${focus.teamId}|${focus.slot}`;
+  if (slide > 0) out[SLIDE_KEY] = slide;
   return JSON.stringify(out);
 }
 
@@ -101,15 +110,16 @@ export function overlayStamp(row: OverlayRow) {
 }
 
 export function overlayFromRow(row: OverlayRow) {
-  const gatesAll = parseGatesJson(row.gatesJson);
+  const blob = parseOverlayBlob(row.gatesJson);
   return {
     activeMatchId: row.activeMatchId,
     activeCategory: row.activeCategory,
     view: row.view,
     visible: row.visible,
-    gates: row.activeMatchId ? gatesForRace(gatesAll, row.activeMatchId, row.activeCategory) : [],
-    gatesAll,
-    focus: parseFocusJson(row.gatesJson),
+    gates: row.activeMatchId ? gatesForRace(blob.gates, row.activeMatchId, row.activeCategory) : [],
+    gatesAll: blob.gates,
+    focus: blob.focus,
+    slide: blob.slide,
     stamp: overlayStamp(row),
   };
 }
