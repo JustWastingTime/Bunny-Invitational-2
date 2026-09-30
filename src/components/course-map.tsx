@@ -1,25 +1,25 @@
 import type { CourseProfile, CourseSegment } from "@/lib/course-profiles";
 
-/** Same palette as Tazuna's courseMapRenderer.js. */
+/** Broadcast palette: gold, peach, and rose on the briefing slide. */
 export const COURSE_COLORS = {
-  sky: "#A8D4F8",
-  flat: "#8DB86A",
-  uphill: "#E89548",
-  downhill: "#C49AA8",
-  blank: "#B8B2A8",
-  straight: "#A8BDD6",
-  corner: "#EDCA72",
-  early: "#59B292",
-  mid: "#D4BC6A",
-  late: "#F7A5A5",
-  spurt: "#E195AB",
-  title: "#6BB5A8",
-  axis: "#8b96a8",
-  tick: "#9ea7b7",
-  meter: "#6f7888",
-  ink: "#20262e",
-  pk: "#934761",
-  border: "rgba(255, 255, 255, 0.12)",
+  sky: "#3d2232",
+  flat: "#f3ddd4",
+  uphill: "#ffd56a",
+  downhill: "#ff7b8a",
+  blank: "#8a6a78",
+  straight: "#ffc4a8",
+  corner: "#ffd56a",
+  early: "#f6e4dc",
+  mid: "#ffd0bc",
+  late: "#ffb0a8",
+  spurt: "#ff7b8a",
+  title: "#ffd56a",
+  axis: "#fff6ee",
+  tick: "rgba(255, 246, 238, 0.72)",
+  meter: "#2a160c",
+  ink: "#2a160c",
+  pk: "#ff7b8a",
+  border: "rgba(42, 22, 12, 0.22)",
 };
 
 type RowKey = "elevation" | "layout" | "zones";
@@ -116,7 +116,7 @@ export function CourseMap({ profile, compact = false }: { profile: CourseProfile
         ? null
         : boundary.map((marker) => (
             <g key={`${marker.y}-${marker.x}-${marker.text}`}>
-              <line x1={marker.x} y1={marker.y - 8} x2={marker.x} y2={marker.y + 5} stroke={COURSE_COLORS.tick} strokeWidth={1.5} />
+              <line x1={marker.x} y1={marker.y - 8} x2={marker.x} y2={marker.y + 5} stroke={COURSE_COLORS.ink} strokeWidth={1.5} />
               <text x={marker.x} y={marker.y - 10} textAnchor="middle" fill={COURSE_COLORS.meter} fontSize={meterSize}>
                 {marker.text}
               </text>
