@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { plainSkillName } from "./skill-name";
 import {
   CATEGORIES,
   CATEGORY_LABEL,
@@ -358,7 +359,9 @@ export function buildStats(
       cur.count += 1;
       bySprite.set(u.spriteId, cur);
       for (const skill of u.skills) {
-        skillCounts.set(skill, (skillCounts.get(skill) ?? 0) + 1);
+        const name = plainSkillName(skill);
+        if (!name) continue;
+        skillCounts.set(name, (skillCounts.get(name) ?? 0) + 1);
       }
     }
   }

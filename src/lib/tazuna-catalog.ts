@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { plainSkillName } from "./skill-name";
 import { spriteFileName, spriteLocalPath } from "./sprites";
 import type { CatalogSkill, CatalogUma, TazunaCatalog } from "./tazuna-types";
 
@@ -8,7 +9,7 @@ export type { CatalogSkill, CatalogUma, TazunaCatalog } from "./tazuna-types";
 const REPO = "JustWastingTime/TazunaDiscordBot";
 const CHAR_PATH = "assets/character.json";
 const SKILL_PATH = "assets/skill.json";
-const CACHE_VERSION = "5";
+const CACHE_VERSION = "6";
 const FETCH_MS = 20_000;
 const memory = new Map<string, TazunaCatalog>();
 
@@ -26,6 +27,7 @@ type SkillRaw = {
   aliases?: unknown;
   rarity?: string;
   note?: string;
+  gametora_id?: string | number;
 };
 
 function githubHeaders() {
@@ -77,10 +79,12 @@ function normalizeUma(row: CharRaw): CatalogUma | null {
 function normalizeSkill(row: SkillRaw): CatalogSkill | null {
   // `note` is a section banner Tazuna attaches to the first skill in a group
   // (Right-Handed, Professor of Curvature, and the rest of those lead-ins).
-  if (!row.skill_name) return null;
+  const name = plainSkillName(row.skill_name ?? "");
+  if (!name) return null;
   return {
-    name: row.skill_name,
-    aliases: asStringList(row.aliases),
+    id: row.gametora_id == null ? "" : String(row.gametora_id),
+    name,
+    aliases: asStringList(row.aliases).map(plainSkillName),
     rarity: row.rarity ?? "",
   };
 }

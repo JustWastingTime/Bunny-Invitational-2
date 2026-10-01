@@ -11,6 +11,7 @@ export type CatalogUma = {
 };
 
 export type CatalogSkill = {
+  id: string;
   name: string;
   aliases: string[];
   rarity: string;

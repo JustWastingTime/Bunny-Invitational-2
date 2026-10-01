@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { plainSkillName } from "@/lib/skill-name";
 import type { CatalogSkill, CatalogUma } from "@/lib/tazuna-types";
 
 const field =
@@ -138,18 +139,20 @@ export function SkillInput({
     return () => document.removeEventListener("mousedown", close);
   }, []);
 
+  const selected = useMemo(() => new Set(value.map(plainSkillName)), [value]);
+
   const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = plainSkillName(query).toLowerCase();
     if (!q) return skills.slice(0, 10);
     return skills
-      .filter((s) => `${s.name} ${s.aliases.join(" ")}`.toLowerCase().includes(q))
-      .filter((s) => !value.includes(s.name))
+      .filter((s) => plainSkillName(`${s.name} ${s.aliases.join(" ")}`).toLowerCase().includes(q))
+      .filter((s) => !selected.has(plainSkillName(s.name)))
       .slice(0, 12);
-  }, [query, skills, value]);
+  }, [query, selected, skills]);
 
   function add(name: string) {
-    const skill = name.trim();
-    if (!skill || value.includes(skill)) return;
+    const skill = plainSkillName(name);
+    if (!skill || selected.has(skill)) return;
     onChange([...value, skill]);
     setQuery("");
     setOpen(false);
@@ -167,7 +170,7 @@ export function SkillInput({
             onClick={() => onChange(value.filter((s) => s !== skill))}
             title="Remove"
           >
-            {skill} ×
+            {plainSkillName(skill)} ×
           </button>
         ))}
       </div>
@@ -196,7 +199,7 @@ export function SkillInput({
                 className="flex w-full items-center justify-between rounded-xl px-3 py-1.5 text-left text-sm hover:bg-[var(--paper)]"
                 onClick={() => add(skill.name)}
               >
-                <span>{skill.name}</span>
+                <span>{plainSkillName(skill.name)}</span>
                 {skill.rarity ? <span className="text-xs text-[var(--ink-soft)]">{skill.rarity}</span> : null}
               </button>
             </li>

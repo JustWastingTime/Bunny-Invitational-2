@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { plainSkillName } from "@/lib/skill-name";
 import type { PublicUma, UmaFinishRecord } from "@/lib/types";
 import { emptyFinish } from "@/lib/uma-finish";
 
@@ -60,11 +61,14 @@ export function UmaRosterCard({
 
       {uma.skills.length ? (
         <ul className="mt-3 flex flex-wrap gap-1.5">
-          {uma.skills.map((skill, index) => (
-            <li key={`${skill}-${index}`} className={skillChipClass(index, skillRarity[skill])}>
-              {skill}
-            </li>
-          ))}
+          {uma.skills.map((skill, index) => {
+            const label = plainSkillName(skill);
+            return (
+              <li key={`${label}-${index}`} className={skillChipClass(index, skillRarity[label] ?? skillRarity[skill])}>
+                {label}
+              </li>
+            );
+          })}
         </ul>
       ) : null}
 

@@ -3,6 +3,7 @@
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CATEGORIES, CATEGORY_LABEL, STYLES, STYLE_LABEL, type Category } from "@/lib/constants";
+import { importUmaJson, type ImportedUma } from "@/lib/uma-import";
 import { spriteFileName } from "@/lib/sprites";
 import type { PublicUma } from "@/lib/types";
 import type { CatalogSkill, CatalogUma, TazunaCatalog } from "@/lib/tazuna-types";
@@ -520,6 +521,66 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
   );
 }
 
+function JsonLoad({
+  umas,
+  skills,
+  onLoad,
+}: {
+  umas: CatalogUma[];
+  skills: CatalogSkill[];
+  onLoad: (patch: ImportedUma) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const [note, setNote] = useState("");
+
+  function apply() {
+    if (!umas.length || !skills.length) {
+      setNote("The uma and skill list is still loading. Try again in a moment.");
+      return;
+    }
+    try {
+      const { patch, warnings } = importUmaJson(text, umas, skills);
+      onLoad(patch);
+      setNote(
+        warnings.length
+          ? warnings.join(" ")
+          : `Loaded ${patch.umaName || patch.spriteId || "uma"} · ${patch.skills.length} skills.`,
+      );
+      if (!warnings.length) setOpen(false);
+    } catch {
+      setNote("That is not valid JSON.");
+    }
+  }
+
+  return (
+    <div className="mb-3">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)] underline decoration-[var(--line-strong)] underline-offset-2"
+      >
+        {open ? "Hide JSON" : "Load JSON"}
+      </button>
+      {open ? (
+        <div className="mt-2 grid gap-2">
+          <textarea
+            className={`${field} min-h-28 font-mono text-xs`}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder='Paste { "outfitId": "102001", "speed": 1545, "strategy": "Nige", "skills": ["100201"] }'
+            spellCheck={false}
+          />
+          <button type="button" onClick={apply} className="w-fit rounded-full bg-[var(--ink)] px-3 py-1.5 text-sm font-extrabold text-[var(--paper)]">
+            Load into this uma
+          </button>
+        </div>
+      ) : null}
+      {note ? <p className="mt-2 text-xs text-[var(--ink-soft)]">{note}</p> : null}
+    </div>
+  );
+}
+
 function UmaCard({
   uma,
   umas,
@@ -567,6 +628,11 @@ function UmaCard({
           </button>
         </div>
       </div>
+      <JsonLoad
+        umas={umas}
+        skills={skills}
+        onLoad={(patch) => onChange(patch)}
+      />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <div className="grid gap-3">
           <label className="grid gap-1">

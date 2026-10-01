@@ -1,6 +1,7 @@
 import { CATEGORIES, PLAY_IN_STAGE, STYLE_LABEL, TEAM_KIND_PLAYIN } from "./constants";
 import { prisma } from "./prisma";
 import { popularityFromRosters } from "./scoring";
+import { plainSkillName } from "./skill-name";
 import { parseSkills, spriteFileName } from "./sprites";
 import { scoreMatch } from "./standings";
 import { getTazunaCatalog } from "./tazuna-catalog";
@@ -130,12 +131,15 @@ export async function buildPlayInRosters(): Promise<PlayInPayload> {
       ),
     }));
 
-  const usedSkills = new Set(publicTeams.flatMap((team) => team.roster.flatMap((uma) => uma.skills)));
+  const usedSkills = new Set(
+    publicTeams.flatMap((team) => team.roster.flatMap((uma) => uma.skills.map(plainSkillName))),
+  );
   const skillRarity: Record<string, string> = {};
   try {
     const catalog = await getTazunaCatalog();
     for (const skill of catalog.skills) {
-      if (usedSkills.has(skill.name)) skillRarity[skill.name] = skill.rarity || "normal";
+      const label = plainSkillName(skill.name);
+      if (usedSkills.has(label)) skillRarity[label] = skill.rarity || "normal";
     }
   } catch {
     /* chips fall back to white, and the first skill stays rainbow */
