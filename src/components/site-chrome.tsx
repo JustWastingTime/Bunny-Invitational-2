@@ -11,6 +11,7 @@ const MENU_ID = "site-menu";
 const LINKS = [
   { href: "/", label: "Home" },
   { href: "/schedule", label: "Schedule" },
+  { href: "/play-in", label: "Play-in" },
   { href: "/scoreboard", label: "Scoreboard" },
   { href: "/teams", label: "Teams", live: true },
   { href: "/stats", label: "Stats", live: true },
@@ -49,7 +50,7 @@ export function SiteHeader() {
         </Link>
         <nav className="hidden items-center gap-1 md:flex">
           {links.map((link) => {
-            const active = pathname === link.href;
+            const active = link.href === "/" ? pathname === "/" : pathname === link.href || pathname.startsWith(`${link.href}/`);
             return (
               <Link
                 key={link.href}
@@ -82,7 +83,7 @@ export function SiteHeader() {
       {open ? (
         <div id={MENU_ID} className="grid gap-1 px-4 pb-3 md:hidden">
           {links.map((link) => {
-            const active = pathname === link.href;
+            const active = link.href === "/" ? pathname === "/" : pathname === link.href || pathname.startsWith(`${link.href}/`);
             return (
               <Link
                 key={link.href}

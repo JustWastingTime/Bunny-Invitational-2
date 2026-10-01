@@ -75,8 +75,6 @@ function kickerFor(slide: BriefSlide) {
       return "Oshi buff";
     case "penalty":
       return "Meta penalty";
-    case "field":
-      return "This pool";
     case "costume":
       return "Penalized variant";
     case "costumes":
@@ -98,8 +96,6 @@ function bodyFor(slide: BriefSlide) {
       return <OshiSlide uniqueCount={slide.uniqueCount} pairCount={slide.pairCount} />;
     case "penalty":
       return <PenaltySlide penalized={slide.penalized} />;
-    case "field":
-      return <FieldSlide slide={slide} />;
     case "costume":
       return <CostumeSlide slide={slide} />;
     case "costumes":
@@ -303,48 +299,6 @@ function PenaltySlide({ penalized }: { penalized: number }) {
           ? "No variant in this pool is popular enough to be penalized."
           : `${countPhrase(penalized, "variant")} ${penalized === 1 ? "takes" : "take"} a penalty. The next slides name them.`}
       </p>
-    </div>
-  );
-}
-
-function FieldSlide({ slide }: { slide: Extract<BriefSlide, { kind: "field" }> }) {
-  return (
-    <div className="brief-stack">
-      <h1>Pool snapshot</h1>
-      <p className="brief-lede">Live from the submitted variants. It updates when a roster changes.</p>
-      <div className="brief-nums">
-        <article className="brief-num">
-          <span>Variants</span>
-          <strong>{slide.costumes}</strong>
-          <em>with a costume set</em>
-        </article>
-        <article className="brief-num">
-          <span>Oshi {signed(BRIEF_POINTS.unique)}</span>
-          <strong>{slide.uniqueCount}</strong>
-          <em>only one trainer</em>
-        </article>
-        <article className="brief-num">
-          <span>Oshi {signed(BRIEF_POINTS.pair)}</span>
-          <strong>{slide.pairCount}</strong>
-          <em>exactly two trainers</em>
-        </article>
-        <article className={`brief-num ${slide.penalized ? "is-hot" : ""}`}>
-          <span>Penalized</span>
-          <strong>{slide.penalized}</strong>
-          <em>meta rank 1–3</em>
-        </article>
-      </div>
-      <div className="brief-top-list">
-        {slide.top.length ? (
-          slide.top.map((row, i) => (
-            <p key={`${row.name}-${i}`}>
-              {row.name} · {row.count} {row.penalty ? `· ${signed(row.penalty)}` : "· no penalty"}
-            </p>
-          ))
-        ) : (
-          <p>No variants submitted in this pool yet.</p>
-        )}
-      </div>
     </div>
   );
 }

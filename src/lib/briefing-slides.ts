@@ -65,7 +65,6 @@ export type BriefSlide =
   | { id: string; kind: "places" }
   | { id: string; kind: "oshi"; uniqueCount: number; pairCount: number }
   | { id: string; kind: "penalty"; penalized: number }
-  | { id: string; kind: "field"; costumes: number; uniqueCount: number; pairCount: number; penalized: number; top: { name: string; count: number; penalty: number }[] }
   | { id: string; kind: "costume"; uma: BriefUma }
   | { id: string; kind: "costumes"; tone: "penalty" | "pair" | "unique"; title: string; umas: BriefUma[]; page: number; pages: number };
 
@@ -88,8 +87,6 @@ export function briefSlideGroup(slide: BriefSlide) {
     case "oshi":
     case "penalty":
       return "Points";
-    case "field":
-      return "Snapshot";
     case "costume":
       return "Penalized";
     case "costumes":
@@ -113,8 +110,6 @@ export function briefSlideLabel(slide: BriefSlide) {
       return "Oshi buff";
     case "penalty":
       return "Meta penalty";
-    case "field":
-      return "Pool snapshot";
     case "costume":
       return `${signed(slide.uma.penalty)} · ${slide.uma.name} · ${slide.uma.count}`;
     case "costumes": {
@@ -136,9 +131,6 @@ export function buildBriefingSlides(teams: PublicTeam[], pool: BriefPool): Brief
   const penalized = umas
     .filter((uma) => uma.penalty !== 0)
     .sort((a, b) => a.penalty - b.penalty || b.count - a.count || a.name.localeCompare(b.name));
-  const topCount = umas.reduce((max, uma) => Math.max(max, uma.count), 0);
-  const top = topCount > 0 ? umas.filter((uma) => uma.count === topCount).sort(byName).slice(0, 4) : [];
-
   const slides: BriefSlide[] = [
     { id: "title", kind: "title", pool, groups: welcomeGroups(teams, pool) },
     { id: "maps", kind: "maps" },
@@ -163,15 +155,6 @@ export function buildBriefingSlides(teams: PublicTeam[], pool: BriefPool): Brief
 
   pushCostumePages(slides, pairs, "pair", "Oshi +1");
   pushCostumePages(slides, unique.sort(byName), "unique", "Oshi +2");
-  slides.push({
-    id: "field",
-    kind: "field",
-    costumes: umas.length,
-    uniqueCount: unique.length,
-    pairCount: pairs.length,
-    penalized: penalized.length,
-    top: top.map((uma) => ({ name: uma.name, count: uma.count, penalty: uma.penalty })),
-  });
 
   return slides;
 }

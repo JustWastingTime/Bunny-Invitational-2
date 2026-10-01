@@ -110,7 +110,7 @@ export const PLAY_IN_STAGE = "playin";
 export const PLAY_IN_GROUP = "P";
 /** All seven play-in matches run on this one session (Match.day). */
 export const PLAY_IN_DAY = 0;
-export const PLAY_IN_EVENT_LABEL = "Sat 3 Oct 2026, 10:00 PM ICT";
+export const PLAY_IN_EVENT_LABEL = "Sat 3 Oct 2026, 3:00 PM UTC";
 
 export const FANO_TRIPLES: [number, number, number][] = [
   [0, 1, 3],

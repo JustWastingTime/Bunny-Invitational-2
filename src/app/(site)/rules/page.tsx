@@ -231,7 +231,7 @@ function AdvancedRules() {
           </li>
           <li>
             If your team does not have enough players, you can recruit some Free Agents or we can help you find another
-            team to merge with. Please have your players filled by <When>Sat 12 Sep 2026, 10:00 PM ICT</When>.
+            team to merge with. Please have your players filled by <When>Sat 12 Sep 2026, 3:00 PM UTC</When>.
           </li>
           <li>
             If you are a <strong className="font-extrabold text-[var(--ink)]">Free Agent</strong>, showcase in{" "}
@@ -268,13 +268,13 @@ function AdvancedRules() {
         <h2 className="mt-1 mb-3 display-lg text-3xl">Submission</h2>
         <ul className="space-y-2 text-[var(--ink-soft)]">
           <li>
-            All teams will be pinged on <When>Wed 7 Oct 2026, 10:00 PM ICT</When>. Submit your umas as a{" "}
+            All teams will be pinged on <When>Wed 7 Oct 2026, 3:00 PM UTC</When>. Submit your umas as a{" "}
             <strong className="font-extrabold text-[var(--ink)]">new post</strong> in your designated team channel. Refer
             to <span className="font-semibold text-[var(--ink)]">#example</span> for the format. Posts created after the
             deadline may be rejected if they are unfair or break the rules.
           </li>
           <li>
-            On <When>Thu 8 Oct 2026, 10:00 PM ICT</When> another ping will ask you to generate practice partner codes for
+            On <When>Thu 8 Oct 2026, 3:00 PM UTC</When> another ping will ask you to generate practice partner codes for
             the uma you submitted the day before. Please do not send a different uma. Please do not generate the code
             before the ping — these codes <strong className="font-extrabold text-[var(--ink)]">only last 24 hours</strong>.
           </li>
@@ -356,11 +356,11 @@ function AdvancedRules() {
         <ul className="space-y-2 text-[var(--ink-soft)]">
           <li>
             Clubs / networks that want a second team do not get a guaranteed group-stage slot. Second teams play a
-            smaller stage on <When>Sat 3 Oct 2026, 10:00 PM ICT</When> for the final slot (or two).
+            smaller stage on <When>Sat 3 Oct 2026, 3:00 PM UTC</When> for the final slot (or two).
           </li>
           <li>Format is still to be decided while we wait on how many teams confirm.</li>
           <li>
-            Play-in submission: <When>Thu 1 Oct 2026, 10:00 PM ICT</When>.
+            Play-in submission: <When>Thu 1 Oct 2026, 3:00 PM UTC</When>.
           </li>
           <li>
             Teams that make it through may remake / change their umas for the main stage, then follow the main
