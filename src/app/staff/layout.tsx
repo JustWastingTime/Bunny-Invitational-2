@@ -2,15 +2,16 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { StaffToastProvider } from "@/components/staff-toast";
-import { devBypass, getSession, isStaffSession } from "@/lib/auth";
+import { canOpenSettings, devBypass, getSession, isStaffSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
-  if (!isStaffSession(session)) {
+  if (!(await isStaffSession(session))) {
     redirect("/login");
   }
+  const settings = canOpenSettings(session);
 
   return (
     <div className="staff-desk flex min-h-full flex-col">
@@ -29,6 +30,11 @@ export default async function StaffLayout({ children }: { children: React.ReactN
             <Link className="border-b border-[var(--line-strong)] pb-0.5" href="/staff/overlay">
               Overlay
             </Link>
+            {settings ? (
+              <Link className="border-b border-[var(--line-strong)] pb-0.5" href="/staff/settings">
+                Settings
+              </Link>
+            ) : null}
             <Link href="/">Public site</Link>
             <Link href="/obs">OBS view</Link>
           </nav>

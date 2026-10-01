@@ -2,7 +2,7 @@
 
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CATEGORIES, CATEGORY_LABEL, STYLES, STYLE_LABEL, TOURNAMENT_CATALOG_DATE, type Category } from "@/lib/constants";
+import { CATEGORIES, CATEGORY_LABEL, STYLES, STYLE_LABEL, type Category } from "@/lib/constants";
 import { spriteFileName } from "@/lib/sprites";
 import type { PublicUma } from "@/lib/types";
 import type { CatalogSkill, CatalogUma, TazunaCatalog } from "@/lib/tazuna-types";
@@ -106,7 +106,6 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
   const [status, setStatus] = useState("");
   const [saveState, setSaveState] = useState<"idle" | "unsaved" | "saving" | "saved">("idle");
   const [tab, setTab] = useState<Category>("sprint");
-  const [asOf, setAsOf] = useState(TOURNAMENT_CATALOG_DATE);
   const [catalog, setCatalog] = useState<TazunaCatalog | null>(null);
   const toast = useStaffToast();
   const router = useRouter();
@@ -146,7 +145,7 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/staff/catalog?asOf=${encodeURIComponent(asOf)}`)
+    fetch("/api/staff/catalog")
       .then(async (r) => {
         const json = await r.json();
         if (!r.ok) throw new Error(json.error ?? "catalog failed");
@@ -161,7 +160,7 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
     return () => {
       cancelled = true;
     };
-  }, [asOf]);
+  }, []);
 
   function update(cat: string, slot: number, patch: Partial<FormUma>) {
     setRoster((rows) => rows.map((u) => (u.category === cat && u.slot === slot ? { ...u, ...patch } : u)));
@@ -493,22 +492,11 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
               );
             })}
           </div>
-          <label className="flex items-center gap-2 text-xs text-[var(--ink-soft)]">
-            Tazuna snapshot
-            <input
-              type="date"
-              className="rounded-lg border border-[var(--line)] bg-[var(--surface-strong)] px-2 py-1"
-              value={asOf}
-              onChange={(e) => setAsOf(e.target.value)}
-            />
-            {catalog ? (
-              <span>
-                {catalog.umas.length} umas · {catalog.skills.length} skills
-              </span>
-            ) : (
-              <span>Picker loads in the background</span>
-            )}
-          </label>
+          <p className="text-xs text-[var(--ink-soft)]">
+            {catalog
+              ? `Latest Tazuna · ${catalog.umas.length} umas · ${catalog.skills.length} skills`
+              : "Picker loads in the background"}
+          </p>
         </div>
 
         <div className="grid gap-4">

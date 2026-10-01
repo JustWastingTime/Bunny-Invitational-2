@@ -1,6 +1,5 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { TOURNAMENT_CATALOG_DATE } from "./constants";
 import { spriteFileName, spriteLocalPath } from "./sprites";
 import type { CatalogSkill, CatalogUma, TazunaCatalog } from "./tazuna-types";
 
@@ -9,8 +8,8 @@ export type { CatalogSkill, CatalogUma, TazunaCatalog } from "./tazuna-types";
 const REPO = "JustWastingTime/TazunaDiscordBot";
 const CHAR_PATH = "assets/character.json";
 const SKILL_PATH = "assets/skill.json";
-const CACHE_VERSION = "4";
-const FETCH_MS = 8_000;
+const CACHE_VERSION = "5";
+const FETCH_MS = 20_000;
 const memory = new Map<string, TazunaCatalog>();
 
 type CharRaw = {
@@ -42,13 +41,8 @@ function timedSignal() {
   return AbortSignal.timeout(FETCH_MS);
 }
 
-export function catalogDate(value?: string | null) {
-  const raw = (value || process.env.TAZUNA_AS_OF || TOURNAMENT_CATALOG_DATE).trim();
-  return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : TOURNAMENT_CATALOG_DATE;
-}
-
-function cacheDir(asOf: string) {
-  return path.join(process.cwd(), ".cache", "tazuna", asOf);
+function cacheFile() {
+  return path.join(process.cwd(), ".cache", "tazuna", "latest", `catalog-v${CACHE_VERSION}.json`);
 }
 
 function spriteIdFromRow(row: CharRaw) {
@@ -91,13 +85,16 @@ function normalizeSkill(row: SkillRaw): CatalogSkill | null {
   };
 }
 
-async function commitShaAt(filePath: string, asOf: string): Promise<string | null> {
+async function latestCommitSha(): Promise<string | null> {
   try {
-    const url = `https://api.github.com/repos/${REPO}/commits?path=${encodeURIComponent(filePath)}&until=${asOf}T23:59:59Z&per_page=1`;
-    const res = await fetch(url, { headers: githubHeaders(), cache: "no-store", signal: timedSignal() });
+    const res = await fetch(`https://api.github.com/repos/${REPO}/commits/main`, {
+      headers: githubHeaders(),
+      cache: "no-store",
+      signal: timedSignal(),
+    });
     if (!res.ok) return null;
-    const json = (await res.json()) as { sha?: string }[];
-    return json[0]?.sha ?? null;
+    const json = (await res.json()) as { sha?: string };
+    return json.sha ?? null;
   } catch {
     return null;
   }
@@ -115,46 +112,37 @@ async function fetchRawJson(filePath: string, sha: string | null) {
   return res.json();
 }
 
-async function readCached(asOf: string): Promise<TazunaCatalog | null> {
+async function readCached(): Promise<TazunaCatalog | null> {
   try {
-    const cached = JSON.parse(
-      await readFile(path.join(cacheDir(asOf), `catalog-v${CACHE_VERSION}.json`), "utf8"),
-    ) as TazunaCatalog;
+    const cached = JSON.parse(await readFile(cacheFile(), "utf8")) as TazunaCatalog;
     if (cached?.umas?.length && cached?.skills?.length) return cached;
   } catch {
-    /* miss — older caches dropped section-leading skills */
+    /* miss */
   }
   return null;
 }
 
-export async function getTazunaCatalog(asOfInput?: string | null, refresh = false): Promise<TazunaCatalog> {
-  const asOf = catalogDate(asOfInput);
-  const key = `${asOf}:${CACHE_VERSION}`;
+/** Latest Tazuna character and skill lists from the main branch, cached on disk. */
+export async function getTazunaCatalog(refresh = false): Promise<TazunaCatalog> {
+  const key = `latest:${CACHE_VERSION}`;
   if (!refresh && memory.has(key)) return memory.get(key)!;
 
   if (!refresh) {
-    const cached = await readCached(asOf);
+    const cached = await readCached();
     if (cached) {
       memory.set(key, cached);
       return cached;
     }
   }
 
-  let sha: string | null = null;
-  try {
-    const [charSha, skillSha] = await Promise.all([commitShaAt(CHAR_PATH, asOf), commitShaAt(SKILL_PATH, asOf)]);
-    sha = charSha ?? skillSha;
-  } catch {
-    sha = null;
-  }
-
+  const sha = await latestCommitSha();
   const [chars, skillsRaw] = await Promise.all([
     fetchRawJson(CHAR_PATH, sha) as Promise<CharRaw[]>,
     fetchRawJson(SKILL_PATH, sha) as Promise<SkillRaw[]>,
   ]);
 
   const catalog: TazunaCatalog = {
-    asOf,
+    asOf: new Date().toISOString().slice(0, 10),
     commitSha: sha,
     umas: chars.map(normalizeUma).filter((row): row is CatalogUma => row !== null),
     skills: skillsRaw.map(normalizeSkill).filter((row): row is CatalogSkill => row !== null),
@@ -162,8 +150,8 @@ export async function getTazunaCatalog(asOfInput?: string | null, refresh = fals
 
   memory.set(key, catalog);
   try {
-    await mkdir(cacheDir(asOf), { recursive: true });
-    await writeFile(path.join(cacheDir(asOf), `catalog-v${CACHE_VERSION}.json`), JSON.stringify(catalog));
+    await mkdir(path.dirname(cacheFile()), { recursive: true });
+    await writeFile(cacheFile(), JSON.stringify(catalog));
   } catch {
     /* serverless fs may be read-only */
   }

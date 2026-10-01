@@ -126,9 +126,9 @@
 
 .brief-groups {
   display: grid;
-  flex: 1;
-  min-height: 0;
-  margin-top: 28px;
+  flex: none;
+  align-items: start;
+  margin-top: 36px;
   grid-template-columns: repeat(3, 1fr);
   gap: 18px;
 }
@@ -194,9 +194,9 @@
 
 .brief-clubs {
   display: grid;
-  flex: 1;
-  min-height: 0;
-  margin-top: 32px;
+  flex: none;
+  align-items: start;
+  margin-top: 48px;
   grid-template-columns: repeat(7, 1fr);
   gap: 14px;
 }

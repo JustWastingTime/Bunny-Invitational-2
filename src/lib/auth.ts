@@ -1,6 +1,8 @@
 import type { NextAuthOptions, Session } from "next-auth";
 import DiscordProvider from "next-auth/providers/discord";
 import { getServerSession } from "next-auth";
+import { OWNER_DISCORD_ID } from "./constants";
+import { staffDiscordIds } from "./staff-access";
 
 declare module "next-auth" {
   interface Session {
@@ -18,28 +20,30 @@ if (!process.env.NEXTAUTH_URL) {
   if (host) process.env.NEXTAUTH_URL = host.startsWith("http") ? host : `https://${host}`;
 }
 
-export function staffIdList(): string[] {
-  return (process.env.DISCORD_STAFF_IDS ?? "")
-    .split(/[,\s]+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
 export function devBypass(): boolean {
   return process.env.DEV_STAFF_BYPASS === "true" && process.env.NODE_ENV !== "production";
 }
 
+export function isOwnerId(id: string | null | undefined) {
+  return id === OWNER_DISCORD_ID;
+}
+
 export async function requireStaff(): Promise<{ ok: true; session: Session | null } | { ok: false; status: number }> {
   if (devBypass()) return { ok: true, session: null };
-  const ids = staffIdList();
-  if (process.env.NODE_ENV === "production" && ids.length === 0) {
-    console.error("DISCORD_STAFF_IDS is required in production so staff Discord accounts can sign in.");
-    return { ok: false, status: 503 };
-  }
   const session = await getSession();
   const id = session?.user?.id;
   if (!session || !id) return { ok: false, status: 401 };
+  const ids = await staffDiscordIds();
   if (!ids.includes(id)) return { ok: false, status: 403 };
+  return { ok: true, session };
+}
+
+export async function requireOwner(): Promise<{ ok: true; session: Session | null } | { ok: false; status: number }> {
+  if (devBypass()) return { ok: true, session: null };
+  const session = await getSession();
+  const id = session?.user?.id;
+  if (!session || !id) return { ok: false, status: 401 };
+  if (!isOwnerId(id)) return { ok: false, status: 403 };
   return { ok: true, session };
 }
 
@@ -65,8 +69,15 @@ export async function getSession(): Promise<Session | null> {
   return getServerSession(authOptions);
 }
 
-export function isStaffSession(session: Session | null): boolean {
+export async function isStaffSession(session: Session | null): Promise<boolean> {
   if (devBypass()) return true;
   const id = session?.user?.id;
-  return Boolean(id && staffIdList().includes(id));
+  if (!id) return false;
+  const ids = await staffDiscordIds();
+  return ids.includes(id);
+}
+
+export function canOpenSettings(session: Session | null): boolean {
+  if (devBypass()) return true;
+  return isOwnerId(session?.user?.id);
 }

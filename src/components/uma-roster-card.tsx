@@ -98,8 +98,8 @@ export function UmaRosterCard({
 }
 
 function skillChipClass(index: number, rarity: string | undefined) {
-  const tone = index === 0 || rarity === "unique" ? "unique" : rarity === "rare" ? "rare" : "normal";
-  if (tone === "unique") return "skill-chip skill-chip-unique";
-  if (tone === "rare") return "skill-chip skill-chip-rare";
+  if (index === 0) return "skill-chip skill-chip-unique";
+  if (rarity === "unique") return "skill-chip skill-chip-unique skill-chip-inherited";
+  if (rarity === "rare") return "skill-chip skill-chip-rare";
   return "skill-chip";
 }

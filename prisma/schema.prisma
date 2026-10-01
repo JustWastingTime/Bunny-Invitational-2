@@ -91,6 +91,12 @@ model Placement {
   @@unique([raceId, place])
 }
 
+model StaffMember {
+  discordId String   @id
+  label     String   @default("")
+  createdAt DateTime @default(now())
+}
+
 model OverlayState {
   id             String  @id @default("default")
   activeMatchId  String?

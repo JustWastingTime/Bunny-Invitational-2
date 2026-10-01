@@ -524,6 +524,7 @@ function BriefingDesk({
   onCue: (index: number) => void;
   onShow: () => void;
 }) {
+  const [open, setOpen] = useState(false);
   let group = "";
   return (
     <section
@@ -539,14 +540,23 @@ function BriefingDesk({
     >
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">Stream briefing</p>
+          <button
+            type="button"
+            className="text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]"
+            aria-expanded={open}
+            onClick={() => setOpen((value) => !value)}
+          >
+            {open ? "Hide briefing" : "Show briefing"}
+          </button>
           <h2 className="font-[family-name:var(--font-display)] text-2xl">{cue ? briefSlideLabel(cue) : "Briefing"}</h2>
-          <p className="max-w-3xl text-sm text-[var(--ink-soft)]">
-            {pool === "playin" ? "Play-in pool" : "Main field"}. Built from the current rosters, so a submission change
-            updates the penalized and oshi variants. While slides are on air, Previous and Next update OBS. Otherwise
-            they only move this preview.
-            {detached ? " The prep match differs from OBS, so the arrows stay on this preview until you show the slide." : ""}
-          </p>
+          {open ? (
+            <p className="max-w-3xl text-sm text-[var(--ink-soft)]">
+              {pool === "playin" ? "Play-in pool" : "Main field"}. Built from the current rosters, so a submission change
+              updates the penalized and oshi variants. While slides are on air, Previous and Next update OBS. Otherwise
+              they only move this preview.
+              {detached ? " The prep match differs from OBS, so the arrows stay on this preview until you show the slide." : ""}
+            </p>
+          ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" className="min-h-11 rounded-full bg-[var(--surface)] px-4 py-2 ring-1 ring-[var(--line)]" onClick={() => onCue(index - 1)} disabled={busy || index <= 0}>
@@ -565,7 +575,7 @@ function BriefingDesk({
           </button>
         </div>
       </div>
-      <div className="grid items-start gap-3 lg:grid-cols-[18rem_minmax(0,1fr)]">
+      {open ? <div className="grid items-start gap-3 lg:grid-cols-[18rem_minmax(0,1fr)]">
         <div className="grid max-h-[32rem] content-start gap-1 overflow-auto pr-1">
           {deck.map((slide, i) => {
             const nextGroup = briefSlideGroup(slide);
@@ -592,7 +602,7 @@ function BriefingDesk({
             <BriefingDeck slide={cue} index={index} total={deck.length} pool={pool} />
           </BriefingFrame>
         ) : null}
-      </div>
+      </div> : null}
     </section>
   );
 }

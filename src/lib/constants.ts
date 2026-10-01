@@ -1,6 +1,6 @@
 export const TOURNAMENT_NAME = "Bunny Invitational 2";
-/** Roster lock — Tazuna uma/skill catalog is snapshotted as of this date unless overridden. */
-export const TOURNAMENT_CATALOG_DATE = "2026-09-12";
+/** Discord account that can open staff settings and grant desk access. */
+export const OWNER_DISCORD_ID = "217274197553053696";
 /** Public site: team/stats pages, real umas, and live match cues. Staff desk is unchanged. */
 export const PUBLIC_TOURNAMENT_LIVE = false;
 
