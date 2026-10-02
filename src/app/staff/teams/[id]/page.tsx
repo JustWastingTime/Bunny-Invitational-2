@@ -36,6 +36,7 @@ function emptyUma(category: string, slot: number): FormUma {
     spriteId: "",
     spritePath: null,
     rating: "",
+    score: "",
     style: "pace",
     styleLabel: STYLE_LABEL.pace,
     aptitudes: { terrain: "", distance: "", style: "" },
@@ -198,6 +199,7 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
             umaName: u.umaName || "TBD",
             spriteId: u.spriteId,
             rating: u.rating,
+            score: u.score,
             style: u.style,
             aptTerrain: u.aptitudes.terrain,
             aptDistance: u.aptitudes.distance,
@@ -643,10 +645,14 @@ function UmaCard({
           {thumb && !umas.find((c) => c.spriteId === uma.spriteId) ? (
             <p className="text-xs text-[var(--ink-soft)]">Current art: {thumb}</p>
           ) : null}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <label className="grid gap-1">
               <span className="text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">Rating</span>
               <input className={field} value={uma.rating ?? ""} onChange={(e) => onChange({ rating: e.target.value })} placeholder="UG" />
+            </label>
+            <label className="grid gap-1">
+              <span className="text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">Score</span>
+              <input className={field} value={uma.score ?? ""} onChange={(e) => onChange({ score: e.target.value })} />
             </label>
             <label className="grid gap-1">
               <span className="text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">Style</span>

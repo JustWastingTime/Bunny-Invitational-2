@@ -13,6 +13,7 @@ type RosterPayload = {
   umaName?: string;
   spriteId?: string;
   rating?: string | null;
+  score?: string | null;
   style?: string | null;
   aptTerrain?: string | null;
   aptDistance?: string | null;
@@ -80,6 +81,7 @@ export async function PUT(request: Request) {
             umaName: row.umaName ?? "TBD",
             spriteId: String(row.spriteId ?? ""),
             rating: row.rating,
+            score: row.score,
             style: row.style,
             aptTerrain: row.aptTerrain,
             aptDistance: row.aptDistance,
@@ -97,6 +99,7 @@ export async function PUT(request: Request) {
             umaName: row.umaName ?? "TBD",
             spriteId: String(row.spriteId ?? ""),
             rating: row.rating,
+            score: row.score,
             style: row.style,
             aptTerrain: row.aptTerrain,
             aptDistance: row.aptDistance,

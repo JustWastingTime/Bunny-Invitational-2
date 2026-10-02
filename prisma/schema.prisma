@@ -32,6 +32,7 @@ model UmaEntry {
   umaName     String @default("TBD")
   spriteId    String @default("")
   rating      String?
+  score       String?
   style       String?
   aptTerrain  String?
   aptDistance String?

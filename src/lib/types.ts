@@ -57,6 +57,7 @@ export type PublicUma = {
   spriteId: string;
   spritePath: string | null;
   rating: string | null;
+  score: string | null;
   style: string | null;
   styleLabel: string | null;
   aptitudes: { terrain: string | null; distance: string | null; style: string | null };

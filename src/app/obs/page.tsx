@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { HoldScreen } from "@/components/hold-screen";
 import { BriefingDeck } from "@/components/briefing-deck";
 import { briefingPool, buildBriefingSlides } from "@/lib/briefing-slides";
 import { CATEGORIES, CATEGORY_LABEL, RACE_MAPS, STYLE_LABEL } from "@/lib/constants";
@@ -136,8 +137,8 @@ export default function ObsPage() {
   useEffect(() => {
     if (!viewKey) return;
     const [view, category, matchId, focus, slide = "0"] = viewKey.split("|");
-    if (!matchId && view !== "pause" && view !== "slides") return;
-    const shownMatchId = matchId || (view === "slides" ? "slides" : "pause");
+    if (!matchId && view !== "pause" && view !== "slides" && view !== "ending") return;
+    const shownMatchId = matchId || (view === "slides" ? "slides" : view === "ending" ? "ending" : "pause");
     const nextSlide = slide || "0";
     const nextShown = { view, category, matchId: shownMatchId, focus: focus || "", slide: nextSlide };
     const current = shownRef.current;
@@ -189,9 +190,25 @@ export default function ObsPage() {
   );
 
   if (view === "pause") {
+    const cue = data.now ?? data.next;
     return (
       <div className="obs-root">
-        {wrap(<PauseOverlay match={liveMatch} now={data.now} next={data.next} />)}
+        {wrap(
+          <HoldScreen
+            title="PAUSE"
+            tag="We’ll be right back · grab a carrot"
+            teams={liveMatch?.teams.map((team) => ({ name: team.name, color: team.color }))}
+            cue={cue ? { label: data.now ? "On deck" : "Up next", match: cue.matchLabel, category: cue.categoryLabel } : null}
+          />,
+        )}
+      </div>
+    );
+  }
+
+  if (view === "ending") {
+    return (
+      <div className="obs-root">
+        {wrap(<HoldScreen title="THANK YOU" tag="Thank you for watching" />)}
       </div>
     );
   }
@@ -257,43 +274,6 @@ export default function ObsPage() {
           : view === "groups"
             ? wrap(<GroupTableOverlay match={liveMatch} groups={data.groups ?? []} playIn={data.playIn} />)
             : wrap(<Scoreboard match={liveMatch} category={cat} />)}
-    </div>
-  );
-}
-
-function PauseOverlay({ match, now, next }: { match: PublicMatch | null; now: Cue; next: Cue }) {
-  const cue = now ?? next;
-  return (
-    <div className="pause">
-      <div className="pause-wash" />
-      <div className="pause-aurora" />
-      <div className="pause-spark pause-spark-a" />
-      <div className="pause-spark pause-spark-b" />
-      <div className="pause-spark pause-spark-c" />
-      <div className="pause-ring pause-ring-1" />
-      <div className="pause-ring pause-ring-2" />
-      <div className="pause-ring pause-ring-3" />
-      <div className="pause-core">
-        <p className="pause-kicker">Bunny Invitational 2</p>
-        <h1 className="pause-title">PAUSE</h1>
-        <p className="pause-tag">We’ll be right back · grab a carrot</p>
-        {cue ? (
-          <div className="pause-cue">
-            <span>{now ? "On deck" : "Up next"}</span>
-            <strong>{cue.matchLabel}</strong>
-            <em>{cue.categoryLabel}</em>
-          </div>
-        ) : null}
-      </div>
-      {match ? (
-        <div className="pause-teams">
-          {match.teams.map((t) => (
-            <span key={t.slot} style={{ ["--team" as string]: t.color }}>
-              {t.name}
-            </span>
-          ))}
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -592,7 +572,8 @@ function UmaSpotlight({
           <p className="uma-spot-team">{matchTeam?.name ?? team?.name ?? "TBD"}</p>
           <p className="uma-spot-trainer">{uma?.trainer || "TBD"}</p>
           <p className="uma-spot-meta">
-            {uma?.rating || "—"} · {uma?.styleLabel || "—"}
+            {uma?.rating || "—"}
+            {uma?.score ? ` · ${uma.score}` : ""} · {uma?.styleLabel || "—"}
             {uma?.isUnique ? " · Unique" : ""}
             {uma?.popularityRank && uma.pickCount > 1 ? ` · Popular #${uma.popularityRank}` : ""}
           </p>
@@ -635,6 +616,7 @@ function placeholderUmas(): PublicUma[] {
     spriteId: "",
     spritePath: null,
     rating: null,
+    score: null,
     style: null,
     styleLabel: null,
     aptitudes: { terrain: null, distance: null, style: null },

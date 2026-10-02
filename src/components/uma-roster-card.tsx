@@ -38,7 +38,8 @@ export function UmaRosterCard({
         <div className="min-w-0">
           <h4 className="font-[family-name:var(--font-display)] text-xl leading-tight">{uma.umaName}</h4>
           <p className="text-sm text-[var(--ink-soft)]">
-            {uma.trainer || "Trainer TBD"} · {uma.rating ?? "—"} · {uma.styleLabel ?? "—"}
+            {uma.trainer || "Trainer TBD"} · {uma.rating ?? "—"}
+            {uma.score ? ` · ${uma.score}` : ""} · {uma.styleLabel ?? "—"}
           </p>
           <p className="mt-1 text-xs">
             {uma.spriteId && uma.isUnique ? <span className="mr-2 font-semibold text-[var(--mint)]">Unique</span> : null}

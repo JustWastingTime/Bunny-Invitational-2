@@ -8,7 +8,7 @@ import { noStoreHeaders } from "@/lib/no-store";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const VIEWS = ["scoreboard", "matchup", "race", "gates", "groups", "pause", "slides"] as const;
+const VIEWS = ["scoreboard", "matchup", "race", "gates", "groups", "pause", "slides", "ending"] as const;
 
 export async function POST(request: Request) {
   return PUT(request);

@@ -32,6 +32,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       spriteId: e.spriteId,
       spritePath: spriteFileName(e.spriteId),
       rating: e.rating,
+      score: e.score,
       style: e.style,
       styleLabel: e.style ? STYLE_LABEL[e.style] ?? e.style : null,
       aptitudes: { terrain: e.aptTerrain, distance: e.aptDistance, style: e.aptStyle },

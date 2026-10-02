@@ -5,6 +5,7 @@ import { BriefingDeck, BriefingFrame } from "@/components/briefing-deck";
 import { briefSlideGroup, briefSlideLabel, briefingPool, buildBriefingSlides } from "@/lib/briefing-slides";
 import { CATEGORIES, CATEGORY_LABEL } from "@/lib/constants";
 import { defaultGate, gateKey } from "@/lib/overlay-gates";
+import { spriteFileName, spriteLocalPath } from "@/lib/sprites";
 import { usePublicData } from "@/components/use-public-data";
 import { PlayInSchedule } from "@/components/tournament-ui";
 import { useStaffToast } from "@/components/staff-toast";
@@ -20,6 +21,7 @@ const VIEWS = [
   { id: "groups", label: "Show Group Table" },
   { id: "pause", label: "Show Pause" },
   { id: "slides", label: "Show Slides" },
+  { id: "ending", label: "Show Ending" },
 ] as const;
 
 export default function OverlayDirectorPage() {
@@ -495,6 +497,7 @@ function liveViewLabel(view: string) {
   if (view === "groups") return "Group table";
   if (view === "pause") return "Pause";
   if (view === "slides") return "Slides";
+  if (view === "ending") return "Ending";
   return "Match up";
 }
 
@@ -630,6 +633,36 @@ function matchesForPrep(matches: PublicMatch[], prep: PublicMatch | null) {
   return { title: prep.label, matches: matches.filter((m) => m.stage === prep.stage) };
 }
 
+function PlaceSelect({
+  place,
+  value,
+  racers,
+  onChange,
+}: {
+  place: number;
+  value: string;
+  racers: { key: string; label: string }[];
+  onChange: (key: string) => void;
+}) {
+  return (
+    <label className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center gap-2 text-sm">
+      <span className="font-semibold">{place}</span>
+      <select
+        className="w-full min-w-0 rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] px-2 py-1.5"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        <option value="">—</option>
+        {racers.map((racer) => (
+          <option key={racer.key} value={racer.key}>
+            {racer.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function matchOptGroups(matches: PublicMatch[]) {
   const playin = matches.filter((m) => m.stage === "playin");
   const groups = ["A", "B", "C"].map((g) => ({
@@ -683,11 +716,24 @@ function GatesCard({
                   const uma = umas.find((u) => u.slot === slot);
                   const assigned = t.teamId ? gatesAll[gateKey(match.id, cat, t.teamId, slot)] : undefined;
                   return (
-                    <label key={slot} className="grid grid-cols-[1fr_4.5rem] items-center gap-2 text-sm">
-                      <span className="truncate">
-                        {uma?.umaName || `Slot ${slot + 1}`}{" "}
-                        <span className="text-[var(--ink-soft)]">({uma?.trainer || "—"})</span>
+                    <label key={slot} className="grid grid-cols-[2.5rem_minmax(0,1fr)_4.5rem] items-center gap-2 text-sm">
+                      <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-lg bg-[var(--paper)]">
+                        {uma?.spriteId ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={uma.spritePath || spriteFileName(uma.spriteId) || ""}
+                            alt=""
+                            className="h-10 w-10 object-contain"
+                            onError={(event) => {
+                              const fallback = spriteLocalPath(uma.spriteId);
+                              if (fallback && event.currentTarget.src !== fallback) event.currentTarget.src = fallback;
+                            }}
+                          />
+                        ) : (
+                          <span className="text-[0.65rem] text-[var(--ink-soft)]">{slot + 1}</span>
+                        )}
                       </span>
+                      <span className="truncate font-semibold">{uma?.trainer?.trim() || `Slot ${slot + 1}`}</span>
                       <GateField
                         assigned={assigned}
                         placeholder={String(defaultGate(teamIndex, slot))}
@@ -769,7 +815,7 @@ function ScoresCard({
         const uma = team?.roster.find((u) => u.category === cat && u.slot === slot);
         out.push({
           key: `${t.teamId}:${slot}`,
-          label: `${t.name} · ${uma?.umaName ?? `slot ${slot + 1}`} (${uma?.trainer || "—"})`,
+          label: `${t.shortName || t.name}  ${uma?.trainer?.trim() || "—"} (${uma?.umaName && uma.umaName !== "TBD" ? uma.umaName : `slot ${slot + 1}`})`,
         });
       }
     }
@@ -837,27 +883,29 @@ function ScoresCard({
       <p className="text-sm text-[var(--ink-soft)]">
         Places 1–5 for the match staged above. Everyone else is scored from their own placement automatically.
       </p>
-      {/* minmax(0,1fr) and min-w-0 let the native selects actually shrink: a bare
-          1fr resolves to minmax(auto,1fr), and a select refuses to go below the
-          intrinsic width set by its longest option, so the column overflows. */}
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {[1, 2, 3, 4, 5].map((place) => (
-          <label key={place} className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center gap-2 text-sm">
-            <span className="font-semibold">{place}</span>
-            <select
-              className="w-full min-w-0 rounded-xl border border-[var(--line)] bg-[var(--surface-strong)] px-2 py-1.5"
+      <div className="grid gap-3">
+        <div className="grid gap-2 sm:grid-cols-3">
+          {[1, 2, 3].map((place) => (
+            <PlaceSelect
+              key={place}
+              place={place}
               value={places[place] ?? placeKey(shown?.placements.find((p) => p.place === place))}
-              onChange={(e) => setPlace(place, e.target.value)}
-            >
-              <option value="">—</option>
-              {racers.map((r) => (
-                <option key={r.key} value={r.key}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        ))}
+              racers={racers}
+              onChange={(key) => setPlace(place, key)}
+            />
+          ))}
+        </div>
+        <div className="mx-auto grid w-full max-w-3xl gap-2 sm:grid-cols-2">
+          {[4, 5].map((place) => (
+            <PlaceSelect
+              key={place}
+              place={place}
+              value={places[place] ?? placeKey(shown?.placements.find((p) => p.place === place))}
+              racers={racers}
+              onChange={(key) => setPlace(place, key)}
+            />
+          ))}
+        </div>
       </div>
       {shown?.placements.length ? (
         <ul className="grid gap-0.5 text-sm text-[var(--ink-soft)] sm:grid-cols-2 lg:grid-cols-3">

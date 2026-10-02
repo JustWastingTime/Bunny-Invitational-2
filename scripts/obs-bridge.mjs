@@ -13,14 +13,23 @@
  * overlay state (the same state the /obs browser source renders) and mirrors it
  * onto OBS scenes and sources:
  *
- *   view "race"                   -> scene "Uma"
- *   view "matchup" | "scoreboard"
- *     | "groups" | "pause"        -> scene "Cast"
+ *   view "race" | "scoreboard" | "groups"
+ *     | "pause" | "slides" | "ending" -> scene "Uma"
+ *   view "matchup"              -> scene "Cast"
  *   view "gates"                  -> scene left alone: the gates strip only
  *                                    appears once "race" already owns Uma, so
  *                                    a gates press never moves OBS
  *   activeCategory  -> that category's source on in every toggle scene, and all
- *                      the other category sources off
+ *                      the other category sources off. Uma uses Sprint / Mile /
+ *                      Medium / Long / Dirt, and Medium Audio follows Medium.
+ *                      Cast uses Sprint 2 / Mile 2 / Medium 2 / Long 2 / Dirt 2,
+ *                      and Medium Audio follows Medium 2. Medium Audio turns off
+ *                      for every other distance. A distance change fades that
+ *                      audio out and the next distance in (Medium fades Medium
+ *                      and Medium Audio). Switching Uma and Cast on the same
+ *                      distance does not fade. Re-applied after a scene switch
+ *                      so the scene's saved default does not replace the
+ *                      distance already on air.
  *
  * Usage (streaming PC):
  *   set APP_URL=https://your-app.vercel.app
@@ -33,9 +42,11 @@
  *   OBS_URL               obs-websocket URL (default ws://127.0.0.1:4455)
  *   OBS_PASSWORD          obs-websocket password (Tools -> WebSocket Server Settings)
  *   OBS_SCENE_MAP         JSON view -> scene (default: race -> Uma, everything else -> Cast)
- *   OBS_CATEGORY_SOURCES  JSON category -> source names to switch
+ *   OBS_CATEGORY_SOURCES  JSON scene -> category -> source names. A flat
+ *                         category -> source map still applies to every scene.
  *   OBS_TOGGLE_SCENES     JSON array of scenes to toggle sources in
  *   OBS_POLL_MS           state poll interval (default 750)
+ *   OBS_AUDIO_FADE_MS     distance-change audio fade (default 400, 0 to skip)
  *
  * Flags:
  *   --once                sync one state, then exit (handy for a quick check)
@@ -47,17 +58,36 @@ import { pathToFileURL } from "node:url";
 export const DEFAULT_SCENE_MAP = {
   race: "Uma",
   matchup: "Cast",
-  scoreboard: "Cast",
-  groups: "Cast",
-  pause: "Cast",
+  scoreboard: "Uma",
+  groups: "Uma",
+  pause: "Uma",
+  slides: "Uma",
+  ending: "Uma",
 };
 export const DEFAULT_CATEGORY_SOURCES = {
-  sprint: ["Sprint"],
-  mile: ["Mile"],
-  medium: ["Medium"],
-  long: ["Long"],
-  dirt: ["Dirt"],
+  Uma: {
+    sprint: ["Sprint"],
+    mile: ["Mile"],
+    medium: ["Medium", "Medium Audio"],
+    long: ["Long"],
+    dirt: ["Dirt"],
+  },
+  Cast: {
+    sprint: ["Sprint 2"],
+    mile: ["Mile 2"],
+    medium: ["Medium 2", "Medium Audio"],
+    long: ["Long 2"],
+    dirt: ["Dirt 2"],
+  },
 };
+
+/** Per-scene maps win. A flat category map still applies to every scene. */
+export function sourcesForScene(categorySources, sceneName) {
+  const sample = Object.values(categorySources ?? {})[0];
+  const perScene = sample != null && typeof sample === "object" && !Array.isArray(sample);
+  if (!perScene) return categorySources ?? {};
+  return categorySources[sceneName] ?? {};
+}
 
 export class ObsError extends Error {
   constructor(message, code) {
@@ -96,6 +126,8 @@ export function loadConfig(env = process.env) {
   );
   const defaultScenes = [...new Set(Object.values(sceneMap).filter((name) => typeof name === "string"))];
   const toggleScenes = parseJsonEnv(env.OBS_TOGGLE_SCENES, defaultScenes, "OBS_TOGGLE_SCENES");
+  const fadeRaw = env.OBS_AUDIO_FADE_MS;
+  const fadeParsed = fadeRaw == null || String(fadeRaw).trim() === "" ? 400 : Number(fadeRaw);
   return {
     stateUrl: env.OBS_STATE_URL || `${appUrl}/api/overlay/live`,
     obsUrl: env.OBS_URL || "ws://127.0.0.1:4455",
@@ -104,6 +136,7 @@ export function loadConfig(env = process.env) {
     categorySources,
     toggleScenes,
     pollMs: Math.max(100, Number(env.OBS_POLL_MS) || 750),
+    audioFadeMs: Number.isFinite(fadeParsed) ? Math.max(0, fadeParsed) : 400,
   };
 }
 
@@ -261,7 +294,7 @@ export class ObsClient {
 }
 
 export function newBridgeState() {
-  return { indexes: new Map(), warned: new Set(), lastScene: null, lastCategory: null };
+  return { indexes: new Map(), warned: new Set(), lastScene: null, lastCategory: null, volumes: new Map() };
 }
 
 function warnOnce(state, log, key, message) {
@@ -321,12 +354,85 @@ async function sceneIndex(obs, sceneName, state, log) {
   return index;
 }
 
-/** Turns one category on and every other category off, in every toggle scene. */
+/** Source names for one distance, across every toggle scene. Medium includes Medium Audio. */
+export function categorySourceNames(categorySources, toggleScenes, category) {
+  const names = [];
+  const seen = new Set();
+  for (const sceneName of toggleScenes ?? []) {
+    const list = sourcesForScene(categorySources, sceneName)[category];
+    const items = Array.isArray(list) ? list : list ? [list] : [];
+    for (const name of items) {
+      if (typeof name !== "string" || !name) continue;
+      const key = name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      names.push(name);
+    }
+  }
+  return names;
+}
+
+const AUDIO_FADE_STEPS = 8;
+
+async function rememberVolume(obs, state, name) {
+  if (!state.volumes) state.volumes = new Map();
+  if (state.volumes.has(name)) return state.volumes.get(name);
+  let current = null;
+  try {
+    const res = await obs.call("GetInputVolume", { inputName: name });
+    current = typeof res.inputVolumeMul === "number" ? res.inputVolumeMul : null;
+  } catch {
+    return null;
+  }
+  if (current == null) return null;
+  const resting = current > 0.001 ? current : 1;
+  state.volumes.set(name, resting);
+  return resting;
+}
+
+async function writeVolume(obs, name, mul) {
+  try {
+    await obs.call("SetInputVolume", { inputName: name, inputVolumeMul: mul });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Fades distance audio. Scene changes on the same distance do not call this. */
+export async function fadeCategoryAudio(obs, state, names, direction, fadeMs) {
+  if (!fadeMs || !names?.length) return;
+  const stepMs = Math.max(16, Math.round(fadeMs / AUDIO_FADE_STEPS));
+  await Promise.all(
+    names.map(async (name) => {
+      const resting = await rememberVolume(obs, state, name);
+      if (resting == null) return;
+      const from = direction === "out" ? resting : 0;
+      const to = direction === "out" ? 0 : resting;
+      if (!(await writeVolume(obs, name, from))) return;
+      for (let step = 1; step <= AUDIO_FADE_STEPS; step += 1) {
+        const mul = from + (to - from) * (step / AUDIO_FADE_STEPS);
+        if (!(await writeVolume(obs, name, mul))) return;
+        if (step < AUDIO_FADE_STEPS) await sleep(stepMs);
+      }
+    }),
+  );
+}
+
+async function silenceCategoryAudio(obs, state, names) {
+  await Promise.all(
+    names.map(async (name) => {
+      if ((await rememberVolume(obs, state, name)) == null) return;
+      await writeVolume(obs, name, 0);
+    }),
+  );
+}
+
 export async function applyCategory(obs, config, state, category, log = console) {
   let toggled = 0;
   for (const sceneName of config.toggleScenes) {
     const index = await sceneIndex(obs, sceneName, state, log);
-    for (const [name, sources] of Object.entries(config.categorySources)) {
+    for (const [name, sources] of Object.entries(sourcesForScene(config.categorySources, sceneName))) {
       const want = name === category;
       const list = Array.isArray(sources) ? sources : [sources];
       for (const sourceName of list) {
@@ -369,7 +475,7 @@ export async function applyCategory(obs, config, state, category, log = console)
   return toggled;
 }
 
-async function applyState(obs, config, state, wanted, log) {
+export async function applyState(obs, config, state, wanted, log) {
   if (!wanted.visible) {
     if (state.lastScene !== null || state.lastCategory !== null) {
       log.info("[obs-bridge] overlay is hidden — leaving OBS alone");
@@ -380,6 +486,7 @@ async function applyState(obs, config, state, wanted, log) {
   }
 
   const sceneName = config.sceneMap[wanted.view];
+  let sceneChanged = false;
   if (typeof sceneName === "string" && sceneName && sceneName !== state.lastScene) {
     if (state.scenes && !state.scenes.has(sceneName)) {
       warnOnce(state, log, `scene:${sceneName}`, `scene "${sceneName}" does not exist in OBS — check OBS_SCENE_MAP`);
@@ -390,11 +497,32 @@ async function applyState(obs, config, state, wanted, log) {
         log.info(`[obs-bridge] scene -> "${sceneName}" (view "${wanted.view}")`);
       }
       state.lastScene = sceneName;
+      sceneChanged = true;
     }
   }
 
-  if (wanted.category && wanted.category !== state.lastCategory) {
+  // A scene switch restores that scene's saved source visibility (often Mile).
+  // Re-apply the distance already on air so Show Race does not change it.
+  // Audio fades only when the distance changes, not when Uma and Cast swap.
+  if (wanted.category && (sceneChanged || wanted.category !== state.lastCategory)) {
+    const categoryChanged = state.lastCategory != null && wanted.category !== state.lastCategory;
+    if (sceneChanged) {
+      for (const name of config.toggleScenes) state.indexes.delete(name);
+    }
+    const fadeMs = config.audioFadeMs ?? 400;
+    const previous = categoryChanged
+      ? categorySourceNames(config.categorySources, config.toggleScenes, state.lastCategory)
+      : [];
+    const next = categoryChanged
+      ? categorySourceNames(config.categorySources, config.toggleScenes, wanted.category)
+      : [];
+    if (categoryChanged) {
+      log.info(`[obs-bridge] audio fade ${state.lastCategory} -> ${wanted.category}`);
+      await fadeCategoryAudio(obs, state, previous, "out", fadeMs);
+      await silenceCategoryAudio(obs, state, next);
+    }
     const toggled = await applyCategory(obs, config, state, wanted.category, log);
+    if (categoryChanged) await fadeCategoryAudio(obs, state, next, "in", fadeMs);
     log.info(`[obs-bridge] category -> "${wanted.category}" (${toggled} source${toggled === 1 ? "" : "s"} changed)`);
     state.lastCategory = wanted.category;
   }

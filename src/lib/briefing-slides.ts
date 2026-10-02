@@ -59,6 +59,7 @@ export type BriefGroup = {
 };
 
 export type BriefSlide =
+  | { id: string; kind: "soon" }
   | { id: string; kind: "title"; pool: BriefPool; groups: BriefGroup[] }
   | { id: string; kind: "maps" }
   | { id: string; kind: "map"; category: Category }
@@ -78,6 +79,8 @@ export function briefingPool(stage: string | null | undefined): BriefPool {
 
 export function briefSlideGroup(slide: BriefSlide) {
   switch (slide.kind) {
+    case "soon":
+      return "Welcome";
     case "title":
       return "Welcome";
     case "maps":
@@ -96,6 +99,8 @@ export function briefSlideGroup(slide: BriefSlide) {
 
 export function briefSlideLabel(slide: BriefSlide) {
   switch (slide.kind) {
+    case "soon":
+      return "Starting soon";
     case "title":
       return slide.pool === "playin" ? "Play-in welcome" : "Main field welcome";
     case "maps":
@@ -132,6 +137,7 @@ export function buildBriefingSlides(teams: PublicTeam[], pool: BriefPool): Brief
     .filter((uma) => uma.penalty !== 0)
     .sort((a, b) => a.penalty - b.penalty || b.count - a.count || a.name.localeCompare(b.name));
   const slides: BriefSlide[] = [
+    { id: "soon", kind: "soon" },
     { id: "title", kind: "title", pool, groups: welcomeGroups(teams, pool) },
     { id: "maps", kind: "maps" },
     ...RACE_MAPS.filter((map) => CATEGORIES.includes(map.category)).map((map) => ({

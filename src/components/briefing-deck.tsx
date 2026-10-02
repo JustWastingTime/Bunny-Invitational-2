@@ -15,6 +15,7 @@ import {
   type BriefSlide,
   type BriefUma,
 } from "@/lib/briefing-slides";
+import { HoldScreen } from "@/components/hold-screen";
 import "./briefing-deck.css";
 
 export function BriefingFrame({ label, children }: { label: string; children: ReactNode }) {
@@ -41,6 +42,13 @@ export function BriefingFrame({ label, children }: { label: string; children: Re
 }
 
 export function BriefingDeck({ slide, index, total, pool }: { slide: BriefSlide; index: number; total: number; pool: BriefPool }) {
+  if (slide.kind === "soon") {
+    return (
+      <article className="brief" aria-label={briefSlideLabel(slide)}>
+        <HoldScreen title="STARTING SOON" tag="The field is almost here" />
+      </article>
+    );
+  }
   return (
     <article className="brief" aria-label={briefSlideLabel(slide)}>
       <div className="brief-wash" />
@@ -63,6 +71,8 @@ export function BriefingDeck({ slide, index, total, pool }: { slide: BriefSlide;
 
 function kickerFor(slide: BriefSlide) {
   switch (slide.kind) {
+    case "soon":
+      return "Stream briefing";
     case "title":
       return "Stream briefing";
     case "maps":
@@ -84,6 +94,8 @@ function kickerFor(slide: BriefSlide) {
 
 function bodyFor(slide: BriefSlide) {
   switch (slide.kind) {
+    case "soon":
+      return null;
     case "title":
       return <TitleSlide pool={slide.pool} groups={slide.groups} />;
     case "maps":
