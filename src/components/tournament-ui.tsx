@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import type { GroupStandingRow, PublicMatch, PublicPayload } from "@/lib/types";
+import type { GroupStandingRow, PublicMatch, PublicPayload, PublicPlacement } from "@/lib/types";
 import { PLAY_IN_EVENT_LABEL } from "@/lib/constants";
+import { spriteLocalPath } from "@/lib/sprites";
 
 export function GroupTable({
   group,
@@ -267,50 +268,87 @@ function DayColumn({
 }
 
 export function ScorerList({ match }: { match: PublicMatch }) {
-  const scorers = match.races.flatMap((race) =>
-    race.placements
-      .filter((p) => p.net !== 0)
-      .map((p) => ({ ...p, race: race.label })),
-  );
-  if (!scorers.length)
+  const any = match.races.some((race) => race.placements.some((p) => p.net !== 0));
+  if (!any)
     return (
       <p className="border-l-4 border-[var(--gold)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--ink-soft)]">
         No points scored yet. Placements appear here as each race is called in.
       </p>
     );
   return (
-    <div className="min-w-0 overflow-x-auto bg-[var(--surface)] ring-1 ring-[var(--line)]">
-      <table className="ink-table">
-        <thead>
-          <tr>
-            <th scope="col">Place</th>
-            <th scope="col">Uma</th>
-            <th scope="col">Team</th>
-            <th scope="col">Race</th>
-            <th scope="col" className="text-right">Pts</th>
-          </tr>
-        </thead>
-        <tbody>
-          {scorers.map((p) => (
-            <tr key={`${match.id}-${p.race}-${p.place}-${p.teamId}-${p.slot}`}>
-              <td>{p.place}</td>
-              <td>
-                {p.umaName}{" "}
-                <span className="text-[var(--ink-soft)]">({p.trainer})</span>
-              </td>
-              <td>{p.teamName}</td>
-              <td>
-                {p.race}
-                {p.penalty ? ` · pop ${p.penalty}` : ""}
-                {p.uniqueBonus ? ` · unique +${p.uniqueBonus}` : ""}
-              </td>
-              <td className="text-right font-semibold text-[var(--coral-ink)]">
-                {p.net > 0 ? `+${p.net}` : p.net}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="grid gap-6">
+      {match.races.map((race) => {
+        const scorers = race.placements.filter((p) => p.net !== 0);
+        return (
+          <section key={race.category} className="min-w-0">
+            <h3 className="mb-2 font-[family-name:var(--font-display)] text-2xl">{race.label}</h3>
+            {scorers.length ? (
+              <div className="overflow-x-auto bg-[var(--surface)] ring-1 ring-[var(--line)]">
+                <table className="ink-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Place</th>
+                      <th scope="col">Player</th>
+                      <th scope="col">Team</th>
+                      <th scope="col" className="text-right">Pts</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scorers.map((p) => (
+                      <tr key={`${match.id}-${race.category}-${p.place}-${p.teamId}-${p.slot}`}>
+                        <td>{p.place}</td>
+                        <td>
+                          <ScorerRunner placement={p} />
+                        </td>
+                        <td>{p.teamName}</td>
+                        <td className="text-right font-semibold text-[var(--coral-ink)]">
+                          {p.net > 0 ? `+${p.net}` : p.net}
+                          {p.penalty ? <span className="mt-0.5 block text-xs font-normal text-[var(--ink-soft)]">pop {p.penalty}</span> : null}
+                          {p.uniqueBonus ? (
+                            <span className="mt-0.5 block text-xs font-normal text-[var(--ink-soft)]">unique +{p.uniqueBonus}</span>
+                          ) : null}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="bg-[var(--surface)] px-4 py-3 text-sm text-[var(--ink-soft)] ring-1 ring-[var(--line)]">
+                No points in this distance yet.
+              </p>
+            )}
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+function ScorerRunner({ placement }: { placement: PublicPlacement }) {
+  const local = spriteLocalPath(placement.spriteId);
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-[var(--paper-2)]">
+        {placement.spritePath || local ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={placement.spritePath || local || ""}
+            alt=""
+            className="h-10 w-10 object-contain"
+            onError={(event) => {
+              if (!local || event.currentTarget.src.endsWith(local)) return;
+              event.currentTarget.src = local;
+            }}
+          />
+        ) : (
+          <span className="text-[0.65rem] text-[var(--ink-soft)]">?</span>
+        )}
+      </span>
+      <span className="min-w-0">
+        <span className="block font-semibold leading-tight">{placement.trainer.trim() || "—"}</span>
+        <span className="block truncate text-sm text-[var(--ink-soft)]">{placement.umaName || "TBD"}</span>
+      </span>
     </div>
   );
 }

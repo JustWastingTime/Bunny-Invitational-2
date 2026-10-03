@@ -121,16 +121,17 @@ export async function buildPublicPayload(opts?: { reveal?: boolean }) {
             .map((p) => {
               const team = teamById.get(p.teamId);
               const entry = team?.umaEntries.find((e) => e.category === category && e.slot === p.slot);
+              const showUma = reveal || m.stage === PLAY_IN_STAGE;
               return {
                 place: p.place,
                 teamId: p.teamId,
                 teamName: team?.name ?? p.teamId,
                 teamColor: team?.color ?? "#c9a227",
                 slot: p.slot,
-                trainer: reveal ? (entry?.trainer ?? "") : "",
-                umaName: reveal ? (entry?.umaName ?? "Unknown") : "TBD",
-                spriteId: reveal ? (entry?.spriteId ?? p.spriteId) : "",
-                spritePath: reveal ? spriteFileName(entry?.spriteId ?? p.spriteId) : null,
+                trainer: showUma ? (entry?.trainer ?? "") : "",
+                umaName: showUma ? (entry?.umaName ?? "Unknown") : "TBD",
+                spriteId: showUma ? (entry?.spriteId ?? p.spriteId) : "",
+                spritePath: showUma ? spriteFileName(entry?.spriteId ?? p.spriteId) : null,
                 base: p.base,
                 penalty: p.penalty,
                 uniqueBonus: p.uniqueBonus,
@@ -195,9 +196,7 @@ export async function buildPublicPayload(opts?: { reveal?: boolean }) {
   const visibleGroups = hideGroups ? [] : groups;
   const visibleGf = hideGroups ? [] : gfTeams;
 
-  const nowNext = reveal
-    ? resolveNowNext(publicMatches, overlay)
-    : unpublishedNowNext(visibleMatches);
+  const nowNext = resolveNowNext(publicMatches, overlay);
   const stats = reveal
     ? buildStats(
         publicTeams
@@ -259,20 +258,6 @@ function unpublishedUma(category: string, slot: number) {
     popularityRank: null,
     pickCount: 0,
   };
-}
-
-function unpublishedNowNext(
-  matches: {
-    id: string;
-    label: string;
-    stage: string;
-    sortOrder: number;
-    teams: { name: string; color: string }[];
-  }[],
-) {
-  const playIn = matches.filter((m) => m.stage === "playin").sort((a, b) => a.sortOrder - b.sortOrder)[0];
-  const first = playIn ?? [...matches].sort((a, b) => a.sortOrder - b.sortOrder)[0];
-  return { now: null, next: first ? toCue(first, "sprint") : null };
 }
 
 function resolveNowNext(
