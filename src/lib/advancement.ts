@@ -113,7 +113,7 @@ async function writeMatchTeams(matchId: string, teamIds: (string | null)[]) {
 }
 
 export async function generateGroupMatches() {
-  const { FANO_TRIPLES, GROUPS: groups } = await import("./constants");
+  const { FANO_TRIPLES, GROUPS: groups, groupRoundDay } = await import("./constants");
   const teams = await prisma.team.findMany();
   for (const g of groups) {
     const members = teams
@@ -123,7 +123,7 @@ export async function generateGroupMatches() {
     for (let i = 0; i < FANO_TRIPLES.length; i++) {
       const triple = FANO_TRIPLES[i];
       const id = `group-${g.toLowerCase()}-${i + 1}`;
-      const day = i < 5 ? 1 : 2;
+      const day = groupRoundDay(i);
       await prisma.match.upsert({
         where: { id },
         create: {
@@ -193,15 +193,16 @@ export async function generatePlayInMatches() {
 }
 
 export async function ensureKnockoutShell() {
+  const { KNOCKOUT_DAY } = await import("./constants");
   const knockout = [
-    { id: "qf-1", stage: "qf", label: "Quarter Final 1", day: 2, sortOrder: 40 },
-    { id: "qf-2", stage: "qf", label: "Quarter Final 2", day: 2, sortOrder: 41 },
-    { id: "qf-3", stage: "qf", label: "Quarter Final 3", day: 2, sortOrder: 42 },
-    { id: "semi-1", stage: "semi", label: "Semi Final 1", day: 2, sortOrder: 50 },
-    { id: "semi-2", stage: "semi", label: "Semi Final 2", day: 2, sortOrder: 51 },
-    { id: "semi-3", stage: "semi", label: "Semi Final 3", day: 2, sortOrder: 52 },
-    { id: "gf-1", stage: "gf", label: "Grand Final — Set 1", day: 2, sortOrder: 60, setNumber: 1 },
-    { id: "gf-2", stage: "gf", label: "Grand Final — Set 2", day: 2, sortOrder: 61, setNumber: 2 },
+    { id: "qf-1", stage: "qf", label: "Quarter Final 1", day: KNOCKOUT_DAY, sortOrder: 40 },
+    { id: "qf-2", stage: "qf", label: "Quarter Final 2", day: KNOCKOUT_DAY, sortOrder: 41 },
+    { id: "qf-3", stage: "qf", label: "Quarter Final 3", day: KNOCKOUT_DAY, sortOrder: 42 },
+    { id: "semi-1", stage: "semi", label: "Semi Final 1", day: KNOCKOUT_DAY, sortOrder: 50 },
+    { id: "semi-2", stage: "semi", label: "Semi Final 2", day: KNOCKOUT_DAY, sortOrder: 51 },
+    { id: "semi-3", stage: "semi", label: "Semi Final 3", day: KNOCKOUT_DAY, sortOrder: 52 },
+    { id: "gf-1", stage: "gf", label: "Grand Final — Set 1", day: KNOCKOUT_DAY, sortOrder: 60, setNumber: 1 },
+    { id: "gf-2", stage: "gf", label: "Grand Final — Set 2", day: KNOCKOUT_DAY, sortOrder: 61, setNumber: 2 },
   ];
   for (const row of knockout) {
     await prisma.match.upsert({
@@ -214,7 +215,7 @@ export async function ensureKnockoutShell() {
         label: row.label,
         setNumber: row.setNumber ?? null,
       },
-      update: { label: row.label, sortOrder: row.sortOrder },
+      update: { label: row.label, sortOrder: row.sortOrder, day: row.day },
     });
     for (let slot = 0; slot < 3; slot++) {
       const existing = await prisma.matchTeam.findUnique({

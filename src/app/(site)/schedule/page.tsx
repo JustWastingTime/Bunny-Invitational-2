@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PLAY_IN_EVENT_LABEL, PUBLIC_GROUPS_LIVE } from "@/lib/constants";
+import { PLAY_IN_EVENT_LABEL, PUBLIC_GROUPS_LIVE, mainStageDayLabel } from "@/lib/constants";
 import { NowNext } from "@/components/now-next";
 import { GroupSchedule, KnockoutBoard, PlayInSchedule } from "@/components/tournament-ui";
 import { DataError, Loading, PageTitle } from "@/components/site-chrome";
@@ -26,7 +26,7 @@ export default function SchedulePage() {
     <div className="grid gap-10">
       <PageTitle kicker="Order of play" title="Schedule">
         {PUBLIC_GROUPS_LIVE
-          ? `Play-in is a battle between seven second clubs — same 3v3v3 as a group, all on ${PLAY_IN_EVENT_LABEL}, with its own oshi and popularity pool. Then three groups of seven, then knockout.`
+          ? `Play-in is a battle between seven second clubs — same 3v3v3 as a group, all on ${PLAY_IN_EVENT_LABEL}, with its own oshi and popularity pool. The main stage is three days: group matches 1–3 on ${mainStageDayLabel(1)}, matches 4–7 on ${mainStageDayLabel(2)}, then last chance, semis, and finals on ${mainStageDayLabel(3)}.`
           : `Play-ins. Seven in. One remains. ${PLAY_IN_EVENT_LABEL}. Group draw lands closer to the main stage.`}
       </PageTitle>
       <NowNext now={data.now} next={data.next} />

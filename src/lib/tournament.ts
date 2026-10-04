@@ -12,6 +12,7 @@ import {
   PLAY_IN_STAGE,
   PUBLIC_GROUPS_LIVE,
   PUBLIC_TOURNAMENT_LIVE,
+  scheduledDay,
   type Category,
 } from "./constants";
 import { popularityFromRosters, splitPopularity } from "./scoring";
@@ -91,7 +92,7 @@ export async function buildPublicPayload(opts?: { reveal?: boolean }) {
       id: m.id,
       stage: m.stage,
       group: m.group,
-      day: m.day,
+      day: scheduledDay(m),
       sortOrder: m.sortOrder,
       label: m.label,
       setNumber: m.setNumber,

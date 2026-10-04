@@ -112,6 +112,34 @@ export const PLAY_IN_GROUP = "P";
 export const PLAY_IN_DAY = 0;
 export const PLAY_IN_EVENT_LABEL = "Sat 3 Oct 2026, 3:00 PM UTC";
 
+/** Main stage. Discord session starts: 1791565200, 1791644400, 1791730800. */
+export const MAIN_STAGE_DAYS = [
+  { day: 1, label: "Fri 9 Oct 2026, 5:00 PM UTC" },
+  { day: 2, label: "Sat 10 Oct 2026, 3:00 PM UTC" },
+  { day: 3, label: "Sun 11 Oct 2026, 3:00 PM UTC" },
+] as const;
+export const KNOCKOUT_DAY = 3;
+
+export function mainStageDayLabel(day: number) {
+  return MAIN_STAGE_DAYS.find((row) => row.day === day)?.label ?? `Day ${day}`;
+}
+
+/** 0-based index in a group's 7-match round. Matches 1–3 are day 1, 4–7 are day 2. */
+export function groupRoundDay(matchIndex: number) {
+  return matchIndex < 3 ? 1 : 2;
+}
+
+/** Day shown on the schedule. Derived from the match so an older stored day still lines up. */
+export function scheduledDay(match: { stage: string; id: string; day: number }) {
+  if (match.stage === "playin") return match.day;
+  if (match.stage === "group") {
+    const n = Number(match.id.split("-").pop());
+    if (Number.isFinite(n) && n >= 1) return n <= 3 ? 1 : 2;
+  }
+  if (match.stage === "qf" || match.stage === "semi" || match.stage === "gf") return KNOCKOUT_DAY;
+  return match.day;
+}
+
 export const FANO_TRIPLES: [number, number, number][] = [
   [0, 1, 3],
   [1, 2, 4],

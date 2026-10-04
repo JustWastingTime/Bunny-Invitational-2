@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import type { GroupStandingRow, PublicMatch, PublicPayload, PublicPlacement } from "@/lib/types";
-import { PLAY_IN_EVENT_LABEL } from "@/lib/constants";
+import { GROUPS, PLAY_IN_EVENT_LABEL, mainStageDayLabel } from "@/lib/constants";
 import { spriteLocalPath } from "@/lib/sprites";
 
 export function GroupTable({
@@ -97,11 +96,6 @@ export function MatchCard({ match, highlight }: { match: PublicMatch; highlight?
   );
 }
 
-function matchNumber(match: PublicMatch) {
-  const found = match.label.match(/Match (\d+)/i);
-  return found ? found[1] : String(match.sortOrder);
-}
-
 function MatchTeams({ match }: { match: PublicMatch }) {
   const showScores = match.complete || match.teams.some((team) => team.points !== 0);
   return (
@@ -123,9 +117,7 @@ function CompactMatch({ match, highlight }: { match: PublicMatch; highlight?: bo
   return (
     <article className={`rounded-xl px-3 py-2.5 ${highlight ? "bg-[var(--gold)]/40" : "bg-[var(--surface)]"}`}>
       <div className="mb-1.5 flex items-center justify-between gap-2">
-        <h4 className="text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">
-          Match {matchNumber(match)}
-        </h4>
+        <h4 className="text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">{match.label}</h4>
         {highlight ? (
           <span className="text-xs font-extrabold uppercase tracking-wide text-[var(--coral-ink)]">Now</span>
         ) : null}
@@ -135,8 +127,6 @@ function CompactMatch({ match, highlight }: { match: PublicMatch; highlight?: bo
   );
 }
 
-const GROUPS = ["A", "B", "C"] as const;
-
 export function GroupSchedule({
   matches,
   nowId,
@@ -144,50 +134,31 @@ export function GroupSchedule({
   matches: PublicMatch[];
   nowId?: string | null;
 }) {
-  const liveGroup = matches.find((m) => m.id === nowId)?.group;
-  const [focus, setFocus] = useState<(typeof GROUPS)[number]>(
-    liveGroup === "A" || liveGroup === "B" || liveGroup === "C" ? liveGroup : "A",
-  );
-
   return (
-    <div className="grid gap-4">
-      <div className="flex flex-wrap gap-2 lg:hidden">
-        {GROUPS.map((group) => (
-          <button
-            key={group}
-            type="button"
-            onClick={() => setFocus(group)}
-            aria-pressed={focus === group}
-            className={`rounded-full px-4 py-1.5 text-sm ${
-              focus === group
-                ? "bg-[var(--accent-solid)] font-semibold text-[var(--accent-on-solid)]"
-                : "bg-[var(--surface-2)] text-[var(--ink-soft)]"
-            }`}
-          >
-            Group {group}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        {GROUPS.map((group) => {
-          const groupMatches = matches
-            .filter((m) => m.group === group)
-            .sort((a, b) => a.sortOrder - b.sortOrder);
-          const day1 = groupMatches.filter((m) => m.day === 1);
-          const day2 = groupMatches.filter((m) => m.day === 2);
-          return (
-            <section
-              key={group}
-              className={`min-w-0 ${focus === group ? "block" : "hidden lg:block"}`}
-            >
-              <h3 className="mb-3 font-[family-name:var(--font-display)] text-2xl">Group {group}</h3>
-              <DayColumn label="Day 1" matches={day1} nowId={nowId} />
-              <DayColumn label="Day 2" matches={day2} nowId={nowId} className="mt-5" />
-            </section>
-          );
-        })}
-      </div>
+    <div className="grid gap-10">
+      {[1, 2].map((day) => (
+        <section key={day}>
+          <div className="mb-3">
+            <h3 className="font-[family-name:var(--font-display)] text-2xl">Day {day}</h3>
+            <p className="kicker">{mainStageDayLabel(day)}</p>
+          </div>
+          <div className="grid gap-6 lg:grid-cols-3">
+            {GROUPS.map((group) => {
+              const groupMatches = matches
+                .filter((m) => m.group === group && m.day === day)
+                .sort((a, b) => a.sortOrder - b.sortOrder);
+              return (
+                <div key={group}>
+                  <h4 className="mb-2 text-sm font-bold uppercase tracking-[0.09em] text-[var(--ink-soft)]">
+                    Group {group}
+                  </h4>
+                  <DayColumn matches={groupMatches} nowId={nowId} />
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
@@ -217,7 +188,7 @@ export function PlayInSchedule({
       {[...byDay.entries()].map(([day, dayMatches], i) => (
         <DayColumn
           key={day}
-          label={playIn ? PLAY_IN_EVENT_LABEL : dayLabel(day, rows[0]?.stage)}
+          label={playIn ? PLAY_IN_EVENT_LABEL : mainStageDayLabel(day)}
           matches={dayMatches}
           nowId={nowId}
           onPick={onPick}
@@ -228,21 +199,15 @@ export function PlayInSchedule({
   );
 }
 
-function dayLabel(day: number, stage?: string) {
-  if (stage === "qf" || stage === "semi" || stage === "gf") return "";
-  if (day === 1) return "Day 1";
-  if (day === 2) return "Day 2";
-  return `Day ${day}`;
-}
 
 function DayColumn({
-  label,
+  label = "",
   matches,
   nowId,
   className = "",
   onPick,
 }: {
-  label: string;
+  label?: string;
   matches: PublicMatch[];
   nowId?: string | null;
   className?: string;
@@ -364,6 +329,10 @@ export function KnockoutBoard({ data }: { data: PublicPayload }) {
   const gf = data.matches.filter((m) => m.stage === "gf");
   return (
     <div className="grid gap-10">
+      <div>
+        <h3 className="font-[family-name:var(--font-display)] text-2xl">Day 3</h3>
+        <p className="kicker mb-4">{mainStageDayLabel(3)}</p>
+      </div>
       <div>
         <h3 className="mb-3 font-[family-name:var(--font-display)] text-2xl">Last Chance Qualifiers</h3>
         <div className="grid gap-3 md:grid-cols-3">{qf.map((m) => <MatchCard key={m.id} match={m} />)}</div>

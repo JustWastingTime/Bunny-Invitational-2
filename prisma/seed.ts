@@ -135,7 +135,7 @@ async function main() {
           id,
           stage: "group",
           group,
-          day: i < 5 ? 1 : 2,
+          day: i < 3 ? 1 : 2,
           sortOrder: (group.charCodeAt(0) - 65) * 10 + i + 1,
           label: `Group ${group} Match ${i + 1}`,
           teams: {
@@ -167,7 +167,7 @@ async function main() {
       data: {
         id: row.id,
         stage: row.stage,
-        day: 2,
+        day: 3,
         sortOrder: row.sortOrder,
         label: row.label,
         setNumber: "setNumber" in row ? row.setNumber : null,

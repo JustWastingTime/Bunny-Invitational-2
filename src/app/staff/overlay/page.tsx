@@ -3,7 +3,7 @@
 import { memo, startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { BriefingDeck, BriefingFrame } from "@/components/briefing-deck";
 import { briefSlideGroup, briefSlideLabel, briefingPool, buildBriefingSlides } from "@/lib/briefing-slides";
-import { CATEGORIES, CATEGORY_LABEL } from "@/lib/constants";
+import { CATEGORIES, CATEGORY_LABEL, mainStageDayLabel } from "@/lib/constants";
 import { GateBoard } from "@/components/gate-board";
 import { usePublicData } from "@/components/use-public-data";
 import { PlayInSchedule } from "@/components/tournament-ui";
@@ -618,22 +618,10 @@ function matchesForPrep(matches: PublicMatch[], prep: PublicMatch | null) {
   if (prep.stage === "playin") {
     return { title: "Play-in", matches: matches.filter((m) => m.stage === "playin") };
   }
-  if (prep.stage === "group" && prep.group) {
-    return {
-      title: `Group ${prep.group}`,
-      matches: matches.filter((m) => m.stage === "group" && m.group === prep.group),
-    };
-  }
-  if (prep.stage === "qf") {
-    return { title: "Last Chance Qualifiers", matches: matches.filter((m) => m.stage === "qf") };
-  }
-  if (prep.stage === "semi") {
-    return { title: "Semi Finals", matches: matches.filter((m) => m.stage === "semi") };
-  }
-  if (prep.stage === "gf") {
-    return { title: "Grand Finals", matches: matches.filter((m) => m.stage === "gf") };
-  }
-  return { title: prep.label, matches: matches.filter((m) => m.stage === prep.stage) };
+  const sameDay = matches
+    .filter((m) => m.stage !== "playin" && m.day === prep.day)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+  return { title: `Day ${prep.day}`, matches: sameDay };
 }
 
 function PlaceSelect({
@@ -668,16 +656,15 @@ function PlaceSelect({
 
 function matchOptGroups(matches: PublicMatch[]) {
   const playin = matches.filter((m) => m.stage === "playin");
-  const groups = ["A", "B", "C"].map((g) => ({
-    label: `Group ${g}`,
-    matches: matches.filter((m) => m.stage === "group" && m.group === g),
-  }));
-  const knockout = matches.filter((m) => m.stage !== "group" && m.stage !== "playin");
-  return [
-    ...(playin.length ? [{ label: "Play-in", matches: playin }] : []),
-    ...groups.filter((g) => g.matches.length),
-    ...(knockout.length ? [{ label: "Knockout", matches: knockout }] : []),
-  ];
+  const days = [1, 2, 3]
+    .map((day) => ({
+      label: `Day ${day} · ${mainStageDayLabel(day)}`,
+      matches: matches
+        .filter((m) => m.stage !== "playin" && m.day === day)
+        .sort((a, b) => a.sortOrder - b.sortOrder),
+    }))
+    .filter((group) => group.matches.length);
+  return [...(playin.length ? [{ label: "Play-in", matches: playin }] : []), ...days];
 }
 
 // Race result entry. Lives here rather than on its own page because whoever
