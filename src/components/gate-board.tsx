@@ -124,20 +124,19 @@ export function GateBoard({
   }
 
   return (
-    <section className="grid gap-3 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-3">
+    <section className="flex h-full min-h-0 flex-col gap-2 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="display-lg text-lg">
           Gates · {match.label} · {CATEGORY_LABEL[cat as keyof typeof CATEGORY_LABEL] ?? cat}
         </h2>
-        <p className="text-xs text-[var(--ink-soft)]">{note || (live ? "This race is on air." : "Prep race. OBS stays on the live gates.")}</p>
+        <p className="text-xs text-[var(--ink-soft)]">
+          {note || (live ? "On air." : "Drag into a gate. Top is 1.")}
+        </p>
       </div>
-      <p className="text-sm text-[var(--ink-soft)]">
-        Drag a runner into a gate. The top card is gate 1. Drag a card back to the runner column to clear it.
-      </p>
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid min-h-0 flex-1 gap-2 sm:grid-cols-2">
         <div
           data-gate-drop="pool"
-          className={`grid content-start gap-2 rounded-2xl p-2 ring-1 ${over === "pool" ? "bg-[var(--peach)] ring-[var(--coral)]" : "bg-[var(--paper)] ring-[var(--line)]"}`}
+          className={`grid min-h-0 content-start gap-1 overflow-auto rounded-2xl p-1.5 ring-1 ${over === "pool" ? "bg-[var(--peach)] ring-[var(--coral)]" : "bg-[var(--paper)] ring-[var(--line)]"}`}
           onPointerUp={(event) => {
             if (!ghost) return;
             if (event.target === event.currentTarget) dropOn("pool", ghost.key);
@@ -159,22 +158,23 @@ export function GateBoard({
             <p className="px-2 py-6 text-sm text-[var(--ink-soft)]">Everyone has a gate.</p>
           )}
         </div>
-        <div className="grid content-start gap-2 rounded-2xl bg-[var(--paper)] p-2 ring-1 ring-[var(--line)]">
+        <div className="flex min-h-0 flex-col gap-1 rounded-2xl bg-[var(--paper)] p-1.5 ring-1 ring-[var(--line)]">
           <p className="px-1 text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">Gate order</p>
+          <div className="grid min-h-0 flex-1 grid-rows-9 gap-1 overflow-auto">
           {slots.map((key, index) => {
             const runner = key ? byKey.get(key) : undefined;
             const hot = over === String(index);
             return (
-              <div key={index} className="grid grid-cols-[2.25rem_minmax(0,1fr)] items-center gap-2">
+              <div key={index} className="grid min-h-0 grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-1.5">
                 <span
-                  className="grid h-9 w-9 place-items-center rounded-full text-sm font-extrabold"
+                  className="grid h-7 w-7 place-items-center rounded-full text-xs font-extrabold"
                   style={{ background: GATE_FILL[index], color: GATE_INK[index] }}
                 >
                   {index + 1}
                 </span>
                 <div
                   data-gate-drop={String(index)}
-                  className={`min-h-16 rounded-xl ${hot ? "ring-2 ring-[var(--coral)]" : ""}`}
+                  className={`h-full min-h-9 rounded-lg ${hot ? "ring-2 ring-[var(--coral)]" : ""}`}
                 >
                   {runner ? (
                     <GateCard
@@ -185,7 +185,7 @@ export function GateBoard({
                       onPointerUp={(event) => finishDrag(event, ghost, setGhost, setOver, dropOn)}
                     />
                   ) : (
-                    <div className="grid h-16 place-items-center rounded-xl border border-dashed border-[var(--line-strong)] text-xs text-[var(--ink-soft)]">
+                    <div className="grid h-full min-h-9 place-items-center rounded-lg border border-dashed border-[var(--line-strong)] text-[0.65rem] text-[var(--ink-soft)]">
                       Gate {index + 1}
                     </div>
                   )}
@@ -193,6 +193,7 @@ export function GateBoard({
               </div>
             );
           })}
+          </div>
         </div>
       </div>
       {dragging && ghost ? (
@@ -224,17 +225,17 @@ function GateCard({
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      className="flex cursor-grab touch-none items-center gap-2 rounded-xl bg-[var(--surface)] py-1 pr-2 ring-1 ring-[var(--line)] active:cursor-grabbing"
-      style={{ boxShadow: `inset 5px 0 0 ${runner.color}`, visibility: hidden ? "hidden" : "visible" }}
+      className="flex h-full min-h-9 cursor-grab touch-none items-center gap-1.5 rounded-lg bg-[var(--surface)] pr-1.5 ring-1 ring-[var(--line)] active:cursor-grabbing"
+      style={{ boxShadow: `inset 4px 0 0 ${runner.color}`, visibility: hidden ? "hidden" : "visible" }}
     >
-      <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden">
+      <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden">
         {runner.sprite || local ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={runner.sprite || local || ""}
             alt=""
             draggable={false}
-            className="h-14 w-14 object-contain"
+            className="h-9 w-9 object-contain"
             onError={(event) => {
               if (!local || event.currentTarget.src.endsWith(local)) return;
               event.currentTarget.src = local;
@@ -243,10 +244,10 @@ function GateCard({
         ) : null}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-semibold leading-tight">{runner.trainer}</span>
-        <span className="block truncate text-xs text-[var(--ink-soft)]">{runner.club}</span>
+        <span className="block truncate text-sm font-semibold leading-tight">{runner.trainer}</span>
+        <span className="block truncate text-[0.65rem] leading-tight text-[var(--ink-soft)]">{runner.club}</span>
       </span>
-      <span className="shrink-0 rounded-full bg-[var(--paper-2)] px-2 py-1 text-[0.7rem] font-extrabold text-[var(--ink-soft)]">
+      <span className="shrink-0 rounded-full bg-[var(--paper-2)] px-1.5 py-0.5 text-[0.65rem] font-extrabold text-[var(--ink-soft)]">
         {runner.style}
       </span>
     </article>

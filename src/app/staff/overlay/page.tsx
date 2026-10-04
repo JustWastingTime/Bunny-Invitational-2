@@ -337,11 +337,10 @@ export default function OverlayDirectorPage() {
         onShow={() => showSlide(index)}
       />
 
-      {/* Bento: the match list runs the full height of the left column, the short
-          cards stack beside it, and result entry gets the full width underneath.
-          Placement is explicit at lg, so DOM order only decides the mobile stack. */}
-      <div className="grid gap-3 lg:grid-cols-2">
-        <section className="rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-3 lg:col-start-1 lg:row-start-1 lg:row-span-2">
+      {/* Bento: matches on the left, uma detail stacked over the gate board on
+          the right, results full width underneath. */}
+      <div className="grid items-start gap-3 lg:grid-cols-[minmax(16rem,22rem)_minmax(0,1fr)] lg:items-stretch">
+        <section className="rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-3 lg:h-full [&_article]:px-2.5 [&_article]:py-1.5">
           <p className="mb-2 text-sm text-[var(--ink-soft)]">
             Matches for the prep desk. Click one to stage it — OBS stays put until you Show.
           </p>
@@ -357,7 +356,8 @@ export default function OverlayDirectorPage() {
           )}
         </section>
 
-        <section className="flex flex-col gap-2 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-3 lg:col-start-2 lg:row-start-1">
+        <div className="flex min-h-0 flex-col gap-3 lg:h-full">
+        <section className="flex shrink-0 flex-col gap-2 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="display-lg text-lg">Uma detail · on-air matchup</h2>
             {o.focus ? (
@@ -374,7 +374,7 @@ export default function OverlayDirectorPage() {
             Pick a runner to swap the battle screen for a detail card. Works while Match Up is on air.
           </p>
           {o.view === "matchup" && o.visible ? (
-            <div className="grid min-h-[15rem] grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               {[0, 1, 2].map((teamIndex) => {
                 const rows = liveUmas.filter((row) => row.teamIndex === teamIndex);
                 const team = rows[0];
@@ -443,7 +443,7 @@ export default function OverlayDirectorPage() {
         </section>
 
         {stagedMatch ? (
-          <div className="lg:col-span-2 lg:row-start-3">
+          <div className="min-h-0 flex-1">
             <GateBoard
               key={`${stagedMatch.id}-${cat}`}
               match={stagedMatch}
@@ -462,9 +462,11 @@ export default function OverlayDirectorPage() {
             />
           </div>
         ) : null}
+        </div>
+      </div>
 
         {stagedMatch ? (
-          <div className="lg:col-span-2 lg:row-start-4">
+          <div>
             <ScoresCard
               key={`scores-${stagedMatch.id}-${cat}`}
               match={stagedMatch}
@@ -474,7 +476,6 @@ export default function OverlayDirectorPage() {
             />
           </div>
         ) : null}
-      </div>
 
       {status ? <p className="text-sm text-[var(--ink-soft)]">{status}</p> : null}
     </div>
