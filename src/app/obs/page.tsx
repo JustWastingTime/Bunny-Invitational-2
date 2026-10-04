@@ -73,7 +73,7 @@ export default function ObsPage() {
       lastRev = rev;
       stamp = live.stamp;
       const nextMatchId = live.overlay.activeMatchId ?? "";
-      let needFull = false;
+      let needFull = live.overlay.view === "scoreboard" || live.overlay.view === "groups";
       setData((prev) => {
         if (!prev) {
           needFull = true;
@@ -421,7 +421,7 @@ function RaceOverlay({
                   const assigned = t.teamId
                     ? gates.find((g) => g.teamId === t.teamId && g.slot === u.slot)?.gate
                     : undefined;
-                  const gate = assigned ?? defaultGate(teamIndex, u.slot ?? umaIndex);
+                  const gate = assigned ?? (gates.length ? null : defaultGate(teamIndex, u.slot ?? umaIndex));
                   const styleKey = (u.style ?? "").toLowerCase();
                   return (
                     <div
@@ -444,7 +444,7 @@ function RaceOverlay({
                       </p>
                       <div className="race-gate-wrap">
                         <span className="race-gate-label">Gate</span>
-                        <span className={`race-gate race-gate-${gate}`}>{gate}</span>
+                        <span className={gate ? `race-gate race-gate-${gate}` : "race-gate"}>{gate ?? "—"}</span>
                       </div>
                     </div>
                   );

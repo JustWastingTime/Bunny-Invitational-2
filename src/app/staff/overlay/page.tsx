@@ -4,8 +4,7 @@ import { memo, startTransition, useEffect, useMemo, useRef, useState } from "rea
 import { BriefingDeck, BriefingFrame } from "@/components/briefing-deck";
 import { briefSlideGroup, briefSlideLabel, briefingPool, buildBriefingSlides } from "@/lib/briefing-slides";
 import { CATEGORIES, CATEGORY_LABEL } from "@/lib/constants";
-import { defaultGate, gateKey } from "@/lib/overlay-gates";
-import { spriteFileName, spriteLocalPath } from "@/lib/sprites";
+import { GateBoard } from "@/components/gate-board";
 import { usePublicData } from "@/components/use-public-data";
 import { PlayInSchedule } from "@/components/tournament-ui";
 import { useStaffToast } from "@/components/staff-toast";
@@ -131,9 +130,12 @@ export default function OverlayDirectorPage() {
   }
 
   function patchGate(body: Record<string, unknown>) {
-    gateQueue.current = gateQueue.current.then(async () => {
-      await sendOverlay(body, 1);
-    });
+    const run = gateQueue.current.then(() => sendOverlay(body, 4));
+    gateQueue.current = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
   }
 
   function goLive(view: string) {
@@ -441,28 +443,28 @@ export default function OverlayDirectorPage() {
         </section>
 
         {stagedMatch ? (
-          <div className="lg:col-start-2 lg:row-start-2">
-            <GatesCard
+          <div className="lg:col-span-2 lg:row-start-3">
+            <GateBoard
               key={`${stagedMatch.id}-${cat}`}
               match={stagedMatch}
               cat={cat}
               teams={data.teams}
               gatesAll={o.gatesAll ?? {}}
-              liveMatchId={o.activeMatchId}
-              liveCat={liveCat}
-              onGate={(teamId, slot, gate) => {
+              live={stagedMatch.id === o.activeMatchId && cat === liveCat && (o.view === "race" || o.view === "gates")}
+              onSave={(gates) =>
                 patchGate({
-                  gates: [{ teamId, slot, gate }],
+                  gates,
+                  replaceGates: true,
                   gateMatchId: stagedMatch.id,
                   gateCategory: cat,
-                });
-              }}
+                })
+              }
             />
           </div>
         ) : null}
 
         {stagedMatch ? (
-          <div className="lg:col-span-2 lg:row-start-3">
+          <div className="lg:col-span-2 lg:row-start-4">
             <ScoresCard
               key={`scores-${stagedMatch.id}-${cat}`}
               match={stagedMatch}
@@ -675,116 +677,6 @@ function matchOptGroups(matches: PublicMatch[]) {
     ...groups.filter((g) => g.matches.length),
     ...(knockout.length ? [{ label: "Knockout", matches: knockout }] : []),
   ];
-}
-
-function GatesCard({
-  match,
-  cat,
-  teams,
-  gatesAll,
-  liveMatchId,
-  liveCat,
-  onGate,
-}: {
-  match: PublicMatch;
-  cat: string;
-  teams: { id: string; roster: PublicUma[] }[];
-  gatesAll: Record<string, number>;
-  liveMatchId: string | null;
-  liveCat: string;
-  onGate: (teamId: string, slot: number, gate: number | null) => void;
-}) {
-  const liveGates = match.id === liveMatchId && cat === liveCat;
-  return (
-    <section className="grid gap-3 rounded-3xl border border-[var(--line)] bg-[var(--surface-strong)] p-3">
-      <h2 className="display-lg text-lg">
-        Gates · {match.label} · {CATEGORY_LABEL[cat as keyof typeof CATEGORY_LABEL] ?? cat}
-      </h2>
-      <p className="text-sm text-[var(--ink-soft)]">
-        1–9, Japanese gate colors. Saving gates does not change the on-air overlay.
-        {liveGates ? " These are the live race’s gates." : " Preparing a different race than OBS."}
-      </p>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {match.teams.map((t, teamIndex) => {
-          const team = teams.find((x) => x.id === t.teamId);
-          const umas = team?.roster.filter((u) => u.category === cat).sort((a, b) => a.slot - b.slot) ?? [];
-          return (
-            <div key={t.slot}>
-              <p className="mb-2 font-semibold">{t.name}</p>
-              <div className="grid gap-2">
-                {[0, 1, 2].map((slot) => {
-                  const uma = umas.find((u) => u.slot === slot);
-                  const assigned = t.teamId ? gatesAll[gateKey(match.id, cat, t.teamId, slot)] : undefined;
-                  return (
-                    <label key={slot} className="grid grid-cols-[2.5rem_minmax(0,1fr)_4.5rem] items-center gap-2 text-sm">
-                      <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-lg bg-[var(--paper)]">
-                        {uma?.spriteId ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={uma.spritePath || spriteFileName(uma.spriteId) || ""}
-                            alt=""
-                            className="h-10 w-10 object-contain"
-                            onError={(event) => {
-                              const fallback = spriteLocalPath(uma.spriteId);
-                              if (fallback && event.currentTarget.src !== fallback) event.currentTarget.src = fallback;
-                            }}
-                          />
-                        ) : (
-                          <span className="text-[0.65rem] text-[var(--ink-soft)]">{slot + 1}</span>
-                        )}
-                      </span>
-                      <span className="truncate font-semibold">{uma?.trainer?.trim() || `Slot ${slot + 1}`}</span>
-                      <GateField
-                        assigned={assigned}
-                        placeholder={String(defaultGate(teamIndex, slot))}
-                        disabled={!t.teamId}
-                        onCommit={(gate) => {
-                          if (!t.teamId) return;
-                          if (gate === (assigned ?? null)) return;
-                          onGate(t.teamId, slot, gate);
-                        }}
-                      />
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function GateField({
-  assigned,
-  placeholder,
-  disabled,
-  onCommit,
-}: {
-  assigned: number | undefined;
-  placeholder: string;
-  disabled: boolean;
-  onCommit: (gate: number | null) => void;
-}) {
-  const [value, setValue] = useState(assigned != null ? String(assigned) : "");
-  return (
-    <input
-      type="number"
-      min={1}
-      max={9}
-      className="rounded-xl border border-[var(--line)] px-2 py-1"
-      placeholder={placeholder}
-      value={value}
-      disabled={disabled}
-      onChange={(e) => setValue(e.target.value)}
-      onBlur={() => {
-        const raw = value.trim();
-        const gate = raw === "" ? null : Number(raw);
-        onCommit(gate && gate >= 1 && gate <= 9 ? gate : null);
-      }}
-    />
-  );
 }
 
 // Race result entry. Lives here rather than on its own page because whoever

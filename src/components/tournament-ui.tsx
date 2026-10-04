@@ -278,7 +278,7 @@ export function ScorerList({ match }: { match: PublicMatch }) {
   return (
     <div className="grid gap-6">
       {match.races.map((race) => {
-        const scorers = race.placements.filter((p) => p.net !== 0);
+        const scorers = race.placements.filter((p) => p.net !== 0).sort((a, b) => a.place - b.place);
         return (
           <section key={race.category} className="min-w-0">
             <h3 className="mb-2 font-[family-name:var(--font-display)] text-2xl">{race.label}</h3>
@@ -294,9 +294,9 @@ export function ScorerList({ match }: { match: PublicMatch }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {scorers.map((p) => (
+                    {scorers.map((p, index) => (
                       <tr key={`${match.id}-${race.category}-${p.place}-${p.teamId}-${p.slot}`}>
-                        <td>{p.place}</td>
+                        <td>{boardPlace(index, scorers.length, p.place)}</td>
                         <td>
                           <ScorerRunner placement={p} />
                         </td>
@@ -323,6 +323,11 @@ export function ScorerList({ match }: { match: PublicMatch }) {
       })}
     </div>
   );
+}
+
+function boardPlace(index: number, count: number, stored: number) {
+  if (count <= 5) return index + 1;
+  return stored >= 1 && stored <= 5 ? stored : "—";
 }
 
 function ScorerRunner({ placement }: { placement: PublicPlacement }) {

@@ -25,6 +25,7 @@ export async function PUT(request: Request) {
     gates?: { teamId: string; slot: number; gate: number | null }[];
     gateMatchId?: string | null;
     gateCategory?: string;
+    replaceGates?: boolean;
     focus?: { teamId: string; slot: number } | null;
     slide?: number;
   };
@@ -44,6 +45,12 @@ export async function PUT(request: Request) {
 
   const blob = parseOverlayBlob(current.gatesJson);
   let gates = blob.gates;
+  if (body.replaceGates && gateMatchId) {
+    const prefix = `${gateMatchId}|${gateCat}|`;
+    for (const key of Object.keys(gates)) {
+      if (key.startsWith(prefix)) delete gates[key];
+    }
+  }
   let focus = blob.focus;
   let slide = blob.slide;
   if (body.gates && gateMatchId) {

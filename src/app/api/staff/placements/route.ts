@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { CATEGORIES } from "@/lib/constants";
 import { seedKnockoutSlots } from "@/lib/advancement";
 import { buildPublicPayload } from "@/lib/tournament";
+import { loadOverlayRow, persistOverlayRow } from "@/lib/overlay-store";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,10 @@ export async function PUT(request: Request) {
   }
 
   await seedKnockoutSlots();
+  // Bump the overlay revision so /obs reloads results without waiting out
+  // its full-payload interval. The view and distance stay as they are.
+  const overlay = await loadOverlayRow();
+  await persistOverlayRow(overlay);
   const payload = await buildPublicPayload();
   const match = payload.matches.find((m) => m.id === body.matchId);
   return NextResponse.json({ ok: true, match, groups: payload.groups, playIn: payload.playIn });
