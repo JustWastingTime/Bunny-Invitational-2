@@ -106,3 +106,9 @@ model OverlayState {
   visible        Boolean @default(true)
   gatesJson      String  @default("{}")
 }
+
+/// Staff lobby ticks. key is code:team:category:slot or room:match:category:team:slot.
+model DeskMark {
+  key  String  @id
+  done Boolean @default(true)
+}

@@ -21,6 +21,9 @@ export default async function StaffLayout({ children }: { children: React.ReactN
             Staff desk
           </Link>
           <nav className="flex flex-wrap gap-4 text-sm">
+            <Link className="border-b border-[var(--line-strong)] pb-0.5" href="/staff/lobby">
+              Lobby
+            </Link>
             <Link className="border-b border-[var(--line-strong)] pb-0.5" href="/staff/groups">
               Groups
             </Link>
