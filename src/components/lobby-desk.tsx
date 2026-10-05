@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { mainStageDayLabel } from "@/lib/constants";
 import { useStaffToast } from "@/components/staff-toast";
+import { spriteLocalPath } from "@/lib/sprites";
 import type { Category } from "@/lib/constants";
 
 type Runner = {
@@ -10,7 +10,11 @@ type Runner = {
   slot: number;
   trainer: string;
   umaName: string;
+  spriteId: string;
+  spritePath: string | null;
+  score: string | null;
   style: string | null;
+  styleWarn: boolean;
 };
 
 type BoardTeam = {
@@ -29,7 +33,12 @@ type BoardMatch = {
   teams: { slot: number; teamId: string | null }[];
 };
 
-type Board = { id: string; label: string; teams: BoardTeam[]; matches: BoardMatch[] };
+type Board = {
+  id: string;
+  label: string;
+  teams: BoardTeam[];
+  sections: { title: string; matches: BoardMatch[] }[];
+};
 
 type Payload = {
   categories: { id: Category; label: string }[];
@@ -64,6 +73,19 @@ function playerName(runner: Runner | undefined) {
 function styleShort(style: string | null | undefined) {
   if (!style) return "";
   return STYLE_SHORT[style] ?? style;
+}
+
+function scoreNumber(score: string | null | undefined) {
+  const raw = String(score ?? "").replace(/,/g, "").trim();
+  if (!raw) return -1;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : -1;
+}
+
+function formatScore(score: string | null | undefined) {
+  const n = scoreNumber(score);
+  if (n < 0) return "";
+  return n.toLocaleString("en-US");
 }
 
 function matchTitle(label: string) {
@@ -197,10 +219,12 @@ export function LobbyDesk() {
         ))}
       </div>
 
-      {board.teams.length === 0 ? (
-        <p className="text-sm text-[var(--ink-soft)]">No clubs on this board yet.</p>
-      ) : mode === "codes" ? (
-        <CodeSheet board={board} categories={categories} openOnly={openOnly} isDone={isDone} onToggle={toggle} />
+      {mode === "codes" ? (
+        board.teams.length === 0 ? (
+          <p className="text-sm text-[var(--ink-soft)]">No clubs on this board yet.</p>
+        ) : (
+          <CodeSheet board={board} categories={categories} openOnly={openOnly} isDone={isDone} onToggle={toggle} />
+        )
       ) : (
         <RoomSheet
           board={board}
@@ -283,8 +307,8 @@ function CodeSheet({
   return (
     <div className="overflow-x-auto rounded-2xl bg-[var(--surface)] ring-1 ring-[var(--line)]">
       <div
-        className="grid min-w-[52rem]"
-        style={{ gridTemplateColumns: "6.25rem repeat(5, minmax(8.5rem, 1fr))" }}
+        className="grid"
+        style={{ gridTemplateColumns: "5.5rem repeat(5, minmax(0, 1fr))" }}
       >
         <div className="sticky left-0 z-10 border-b border-[var(--line)] bg-[var(--surface-strong)] px-2 py-2 text-[0.68rem] font-extrabold uppercase tracking-[0.08em] text-[var(--ink-soft)]">
           Club
@@ -377,12 +401,12 @@ function RoomSheet({
   isDone: (key: string) => boolean;
   onToggle: (key: string) => void;
 }) {
-  const days = [...new Set(board.matches.map((match) => match.day))];
+  const matches = board.sections.flatMap((section) => section.matches);
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-5">
       <div className="flex flex-wrap gap-2">
         {categories.map((cat) => {
-          const slots = board.matches.flatMap((match) =>
+          const slots = matches.flatMap((match) =>
             match.teams.filter((slot) => slot.teamId).flatMap((slot) => [0, 1, 2].map((index) => roomKey(match.id, cat.id, slot.teamId as string, index))),
           );
           const got = slots.filter((key) => isDone(key)).length;
@@ -403,21 +427,15 @@ function RoomSheet({
           );
         })}
       </div>
-      {board.matches.length === 0 ? (
+      {matches.length === 0 ? (
         <p className="text-sm text-[var(--ink-soft)]">No matches on this board yet.</p>
       ) : (
-        days.map((day) => {
-          const matches = board.matches.filter((match) => match.day === day);
-          return (
-            <section key={day}>
-              {board.id !== "playin" ? (
-                <p className="mb-2 text-sm font-extrabold">
-                  Day {day}
-                  <span className="ml-2 font-semibold text-[var(--ink-soft)]">{mainStageDayLabel(day)}</span>
-                </p>
-              ) : null}
-              <div className="flex gap-3 overflow-x-auto pb-1">
-                {matches.map((match) => (
+        board.sections.map((section) =>
+          section.matches.length === 0 ? null : (
+            <section key={section.title || "matches"} className="grid gap-2">
+              {section.title ? <h2 className="text-sm font-extrabold uppercase tracking-[0.08em]">{section.title}</h2> : null}
+              <div className="grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {section.matches.map((match) => (
                   <MatchColumn
                     key={match.id}
                     match={match}
@@ -430,10 +448,65 @@ function RoomSheet({
                 ))}
               </div>
             </section>
-          );
-        })
+          ),
+        )
       )}
     </div>
+  );
+}
+
+function RoomRunner({
+  checked,
+  runner,
+  onToggle,
+}: {
+  checked: boolean;
+  runner: Runner | undefined;
+  onToggle: () => void;
+}) {
+  const local = spriteLocalPath(runner?.spriteId);
+  const src = local || runner?.spritePath;
+  const style = styleShort(runner?.style);
+  const score = formatScore(runner?.score);
+  return (
+    <label
+      className={`grid cursor-pointer grid-cols-[auto_2rem_minmax(0,1fr)_auto] items-center gap-1.5 px-1.5 py-1 ${
+        checked ? "text-[var(--ink-soft)]" : "text-[var(--ink)]"
+      }`}
+    >
+      <input
+        type="checkbox"
+        className="h-3.5 w-3.5 accent-[var(--accent-solid)]"
+        checked={checked}
+        onChange={onToggle}
+      />
+      <span className="grid h-8 w-8 place-items-center overflow-hidden rounded bg-[var(--paper-2)]">
+        {src ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={src}
+            alt=""
+            className="h-8 w-8 object-contain"
+            onError={(event) => {
+              const remote = runner?.spritePath;
+              if (!remote || event.currentTarget.src === remote) return;
+              event.currentTarget.src = remote;
+            }}
+          />
+        ) : (
+          <span className="text-[0.6rem] text-[var(--ink-soft)]">?</span>
+        )}
+      </span>
+      <span className="min-w-0 leading-tight">
+        <span className={`block truncate text-[0.8rem] font-semibold ${checked ? "line-through decoration-[var(--line-strong)]" : ""}`}>
+          {playerName(runner)}
+        </span>
+        <span className={`block truncate text-[0.68rem] ${runner?.styleWarn ? "font-extrabold text-[#d1262d]" : "text-[var(--ink-soft)]"}`}>
+          {style || "—"}
+        </span>
+      </span>
+      <span className="font-mono text-[0.68rem] font-bold tabular-nums">{score}</span>
+    </label>
   );
 }
 
@@ -458,7 +531,7 @@ function MatchColumn({
   const got = keys.filter((key) => isDone(key)).length;
   const complete = keys.length > 0 && got === keys.length;
   return (
-    <article className="w-[15.5rem] shrink-0 rounded-2xl bg-[var(--surface)] ring-1 ring-[var(--line)]">
+    <article className="min-w-0 rounded-2xl bg-[var(--surface)] ring-1 ring-[var(--line)]">
       <header className="flex items-baseline justify-between gap-2 border-b border-[var(--line)] px-2.5 py-1.5">
         <h3 className="text-sm font-extrabold">{matchTitle(match.label)}</h3>
         <span className={`text-[0.68rem] font-bold ${complete ? "text-[var(--mint)]" : "text-[var(--coral-ink)]"}`}>
@@ -482,24 +555,22 @@ function MatchColumn({
                 </span>
               </div>
               {team
-                ? [0, 1, 2].map((index) => {
-                    const key = roomKey(match.id, category, team.id, index);
-                    const checked = isDone(key);
-                    if (openOnly && checked) return null;
-                    const runner = runnerAt(team, category, index);
-                    const uma = runner?.umaName;
-                    const style = styleShort(runner?.style);
-                    const detail = [uma, style].filter(Boolean).join(" · ");
-                    return (
-                      <Tick
-                        key={index}
-                        checked={checked}
-                        label={playerName(runner)}
-                        detail={detail || undefined}
-                        onToggle={() => onToggle(key)}
-                      />
-                    );
-                  })
+                ? [0, 1, 2]
+                    .map((index) => ({ index, runner: runnerAt(team, category, index) }))
+                    .sort((a, b) => scoreNumber(b.runner?.score) - scoreNumber(a.runner?.score))
+                    .map(({ index, runner }) => {
+                      const key = roomKey(match.id, category, team.id, index);
+                      const checked = isDone(key);
+                      if (openOnly && checked) return null;
+                      return (
+                        <RoomRunner
+                          key={index}
+                          checked={checked}
+                          runner={runner}
+                          onToggle={() => onToggle(key)}
+                        />
+                      );
+                    })
                 : <p className="px-2 py-1 text-xs text-[var(--ink-soft)]">Waiting on the bracket.</p>}
             </div>
           );

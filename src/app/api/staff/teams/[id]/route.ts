@@ -39,6 +39,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       stats: { speed: e.speed, stamina: e.stamina, power: e.power, guts: e.guts, wisdom: e.wisdom },
       skills: parseSkills(e.skillsJson),
       entered: e.entered,
+      styleWarn: e.styleWarn,
       isUnique: false,
       popularityRank: null,
       pickCount: 0,

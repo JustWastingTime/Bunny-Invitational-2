@@ -11,7 +11,7 @@ import { SkillInput, UmaPicker, staffFieldClass as field } from "@/components/st
 import { useStaffToast } from "@/components/staff-toast";
 import { suggestedTeamSlug } from "@/lib/team-slug";
 
-type FormUma = PublicUma & { entered: boolean };
+type FormUma = PublicUma & { entered: boolean; styleWarn: boolean };
 
 const STATS = [
   { key: "speed", label: "Speed" },
@@ -43,18 +43,19 @@ function emptyUma(category: string, slot: number): FormUma {
     stats: { speed: 0, stamina: 0, power: 0, guts: 0, wisdom: 0 },
     skills: [],
     entered: false,
+    styleWarn: false,
     isUnique: false,
     popularityRank: null,
     pickCount: 0,
   };
 }
 
-function padRoster(rows: (PublicUma & { entered?: boolean })[]): FormUma[] {
+function padRoster(rows: (PublicUma & { entered?: boolean; styleWarn?: boolean })[]): FormUma[] {
   return CATEGORIES.flatMap((cat) =>
     [0, 1, 2].map((slot) => {
       const found = rows.find((u) => u.category === cat && u.slot === slot);
       if (!found) return emptyUma(cat, slot);
-      return { ...found, entered: Boolean(found.entered) };
+      return { ...found, entered: Boolean(found.entered), styleWarn: Boolean(found.styleWarn) };
     }),
   );
 }
@@ -211,6 +212,7 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
             wisdom: u.stats.wisdom,
             skills: u.skills,
             entered: u.entered,
+            styleWarn: u.styleWarn,
           })),
         }),
       });
@@ -628,8 +630,30 @@ function UmaCard({
             </span>
             {uma.entered ? "Inputted" : "Not inputted"}
           </button>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={uma.styleWarn}
+            onClick={() => onChange({ styleWarn: !uma.styleWarn })}
+            className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-extrabold ${
+              uma.styleWarn
+                ? "bg-[#d1262d] text-white"
+                : "bg-[var(--surface-2)] text-[var(--ink-soft)] ring-1 ring-[var(--line)]"
+            }`}
+          >
+            <span
+              className={`relative h-5 w-9 rounded-full ${uma.styleWarn ? "bg-black/15" : "bg-[var(--line-strong)]"}`}
+              aria-hidden
+            >
+              <span
+                className={`absolute top-0.5 h-4 w-4 rounded-full bg-[var(--paper)] ${uma.styleWarn ? "left-4" : "left-0.5"}`}
+              />
+            </span>
+            Style warning
+          </button>
         </div>
       </div>
+      <fieldset disabled={uma.entered} className="min-w-0 border-0 p-0 disabled:opacity-60">
       <JsonLoad
         umas={umas}
         skills={skills}
@@ -712,6 +736,7 @@ function UmaCard({
       <div className="mt-4">
         <SkillInput skills={skills} value={uma.skills} onChange={(skills) => onChange({ skills })} />
       </div>
+      </fieldset>
     </article>
   );
 }

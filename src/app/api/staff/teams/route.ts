@@ -25,6 +25,7 @@ type RosterPayload = {
   wisdom?: number;
   skills?: string[];
   entered?: boolean;
+  styleWarn?: boolean;
 };
 
 export async function PUT(request: Request) {
@@ -93,6 +94,7 @@ export async function PUT(request: Request) {
             wisdom: row.wisdom ?? 0,
             skillsJson: JSON.stringify(row.skills ?? []),
             entered: Boolean(row.entered),
+            styleWarn: Boolean(row.styleWarn),
           },
           update: {
             trainer: row.trainer ?? "",
@@ -111,6 +113,7 @@ export async function PUT(request: Request) {
             wisdom: row.wisdom ?? 0,
             skillsJson: JSON.stringify(row.skills ?? []),
             entered: Boolean(row.entered),
+            styleWarn: Boolean(row.styleWarn),
           },
         }),
       ),

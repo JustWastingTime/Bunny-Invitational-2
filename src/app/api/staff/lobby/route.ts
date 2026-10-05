@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireStaff } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { spriteFileName } from "@/lib/sprites";
 import {
   CATEGORIES,
   CATEGORY_LABEL,
@@ -20,7 +21,11 @@ type Runner = {
   slot: number;
   trainer: string;
   umaName: string;
+  spriteId: string;
+  spritePath: string | null;
+  score: string | null;
   style: string | null;
+  styleWarn: boolean;
 };
 
 type BoardTeam = {
@@ -39,7 +44,20 @@ type BoardMatch = {
   teams: { slot: number; teamId: string | null }[];
 };
 
-function runnersOf(entries: { category: string; slot: number; trainer: string; umaName: string; style: string | null }[]): Runner[] {
+type BoardSection = { title: string; matches: BoardMatch[] };
+
+function runnersOf(
+  entries: {
+    category: string;
+    slot: number;
+    trainer: string;
+    umaName: string;
+    spriteId: string;
+    score: string | null;
+    style: string | null;
+    styleWarn: boolean;
+  }[],
+): Runner[] {
   return CATEGORIES.flatMap((category) =>
     [0, 1, 2].map((slot) => {
       const row = entries.find((entry) => entry.category === category && entry.slot === slot);
@@ -48,7 +66,11 @@ function runnersOf(entries: { category: string; slot: number; trainer: string; u
         slot,
         trainer: row?.trainer?.trim() ?? "",
         umaName: row?.umaName?.trim() && row.umaName !== "TBD" ? row.umaName : "",
+        spriteId: row?.spriteId ?? "",
+        spritePath: spriteFileName(row?.spriteId),
+        score: row?.score?.trim() || null,
         style: row?.style ?? null,
+        styleWarn: Boolean(row?.styleWarn),
       };
     }),
   );
@@ -99,32 +121,55 @@ export async function GET() {
   const knockoutMatches = matchRows.filter((match) => match.stage === "qf" || match.stage === "semi" || match.stage === "gf");
   const knockoutIds = new Set(knockoutMatches.flatMap((match) => match.teams.map((team) => team.teamId).filter(Boolean)));
 
-  function pack(teamsForBoard: typeof teamRows, matchesForBoard: typeof matchRows): { teams: BoardTeam[]; matches: BoardMatch[] } {
-    return {
-      teams: teamsForBoard.map(({ id, name, shortName, color, runners }) => ({ id, name, shortName, color, runners })),
-      matches: matchesForBoard.map(({ id, label, day, sortOrder, teams: slots }) => ({ id, label, day, sortOrder, teams: slots })),
-    };
+  function asTeams(rows: typeof teamRows): BoardTeam[] {
+    return rows.map(({ id, name, shortName, color, runners }) => ({ id, name, shortName, color, runners }));
+  }
+
+  function asMatches(rows: typeof matchRows): BoardMatch[] {
+    return rows.map(({ id, label, day, sortOrder, teams: slots }) => ({ id, label, day, sortOrder, teams: slots }));
+  }
+
+  const groupTeams = teamRows
+    .filter((team) => team.kind !== TEAM_KIND_PLAYIN && (team.group === "A" || team.group === "B" || team.group === "C"))
+    .sort((a, b) => (a.group ?? "").localeCompare(b.group ?? "") || a.groupSlot - b.groupSlot || a.shortName.localeCompare(b.shortName));
+
+  function groupSections(day: number): BoardSection[] {
+    return GROUPS.map((group) => ({
+      title: `Group ${group}`,
+      matches: asMatches(
+        matchRows.filter((match) => match.stage === "group" && match.group === group && match.day === day),
+      ),
+    }));
   }
 
   const boards = [
-    { id: "playin", label: "Play-in", ...pack(playInTeams, playInMatches) },
-    ...GROUPS.map((group) => ({
-      id: group,
-      label: `Group ${group}`,
-      ...pack(
-        teamRows
-          .filter((team) => team.kind !== TEAM_KIND_PLAYIN && team.group === group)
-          .sort((a, b) => a.groupSlot - b.groupSlot || a.shortName.localeCompare(b.shortName)),
-        matchRows.filter((match) => match.stage === "group" && match.group === group),
-      ),
-    })),
     {
-      id: "knockout",
-      label: "Knockout",
-      ...pack(
-        teamRows.filter((team) => knockoutIds.has(team.id)).sort((a, b) => a.shortName.localeCompare(b.shortName)),
-        knockoutMatches,
-      ),
+      id: "playin",
+      label: "Play-in",
+      teams: asTeams(playInTeams),
+      sections: [{ title: "", matches: asMatches(playInMatches) }],
+    },
+    {
+      id: "day1",
+      label: "Group Day 1",
+      teams: asTeams(groupTeams),
+      sections: groupSections(1),
+    },
+    {
+      id: "day2",
+      label: "Group Day 2",
+      teams: asTeams(groupTeams),
+      sections: groupSections(2),
+    },
+    {
+      id: "day3",
+      label: "Day 3",
+      teams: asTeams(teamRows.filter((team) => knockoutIds.has(team.id)).sort((a, b) => a.shortName.localeCompare(b.shortName))),
+      sections: [
+        { title: "Last Chance", matches: asMatches(knockoutMatches.filter((match) => match.stage === "qf")) },
+        { title: "Semis", matches: asMatches(knockoutMatches.filter((match) => match.stage === "semi")) },
+        { title: "Finals", matches: asMatches(knockoutMatches.filter((match) => match.stage === "gf")) },
+      ],
     },
   ];
 
