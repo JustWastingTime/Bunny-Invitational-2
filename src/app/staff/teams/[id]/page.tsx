@@ -528,10 +528,14 @@ export default function RosterEditor({ params }: { params: Promise<{ id: string 
 function JsonLoad({
   umas,
   skills,
+  category,
+  style,
   onLoad,
 }: {
   umas: CatalogUma[];
   skills: CatalogSkill[];
+  category: string;
+  style: string | null;
   onLoad: (patch: ImportedUma) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -544,7 +548,7 @@ function JsonLoad({
       return;
     }
     try {
-      const { patch, warnings } = importUmaJson(text, umas, skills);
+      const { patch, warnings } = importUmaJson(text, umas, skills, { category, style });
       onLoad(patch);
       setNote(
         warnings.length
@@ -572,7 +576,7 @@ function JsonLoad({
             className={`${field} min-h-28 font-mono text-xs`}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder='Paste { "outfitId": "102001", "speed": 1545, "strategy": "Nige", "skills": ["100201"] }'
+            placeholder='Paste { "outfitId": "102001", "skills": ["100201"] } or { "card_id": 100103, "skill_array": [{ "skill_id": 200331 }] }'
             spellCheck={false}
           />
           <button type="button" onClick={apply} className="w-fit rounded-full bg-[var(--ink)] px-3 py-1.5 text-sm font-extrabold text-[var(--paper)]">
@@ -657,6 +661,8 @@ function UmaCard({
       <JsonLoad
         umas={umas}
         skills={skills}
+        category={uma.category}
+        style={uma.style}
         onLoad={(patch) => onChange(patch)}
       />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">

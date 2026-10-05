@@ -38,15 +38,33 @@ const STYLES: Record<string, RunStyle> = {
   "end closer": "end",
 };
 
+const RANK = ["", "G", "F", "E", "D", "C", "B", "A", "S"];
+
+const DISTANCE_FIELD: Record<string, string> = {
+  sprint: "proper_distance_short",
+  mile: "proper_distance_mile",
+  medium: "proper_distance_middle",
+  long: "proper_distance_long",
+  dirt: "proper_distance_mile",
+};
+
+const STYLE_FIELD: Record<string, string> = {
+  front: "proper_running_style_nige",
+  pace: "proper_running_style_senko",
+  late: "proper_running_style_sashi",
+  end: "proper_running_style_oikomi",
+};
+
 export function importUmaJson(
   raw: string,
   umas: CatalogUma[],
   skills: CatalogSkill[],
+  context?: { category?: string | null; style?: string | null },
 ): { patch: ImportedUma; warnings: string[] } {
   const parsed = JSON.parse(raw) as Record<string, unknown>;
   const warnings: string[] = [];
 
-  const outfitId = text(parsed.outfitId ?? parsed.outfit_id ?? parsed.spriteId);
+  const outfitId = text(parsed.outfitId ?? parsed.outfit_id ?? parsed.card_id ?? parsed.cardId ?? parsed.spriteId);
   const uma = umas.find((row) => row.spriteId === outfitId);
   if (!outfitId) warnings.push("No outfit id.");
   else if (!uma) warnings.push(`Outfit ${outfitId} is not in the Tazuna list. Art still uses that id.`);
@@ -58,6 +76,7 @@ export function importUmaJson(
   const skillIds = [
     ...idList(parsed.skills),
     ...idList(parsed.other),
+    ...skillArrayIds(parsed.skill_array ?? parsed.skillArray),
   ];
   const byId = new Map<string, CatalogSkill>();
   for (const skill of skills) {
@@ -84,17 +103,13 @@ export function importUmaJson(
       ...(uma ? { umaName: uma.name } : {}),
       ...(outfitId ? { spriteId: uma?.spriteId ?? outfitId, spritePath: uma?.thumbnail || spriteFileName(outfitId) } : {}),
       ...(style ? { style, styleLabel: STYLE_LABEL[style] ?? style } : {}),
-      aptitudes: {
-        terrain: grade(parsed.surfaceAptitude ?? parsed.surface_aptitude),
-        distance: grade(parsed.distanceAptitude ?? parsed.distance_aptitude),
-        style: grade(parsed.strategyAptitude ?? parsed.strategy_aptitude),
-      },
+      aptitudes: aptitudesFrom(parsed, context),
       stats: {
         speed: stat(parsed.speed),
         stamina: stat(parsed.stamina),
         power: stat(parsed.power),
         guts: stat(parsed.guts),
-        wisdom: stat(parsed.wisdom ?? parsed.wit),
+        wisdom: stat(parsed.wisdom ?? parsed.wit ?? parsed.wiz),
       },
       skills: names,
     },
@@ -131,6 +146,45 @@ function stat(value: unknown) {
 function grade(value: unknown) {
   const grade = text(value).toUpperCase();
   return /^[GFEABSD]$/.test(grade) ? grade : grade.slice(0, 2);
+}
+
+function skillArrayIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((row) => {
+    if (row && typeof row === "object" && "skill_id" in row) {
+      const id = text((row as { skill_id?: unknown }).skill_id).replace(/\D/g, "");
+      return id ? [id] : [];
+    }
+    return idList(row);
+  });
+}
+
+function aptitudesFrom(parsed: Record<string, unknown>, context?: { category?: string | null; style?: string | null }) {
+  const ranked = parsed.proper_distance_short != null || parsed.proper_ground_turf != null || parsed.proper_running_style_nige != null;
+  if (!ranked) {
+    return {
+      terrain: grade(parsed.surfaceAptitude ?? parsed.surface_aptitude),
+      distance: grade(parsed.distanceAptitude ?? parsed.distance_aptitude),
+      style: grade(parsed.strategyAptitude ?? parsed.strategy_aptitude),
+    };
+  }
+  const category = context?.category ?? "";
+  const style = context?.style ?? "";
+  const distanceField = DISTANCE_FIELD[category];
+  const styleField = STYLE_FIELD[style];
+  const terrainField = category === "dirt" ? "proper_ground_dirt" : "proper_ground_turf";
+  return {
+    terrain: rankGrade(parsed[terrainField]),
+    distance: rankGrade(distanceField ? parsed[distanceField] : undefined),
+    style: rankGrade(styleField ? parsed[styleField] : undefined),
+  };
+}
+
+function rankGrade(value: unknown) {
+  const letter = grade(value);
+  if (/^[GFEABSD]$/.test(letter)) return letter;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 1 && n <= 8 ? RANK[n] : "";
 }
 
 function idList(value: unknown): string[] {
