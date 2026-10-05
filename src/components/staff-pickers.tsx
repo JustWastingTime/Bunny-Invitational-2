@@ -121,19 +121,24 @@ export function UmaPicker({
 export function SkillInput({
   skills,
   value,
+  locked = false,
   onChange,
 }: {
   skills: CatalogSkill[];
   value: string[];
+  locked?: boolean;
   onChange: (next: string[]) => void;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
   const box = useRef<HTMLDivElement>(null);
   const handles = useRef<Array<HTMLButtonElement | null>>([]);
   const pendingFocus = useRef<number | null>(null);
+  const canFold = value.length > 4;
+  const shown = !canFold || expanded;
 
   useEffect(() => {
     function close(e: MouseEvent) {
@@ -166,6 +171,7 @@ export function SkillInput({
     onChange([...value, skill]);
     setQuery("");
     setOpen(false);
+    setExpanded(true);
   }
 
   function move(from: number, to: number, focus = false) {
@@ -179,13 +185,36 @@ export function SkillInput({
 
   return (
     <div ref={box} className="relative">
-      <label className="mb-1 block text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">Skills</label>
-      {value.length ? (
-        <ul className="mb-2 grid gap-1">
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <label className="text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">
+          Skills{value.length ? ` · ${value.length}` : ""}
+        </label>
+        {canFold ? (
+          <button
+            type="button"
+            className="text-xs font-bold text-[var(--ink-soft)] hover:text-[var(--ink)]"
+            aria-expanded={expanded}
+            onClick={() => setExpanded((current) => !current)}
+          >
+            {expanded ? "Collapse" : "Expand"}
+          </button>
+        ) : null}
+      </div>
+      {value.length && !shown ? (
+        <button
+          type="button"
+          className="mb-2 line-clamp-2 w-full text-left text-xs leading-snug text-[var(--ink)]"
+          onClick={() => setExpanded(true)}
+        >
+          {value.map((skill) => plainSkillName(skill)).join(" · ")}
+        </button>
+      ) : null}
+      {value.length && shown ? (
+        <ul className="mb-2 flex flex-wrap gap-1">
           {value.map((skill, index) => (
             <li
               key={skill}
-              className={`flex items-center gap-1.5 rounded-lg bg-[var(--surface-strong)] px-1.5 py-1 text-xs ring-1 ${
+              className={`inline-flex max-w-full items-center gap-0.5 rounded-full bg-[var(--surface-strong)] py-0.5 pr-1 pl-1 text-[0.72rem] leading-none ring-1 ${
                 overIndex === index && dragIndex !== index ? "ring-[var(--coral)]" : "ring-[var(--line)]"
               } ${dragIndex === index ? "opacity-50" : ""}`}
               onDragOver={(event) => {
@@ -204,10 +233,11 @@ export function SkillInput({
                 ref={(node) => {
                   handles.current[index] = node;
                 }}
-                draggable
+                draggable={!locked}
+                disabled={locked}
                 aria-label={`Reorder ${plainSkillName(skill)}`}
-                title="Drag to reorder. Up and down arrows move it."
-                className="grid h-6 w-5 shrink-0 cursor-grab place-items-center rounded text-[var(--ink-soft)] active:cursor-grabbing"
+                title="Drag to reorder. Arrow keys move it."
+                className="grid h-4 w-4 shrink-0 cursor-grab place-items-center rounded-full text-[var(--ink-soft)] active:cursor-grabbing disabled:cursor-default"
                 onDragStart={(event) => {
                   event.dataTransfer.effectAllowed = "move";
                   event.dataTransfer.setData("text/plain", String(index));
@@ -218,24 +248,25 @@ export function SkillInput({
                   setOverIndex(null);
                 }}
                 onKeyDown={(event) => {
-                  if (event.key === "ArrowUp") {
+                  if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
                     event.preventDefault();
                     move(index, index - 1, true);
                   }
-                  if (event.key === "ArrowDown") {
+                  if (event.key === "ArrowRight" || event.key === "ArrowDown") {
                     event.preventDefault();
                     move(index, index + 1, true);
                   }
                 }}
               >
-                <span aria-hidden className="text-sm leading-none">
-                  ⋮⋮
+                <span aria-hidden className="text-[0.7rem] leading-none">
+                  ⋮
                 </span>
               </button>
-              <span className="min-w-0 flex-1 truncate font-medium">{plainSkillName(skill)}</span>
+              <span className="truncate font-medium">{plainSkillName(skill)}</span>
               <button
                 type="button"
-                className="grid h-6 w-6 shrink-0 place-items-center rounded text-[var(--ink-soft)] hover:text-[var(--ink)]"
+                disabled={locked}
+                className="grid h-4 w-4 shrink-0 place-items-center rounded-full text-[var(--ink-soft)] hover:text-[var(--ink)] disabled:opacity-40"
                 aria-label={`Remove ${plainSkillName(skill)}`}
                 onClick={() => onChange(value.filter((item) => item !== skill))}
               >
@@ -245,22 +276,25 @@ export function SkillInput({
           ))}
         </ul>
       ) : null}
-      <input
-        className={field}
-        value={query}
-        placeholder="Type a skill, then pick or press Enter"
-        onFocus={() => setOpen(true)}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          setOpen(true);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            add(matches[0]?.name ?? query);
-          }
-        }}
-      />
+      {shown ? (
+        <input
+          className={field}
+          value={query}
+          disabled={locked}
+          placeholder="Type a skill, then pick or press Enter"
+          onFocus={() => setOpen(true)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add(matches[0]?.name ?? query);
+            }
+          }}
+        />
+      ) : null}
       {open && query.trim() ? (
         <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-2xl bg-[var(--surface-strong)] p-1 shadow-lg ring-1 ring-[var(--line)]">
           {matches.map((skill) => (

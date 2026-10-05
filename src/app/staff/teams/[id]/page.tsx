@@ -739,10 +739,10 @@ function UmaCard({
           </div>
         </div>
       </div>
-      <div className="mt-4">
-        <SkillInput skills={skills} value={uma.skills} onChange={(skills) => onChange({ skills })} />
-      </div>
       </fieldset>
+      <div className="mt-4">
+        <SkillInput locked={uma.entered} skills={skills} value={uma.skills} onChange={(skills) => onChange({ skills })} />
+      </div>
     </article>
   );
 }

@@ -82,7 +82,7 @@ export function importUmaJson(
   for (const skill of skills) {
     if (skill.id) byId.set(skill.id, skill);
   }
-  const names: string[] = [];
+  const ordered: CatalogSkill[] = [];
   const seen = new Set<string>();
   const missing: string[] = [];
   for (const id of skillIds) {
@@ -94,8 +94,15 @@ export function importUmaJson(
     const name = plainSkillName(skill.name);
     if (!name || seen.has(name)) continue;
     seen.add(name);
-    names.push(name);
+    ordered.push(skill);
   }
+  // The character card shows that outfit's unique first, then the rest by skill id.
+  ordered.sort((a, b) => {
+    const [tierA, idA] = skillOrder(a, outfitId);
+    const [tierB, idB] = skillOrder(b, outfitId);
+    return tierA - tierB || idA - idB;
+  });
+  const names = ordered.map((skill) => plainSkillName(skill.name));
   if (missing.length) warnings.push(`Unknown skills: ${missing.join(", ")}.`);
 
   return {
@@ -115,6 +122,12 @@ export function importUmaJson(
     },
     warnings,
   };
+}
+
+function skillOrder(skill: CatalogSkill, outfitId: string): [number, number] {
+  const id = Number(skill.id);
+  const ownUnique = skill.rarity === "unique" && Boolean(outfitId) && skill.cards?.includes(outfitId);
+  return [ownUnique ? 0 : 1, Number.isFinite(id) ? id : Number.MAX_SAFE_INTEGER];
 }
 
 function resolveSkill(id: string, byId: Map<string, CatalogSkill>) {

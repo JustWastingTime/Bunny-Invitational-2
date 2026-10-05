@@ -9,7 +9,7 @@ export type { CatalogSkill, CatalogUma, TazunaCatalog } from "./tazuna-types";
 const REPO = "JustWastingTime/TazunaDiscordBot";
 const CHAR_PATH = "assets/character.json";
 const SKILL_PATH = "assets/skill.json";
-const CACHE_VERSION = "6";
+const CACHE_VERSION = "7";
 const FETCH_MS = 20_000;
 const memory = new Map<string, TazunaCatalog>();
 
@@ -74,6 +74,37 @@ function normalizeUma(row: CharRaw): CatalogUma | null {
     thumbnail: row.thumbnail || spriteFileName(spriteId) || "",
     fallbackThumb: spriteLocalPath(spriteId) ?? "",
   };
+}
+
+async function attachUniqueOwners(skills: CatalogSkill[]) {
+  try {
+    const manifestRes = await fetch("https://gametora.com/data/manifests/umamusume.json", {
+      headers: { "User-Agent": "bunny-invitational-2" },
+      cache: "no-store",
+      signal: timedSignal(),
+    });
+    if (!manifestRes.ok) return;
+    const manifest = (await manifestRes.json()) as { skills?: string };
+    if (!manifest.skills) return;
+    const skillRes = await fetch(`https://gametora.com/data/umamusume/skills.${manifest.skills}.json`, {
+      headers: { "User-Agent": "bunny-invitational-2" },
+      cache: "no-store",
+      signal: timedSignal(),
+    });
+    if (!skillRes.ok) return;
+    const rows = (await skillRes.json()) as { id?: number | string; rarity?: number; char?: unknown }[];
+    const owners = new Map<string, string[]>();
+    for (const row of rows) {
+      if ((Number(row.rarity) || 0) < 4 || !Array.isArray(row.char) || !row.char.length) continue;
+      owners.set(String(row.id), row.char.map((card) => String(card)));
+    }
+    for (const skill of skills) {
+      const cards = owners.get(skill.id);
+      if (cards?.length) skill.cards = cards;
+    }
+  } catch {
+    /* id order still matches the rest of the in-game list */
+  }
 }
 
 function normalizeSkill(row: SkillRaw): CatalogSkill | null {
@@ -151,6 +182,7 @@ export async function getTazunaCatalog(refresh = false): Promise<TazunaCatalog> 
     umas: chars.map(normalizeUma).filter((row): row is CatalogUma => row !== null),
     skills: skillsRaw.map(normalizeSkill).filter((row): row is CatalogSkill => row !== null),
   };
+  await attachUniqueOwners(catalog.skills);
 
   memory.set(key, catalog);
   try {

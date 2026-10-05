@@ -15,6 +15,8 @@ export type CatalogSkill = {
   name: string;
   aliases: string[];
   rarity: string;
+  /** Outfit ids whose own unique skill this is. Used to match the in-game skill list. */
+  cards?: string[];
 };
 
 export type TazunaCatalog = {
