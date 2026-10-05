@@ -26,6 +26,7 @@ type Runner = {
   score: string | null;
   style: string | null;
   styleWarn: boolean;
+  note: string;
 };
 
 type BoardTeam = {
@@ -56,6 +57,7 @@ function runnersOf(
     score: string | null;
     style: string | null;
     styleWarn: boolean;
+    note: string;
   }[],
 ): Runner[] {
   return CATEGORIES.flatMap((category) =>
@@ -71,6 +73,7 @@ function runnersOf(
         score: row?.score?.trim() || null,
         style: row?.style ?? null,
         styleWarn: Boolean(row?.styleWarn),
+        note: row?.note?.trim() ?? "",
       };
     }),
   );
@@ -150,6 +153,12 @@ export async function GET() {
       sections: [{ title: "", matches: asMatches(playInMatches) }],
     },
     {
+      id: "main",
+      label: "Main stage",
+      teams: asTeams(groupTeams),
+      sections: [],
+    },
+    {
       id: "day1",
       label: "Group Day 1",
       teams: asTeams(groupTeams),
@@ -183,7 +192,30 @@ export async function GET() {
 export async function PATCH(request: Request) {
   const gate = await requireStaff();
   if (!gate.ok) return NextResponse.json({ error: "forbidden" }, { status: gate.status });
-  const body = (await request.json()) as { key?: string; done?: boolean };
+  const body = (await request.json()) as {
+    key?: string;
+    done?: boolean;
+    teamId?: string;
+    category?: string;
+    slot?: number;
+    styleWarn?: boolean;
+    note?: string;
+  };
+  if (body.teamId && body.category && typeof body.slot === "number") {
+    if (!CATEGORIES.includes(body.category as Category) || body.slot < 0 || body.slot > 2) {
+      return NextResponse.json({ error: "bad runner" }, { status: 400 });
+    }
+    const data: { styleWarn?: boolean; note?: string } = {};
+    if (typeof body.styleWarn === "boolean") data.styleWarn = body.styleWarn;
+    if (typeof body.note === "string") data.note = body.note.trim().slice(0, 160);
+    if (!Object.keys(data).length) return NextResponse.json({ error: "bad runner" }, { status: 400 });
+    const updated = await prisma.umaEntry.updateMany({
+      where: { teamId: body.teamId, category: body.category, slot: body.slot },
+      data,
+    });
+    if (!updated.count) return NextResponse.json({ error: "not found" }, { status: 404 });
+    return NextResponse.json({ ok: true });
+  }
   const key = body.key ?? "";
   if (!KEY_RE.test(key) || typeof body.done !== "boolean") {
     return NextResponse.json({ error: "bad key" }, { status: 400 });

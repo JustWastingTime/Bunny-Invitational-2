@@ -15,6 +15,7 @@ type Runner = {
   score: string | null;
   style: string | null;
   styleWarn: boolean;
+  note: string;
 };
 
 type BoardTeam = {
@@ -138,7 +139,10 @@ export function LobbyDesk() {
     };
   }, [applyServer]);
 
-  const board = payload?.boards.find((item) => item.id === boardId) ?? payload?.boards[0];
+  const shownBoards =
+    payload?.boards.filter((item) => (mode === "codes" ? item.id === "playin" || item.id === "main" : item.id !== "main")) ??
+    [];
+  const board = shownBoards.find((item) => item.id === boardId) ?? shownBoards[0];
   const teamsById = useMemo(() => new Map(board?.teams.map((team) => [team.id, team]) ?? []), [board]);
 
   const isDone = useCallback((key: string) => done.has(key), [done]);
@@ -171,6 +175,35 @@ export function LobbyDesk() {
     }
   }
 
+  function patchRunner(teamId: string, category: string, slot: number, patch: { styleWarn?: boolean; note?: string }) {
+    setPayload((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        boards: current.boards.map((item) => ({
+          ...item,
+          teams: item.teams.map((team) =>
+            team.id !== teamId
+              ? team
+              : {
+                  ...team,
+                  runners: team.runners.map((runner) =>
+                    runner.category === category && runner.slot === slot ? { ...runner, ...patch } : runner,
+                  ),
+                },
+          ),
+        })),
+      };
+    });
+    void fetch("/api/staff/lobby", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ teamId, category, slot, ...patch }),
+    }).then((response) => {
+      if (!response.ok) toast.error("Could not save that");
+    });
+  }
+
   if (!payload || !board) {
     return <p className="text-sm text-[var(--ink-soft)]">{error ? "Could not load the lobby desk." : "Loading lobby desk…"}</p>;
   }
@@ -199,10 +232,22 @@ export function LobbyDesk() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Seg on={mode === "codes"} onClick={() => setMode("codes")}>
+          <Seg
+            on={mode === "codes"}
+            onClick={() => {
+              setMode("codes");
+              setBoardId((id) => (id === "playin" ? id : "main"));
+            }}
+          >
             Codes
           </Seg>
-          <Seg on={mode === "rooms"} onClick={() => setMode("rooms")}>
+          <Seg
+            on={mode === "rooms"}
+            onClick={() => {
+              setMode("rooms");
+              setBoardId((id) => (id === "main" ? "day1" : id));
+            }}
+          >
             Rooms
           </Seg>
           <Seg on={openOnly} onClick={() => setOpenOnly((value) => !value)}>
@@ -212,7 +257,7 @@ export function LobbyDesk() {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {payload.boards.map((item) => (
+        {shownBoards.map((item) => (
           <Seg key={item.id} on={item.id === board.id} onClick={() => setBoardId(item.id)}>
             {item.label}
           </Seg>
@@ -223,7 +268,14 @@ export function LobbyDesk() {
         board.teams.length === 0 ? (
           <p className="text-sm text-[var(--ink-soft)]">No clubs on this board yet.</p>
         ) : (
-          <CodeSheet board={board} categories={categories} openOnly={openOnly} isDone={isDone} onToggle={toggle} />
+          <CodeSheet
+            board={board}
+            categories={categories}
+            openOnly={openOnly}
+            isDone={isDone}
+            onToggle={toggle}
+            onPatch={patchRunner}
+          />
         )
       ) : (
         <RoomSheet
@@ -255,6 +307,107 @@ function Seg({ on, onClick, children }: { on: boolean; onClick: () => void; chil
     >
       {children}
     </button>
+  );
+}
+
+function CodeRunner({
+  checked,
+  runner,
+  onToggle,
+  onWarn,
+  onNote,
+}: {
+  checked: boolean;
+  runner: Runner | undefined;
+  onToggle: () => void;
+  onWarn: () => void;
+  onNote: (note: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(runner?.note ?? "");
+  useEffect(() => {
+    if (!editing) setDraft(runner?.note ?? "");
+  }, [editing, runner?.note]);
+  const warn = Boolean(runner?.styleWarn);
+  const style = styleShort(runner?.style);
+  function commit() {
+    setEditing(false);
+    const next = draft.trim();
+    if (next !== (runner?.note ?? "")) onNote(next);
+  }
+  return (
+    <div className={`group relative px-0.5 py-0.5 ${checked ? "text-[var(--ink-soft)]" : "text-[var(--ink)]"}`}>
+      <div className="flex items-center gap-1">
+        <input
+          type="checkbox"
+          className="h-3.5 w-3.5 shrink-0 accent-[var(--accent-solid)]"
+          checked={checked}
+          aria-label={playerName(runner)}
+          onChange={onToggle}
+        />
+        <span className={`min-w-0 flex-1 truncate text-[0.8rem] font-semibold leading-tight ${checked ? "line-through decoration-[var(--line-strong)]" : ""} ${warn ? "font-extrabold text-[#d1262d]" : ""}`}>
+          {playerName(runner)}
+        </span>
+        {warn && style ? (
+          <span className="shrink-0 text-[0.62rem] font-extrabold uppercase leading-none tracking-wide text-[#d1262d]">{style}</span>
+        ) : null}
+      </div>
+      <div className="pointer-events-none absolute top-0.5 right-0 hidden items-center gap-0.5 rounded bg-[var(--surface)]/95 pl-1 group-focus-within:pointer-events-auto group-focus-within:flex group-hover:pointer-events-auto group-hover:flex">
+        <button
+          type="button"
+          aria-pressed={warn}
+          aria-label={warn ? "Clear style warning" : "Style warning"}
+          title={warn ? `Style warning: ${style || "set"}` : "Flag a wrong style"}
+          onClick={onWarn}
+          className={`grid h-4 w-4 place-items-center rounded text-[0.65rem] font-extrabold leading-none ${
+            warn ? "bg-[#d1262d] text-white" : "text-[var(--ink-soft)] hover:text-[var(--ink)]"
+          }`}
+        >
+          !
+        </button>
+        {runner?.note || editing ? null : (
+          <button
+            type="button"
+            aria-label={`Note for ${playerName(runner)}`}
+            title="Add a note"
+            onClick={() => setEditing(true)}
+            className="grid h-4 w-4 place-items-center rounded text-[0.75rem] leading-none text-[var(--ink-soft)] hover:text-[var(--ink)]"
+          >
+            +
+          </button>
+        )}
+      </div>
+      {editing ? (
+        <input
+          autoFocus
+          value={draft}
+          maxLength={160}
+          aria-label={`Note for ${playerName(runner)}`}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={commit}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              commit();
+            }
+            if (event.key === "Escape") {
+              setDraft(runner?.note ?? "");
+              setEditing(false);
+            }
+          }}
+          className="mt-0.5 w-full rounded bg-[var(--paper)] px-1 py-0.5 text-[0.68rem] ring-1 ring-[var(--line)]"
+        />
+      ) : runner?.note ? (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          title={runner.note}
+          className="mt-0.5 line-clamp-2 w-full rounded bg-[var(--gold)] px-1 text-left text-[0.68rem] font-semibold leading-tight text-[#3a2a08]"
+        >
+          {runner.note}
+        </button>
+      ) : null}
+    </div>
   );
 }
 
@@ -297,12 +450,14 @@ function CodeSheet({
   openOnly,
   isDone,
   onToggle,
+  onPatch,
 }: {
   board: Board;
   categories: { id: Category; label: string }[];
   openOnly: boolean;
   isDone: (key: string) => boolean;
   onToggle: (key: string) => void;
+  onPatch: (teamId: string, category: string, slot: number, patch: { styleWarn?: boolean; note?: string }) => void;
 }) {
   return (
     <div className="overflow-x-auto rounded-2xl bg-[var(--surface)] ring-1 ring-[var(--line)]">
@@ -329,7 +484,15 @@ function CodeSheet({
           );
         })}
         {board.teams.map((team) => (
-          <TeamCodeRow key={team.id} team={team} categories={categories} openOnly={openOnly} isDone={isDone} onToggle={onToggle} />
+          <TeamCodeRow
+            key={team.id}
+            team={team}
+            categories={categories}
+            openOnly={openOnly}
+            isDone={isDone}
+            onToggle={onToggle}
+            onPatch={onPatch}
+          />
         ))}
       </div>
     </div>
@@ -342,12 +505,14 @@ function TeamCodeRow({
   openOnly,
   isDone,
   onToggle,
+  onPatch,
 }: {
   team: BoardTeam;
   categories: { id: Category; label: string }[];
   openOnly: boolean;
   isDone: (key: string) => boolean;
   onToggle: (key: string) => void;
+  onPatch: (teamId: string, category: string, slot: number, patch: { styleWarn?: boolean; note?: string }) => void;
 }) {
   const teamDone = categories.every((cat) => [0, 1, 2].every((slot) => isDone(codeKey(team.id, cat.id, slot))));
   if (openOnly && teamDone) return null;
@@ -368,11 +533,13 @@ function TeamCodeRow({
             if (openOnly && checked) return null;
             const runner = runnerAt(team, cat.id, slot);
             return (
-              <Tick
+              <CodeRunner
                 key={slot}
                 checked={checked}
-                label={playerName(runner)}
+                runner={runner}
                 onToggle={() => onToggle(key)}
+                onWarn={() => onPatch(team.id, cat.id, slot, { styleWarn: !runner?.styleWarn })}
+                onNote={(note) => onPatch(team.id, cat.id, slot, { note })}
               />
             );
           })}

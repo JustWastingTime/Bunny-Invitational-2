@@ -129,7 +129,11 @@ export function SkillInput({
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
   const box = useRef<HTMLDivElement>(null);
+  const handles = useRef<Array<HTMLButtonElement | null>>([]);
+  const pendingFocus = useRef<number | null>(null);
 
   useEffect(() => {
     function close(e: MouseEvent) {
@@ -150,6 +154,12 @@ export function SkillInput({
       .slice(0, 12);
   }, [query, selected, skills]);
 
+  useEffect(() => {
+    if (pendingFocus.current == null) return;
+    handles.current[pendingFocus.current]?.focus();
+    pendingFocus.current = null;
+  }, [value]);
+
   function add(name: string) {
     const skill = plainSkillName(name);
     if (!skill || selected.has(skill)) return;
@@ -158,22 +168,83 @@ export function SkillInput({
     setOpen(false);
   }
 
+  function move(from: number, to: number, focus = false) {
+    if (to < 0 || to >= value.length || from === to) return;
+    const next = value.slice();
+    const [item] = next.splice(from, 1);
+    next.splice(to, 0, item);
+    if (focus) pendingFocus.current = to;
+    onChange(next);
+  }
+
   return (
     <div ref={box} className="relative">
       <label className="mb-1 block text-xs font-extrabold uppercase tracking-wide text-[var(--ink-soft)]">Skills</label>
-      <div className="mb-2 flex flex-wrap gap-1.5">
-        {value.map((skill) => (
-          <button
-            key={skill}
-            type="button"
-            className="rounded-full bg-[var(--surface-strong)] px-2.5 py-1 text-xs ring-1 ring-[var(--line)]"
-            onClick={() => onChange(value.filter((s) => s !== skill))}
-            title="Remove"
-          >
-            {plainSkillName(skill)} ×
-          </button>
-        ))}
-      </div>
+      {value.length ? (
+        <ul className="mb-2 grid gap-1">
+          {value.map((skill, index) => (
+            <li
+              key={skill}
+              className={`flex items-center gap-1.5 rounded-lg bg-[var(--surface-strong)] px-1.5 py-1 text-xs ring-1 ${
+                overIndex === index && dragIndex !== index ? "ring-[var(--coral)]" : "ring-[var(--line)]"
+              } ${dragIndex === index ? "opacity-50" : ""}`}
+              onDragOver={(event) => {
+                event.preventDefault();
+                if (dragIndex !== index) setOverIndex(index);
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                if (dragIndex != null) move(dragIndex, index);
+                setDragIndex(null);
+                setOverIndex(null);
+              }}
+            >
+              <button
+                type="button"
+                ref={(node) => {
+                  handles.current[index] = node;
+                }}
+                draggable
+                aria-label={`Reorder ${plainSkillName(skill)}`}
+                title="Drag to reorder. Up and down arrows move it."
+                className="grid h-6 w-5 shrink-0 cursor-grab place-items-center rounded text-[var(--ink-soft)] active:cursor-grabbing"
+                onDragStart={(event) => {
+                  event.dataTransfer.effectAllowed = "move";
+                  event.dataTransfer.setData("text/plain", String(index));
+                  setDragIndex(index);
+                }}
+                onDragEnd={() => {
+                  setDragIndex(null);
+                  setOverIndex(null);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "ArrowUp") {
+                    event.preventDefault();
+                    move(index, index - 1, true);
+                  }
+                  if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    move(index, index + 1, true);
+                  }
+                }}
+              >
+                <span aria-hidden className="text-sm leading-none">
+                  ⋮⋮
+                </span>
+              </button>
+              <span className="min-w-0 flex-1 truncate font-medium">{plainSkillName(skill)}</span>
+              <button
+                type="button"
+                className="grid h-6 w-6 shrink-0 place-items-center rounded text-[var(--ink-soft)] hover:text-[var(--ink)]"
+                aria-label={`Remove ${plainSkillName(skill)}`}
+                onClick={() => onChange(value.filter((item) => item !== skill))}
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <input
         className={field}
         value={query}

@@ -45,6 +45,7 @@ model UmaEntry {
   skillsJson  String @default("[]")
   entered     Boolean @default(false)
   styleWarn   Boolean @default(false)
+  note        String  @default("")
 
   @@unique([teamId, category, slot])
 }
