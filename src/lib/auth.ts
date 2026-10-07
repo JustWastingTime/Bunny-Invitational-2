@@ -53,11 +53,30 @@ export const authOptions: NextAuthOptions = {
         DiscordProvider({
           clientId: process.env.DISCORD_CLIENT_ID,
           clientSecret: process.env.DISCORD_CLIENT_SECRET ?? "",
+          // Email is not used. Asking for it makes Discord refuse accounts that have no email.
+          authorization: { params: { scope: "identify" } },
+          profile(profile) {
+            const avatar = typeof profile.avatar === "string" ? profile.avatar : "";
+            const image = avatar
+              ? `https://cdn.discordapp.com/avatars/${profile.id}/${avatar}.${avatar.startsWith("a_") ? "gif" : "png"}`
+              : null;
+            return {
+              id: profile.id,
+              name: profile.global_name || profile.username,
+              email: profile.email ?? null,
+              image,
+            };
+          },
         }),
       ]
     : [],
   secret: process.env.NEXTAUTH_SECRET ?? "dev-secret-change-me-please-use-a-long-value",
+  pages: { signIn: "/login", error: "/login" },
   callbacks: {
+    async jwt({ token, account }) {
+      if (account?.providerAccountId) token.sub = account.providerAccountId;
+      return token;
+    },
     async session({ session, token }) {
       if (session.user) session.user.id = token.sub;
       return session;
