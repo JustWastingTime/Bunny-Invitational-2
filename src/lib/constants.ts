@@ -152,6 +152,36 @@ export const FANO_TRIPLES: [number, number, number][] = [
   [6, 0, 2],
 ];
 
+/**
+ * Group matches in day order. The first three are a pencil: every club plays on
+ * day 1, and one club plays all three of those matches, then sits out day 2.
+ * Three rooms cannot hold seven clubs any other way.
+ */
+export function groupStageTriples(): [number, number, number][] {
+  let best: number[] | null = null;
+  let bestMax = Infinity;
+  for (let a = 0; a < FANO_TRIPLES.length; a++) {
+    for (let b = a + 1; b < FANO_TRIPLES.length; b++) {
+      for (let c = b + 1; c < FANO_TRIPLES.length; c++) {
+        const picks = [a, b, c];
+        const counts = Array(7).fill(0);
+        for (const index of picks) for (const slot of FANO_TRIPLES[index]) counts[slot] += 1;
+        if (counts.some((count) => count === 0)) continue;
+        const max = Math.max(...counts);
+        if (max < bestMax) {
+          bestMax = max;
+          best = picks;
+        }
+      }
+    }
+  }
+  const day1 = new Set(best ?? []);
+  return [
+    ...(best ?? []).map((index) => FANO_TRIPLES[index]),
+    ...FANO_TRIPLES.filter((_, index) => !day1.has(index)),
+  ];
+}
+
 export const STYLES = ["front", "pace", "late", "end"] as const;
 export type RunStyle = (typeof STYLES)[number];
 

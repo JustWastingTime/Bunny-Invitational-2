@@ -1,17 +1,10 @@
 import { PrismaClient } from "@prisma/client";
+import { FANO_TRIPLES, groupStageTriples } from "../src/lib/constants";
 
 const prisma = new PrismaClient();
 
 const CATEGORIES = ["sprint", "mile", "medium", "long", "dirt"] as const;
-const FANO: [number, number, number][] = [
-  [0, 1, 3],
-  [1, 2, 4],
-  [2, 3, 5],
-  [3, 4, 6],
-  [4, 5, 0],
-  [5, 6, 1],
-  [6, 0, 2],
-];
+const GROUP_TRIPLES = groupStageTriples();
 
 const TEAMS: { id: string; name: string; shortName: string; tagline: string; color: string; group: string; groupSlot: number }[] = [
   { id: "carrot-club", name: "Carrot Club", shortName: "Carrot", tagline: "Snack first, win second.", color: "#e07a5f", group: "A", groupSlot: 0 },
@@ -128,7 +121,7 @@ async function main() {
 
   for (const group of ["A", "B", "C"]) {
     const members = TEAMS.filter((t) => t.group === group);
-    for (let i = 0; i < FANO.length; i++) {
+    for (let i = 0; i < GROUP_TRIPLES.length; i++) {
       const id = `group-${group.toLowerCase()}-${i + 1}`;
       await prisma.match.create({
         data: {
@@ -139,7 +132,7 @@ async function main() {
           sortOrder: (group.charCodeAt(0) - 65) * 10 + i + 1,
           label: `Group ${group} Match ${i + 1}`,
           teams: {
-            create: FANO[i].map((memberIndex, slot) => ({
+            create: GROUP_TRIPLES[i].map((memberIndex, slot) => ({
               slot,
               teamId: members[memberIndex].id,
             })),
@@ -204,7 +197,7 @@ async function main() {
   }
 
   const playInIds = Array.from({ length: 7 }, (_, i) => `play-in-${i + 1}`);
-  for (let i = 0; i < FANO.length; i++) {
+  for (let i = 0; i < FANO_TRIPLES.length; i++) {
     await prisma.match.create({
       data: {
         id: `playin-${i + 1}`,
@@ -214,7 +207,7 @@ async function main() {
         sortOrder: 90 + i,
         label: `Play-in Match ${i + 1}`,
         teams: {
-          create: FANO[i].map((memberIndex, slot) => ({
+          create: FANO_TRIPLES[i].map((memberIndex, slot) => ({
             slot,
             teamId: playInIds[memberIndex],
           })),

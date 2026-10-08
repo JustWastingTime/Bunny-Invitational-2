@@ -113,15 +113,16 @@ async function writeMatchTeams(matchId: string, teamIds: (string | null)[]) {
 }
 
 export async function generateGroupMatches() {
-  const { FANO_TRIPLES, GROUPS: groups, groupRoundDay } = await import("./constants");
+  const { GROUPS: groups, groupRoundDay, groupStageTriples } = await import("./constants");
   const teams = await prisma.team.findMany();
   for (const g of groups) {
     const members = teams
       .filter((t) => t.kind !== TEAM_KIND_PLAYIN && t.group === g)
       .sort((a, b) => (a.groupSlot ?? 0) - (b.groupSlot ?? 0));
     if (members.length !== 7) continue;
-    for (let i = 0; i < FANO_TRIPLES.length; i++) {
-      const triple = FANO_TRIPLES[i];
+    const triples = groupStageTriples();
+    for (let i = 0; i < triples.length; i++) {
+      const triple = triples[i];
       const id = `group-${g.toLowerCase()}-${i + 1}`;
       const day = groupRoundDay(i);
       await prisma.match.upsert({
