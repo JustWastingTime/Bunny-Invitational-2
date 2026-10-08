@@ -636,44 +636,50 @@ function RoomRunner({
   const style = styleShort(runner?.style);
   const score = formatScore(runner?.score);
   return (
-    <label
-      className={`grid cursor-pointer grid-cols-[auto_2rem_minmax(0,1fr)_auto] items-center gap-1.5 px-1.5 py-1 ${
-        checked ? "text-[var(--ink-soft)]" : "text-[var(--ink)]"
-      }`}
-    >
-      <input
-        type="checkbox"
-        className="h-3.5 w-3.5 accent-[var(--accent-solid)]"
-        checked={checked}
-        onChange={onToggle}
-      />
-      <span className="grid h-8 w-8 place-items-center overflow-hidden rounded bg-[var(--paper-2)]">
-        {src ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={src}
-            alt=""
-            className="h-8 w-8 object-contain"
-            onError={(event) => {
-              const remote = runner?.spritePath;
-              if (!remote || event.currentTarget.src === remote) return;
-              event.currentTarget.src = remote;
-            }}
-          />
-        ) : (
-          <span className="text-[0.6rem] text-[var(--ink-soft)]">?</span>
-        )}
-      </span>
-      <span className="min-w-0 leading-tight">
-        <span className={`block truncate text-[0.8rem] font-semibold ${checked ? "line-through decoration-[var(--line-strong)]" : ""}`}>
-          {playerName(runner)}
+    <div className={`px-1.5 py-1 ${checked ? "text-[var(--ink-soft)]" : "text-[var(--ink)]"}`}>
+      <label className="grid cursor-pointer grid-cols-[auto_2rem_minmax(0,1fr)_auto] items-center gap-1.5">
+        <input
+          type="checkbox"
+          className="h-3.5 w-3.5 accent-[var(--accent-solid)]"
+          checked={checked}
+          onChange={onToggle}
+        />
+        <span className="grid h-8 w-8 place-items-center overflow-hidden rounded bg-[var(--paper-2)]">
+          {src ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={src}
+              alt=""
+              className="h-8 w-8 object-contain"
+              onError={(event) => {
+                const remote = runner?.spritePath;
+                if (!remote || event.currentTarget.src === remote) return;
+                event.currentTarget.src = remote;
+              }}
+            />
+          ) : (
+            <span className="text-[0.6rem] text-[var(--ink-soft)]">?</span>
+          )}
         </span>
-        <span className={`block truncate text-[0.68rem] ${runner?.styleWarn ? "font-extrabold text-[#d1262d]" : "text-[var(--ink-soft)]"}`}>
-          {style || "—"}
+        <span className="min-w-0 leading-tight">
+          <span className={`block truncate text-[0.8rem] font-semibold ${checked ? "line-through decoration-[var(--line-strong)]" : ""}`}>
+            {playerName(runner)}
+          </span>
+          <span className={`block truncate text-[0.68rem] ${runner?.styleWarn ? "font-extrabold text-[#d1262d]" : "text-[var(--ink-soft)]"}`}>
+            {style || "—"}
+          </span>
         </span>
-      </span>
-      <span className="font-mono text-[0.68rem] font-bold tabular-nums">{score}</span>
-    </label>
+        <span className="font-mono text-[0.68rem] font-bold tabular-nums">{score}</span>
+      </label>
+      {runner?.note ? (
+        <p
+          title={runner.note}
+          className="mt-0.5 ml-[3.625rem] line-clamp-2 rounded bg-[var(--gold)] px-1 text-[0.68rem] font-semibold leading-tight text-[#3a2a08]"
+        >
+          {runner.note}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
