@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PLAY_IN_EVENT_LABEL, PUBLIC_GROUP_SCHEDULE, PUBLIC_GROUPS_LIVE, mainStageDayLabel } from "@/lib/constants";
+import { PLAY_IN_EVENT_LABEL, PUBLIC_GROUP_SCHEDULE, PUBLIC_GROUPS_LIVE, PUBLIC_KNOCKOUT_SCHEDULE, mainStageDayLabel } from "@/lib/constants";
 import { NowNext } from "@/components/now-next";
 import { GroupSchedule, KnockoutBoard, PlayInSchedule } from "@/components/tournament-ui";
 import { DataError, Loading, PageTitle } from "@/components/site-chrome";
@@ -16,8 +16,9 @@ export default function SchedulePage() {
 
   const nowStage = data.matches.find((m) => m.id === data.now?.matchId)?.stage;
   const groupsOpen = PUBLIC_GROUP_SCHEDULE || PUBLIC_GROUPS_LIVE;
+  const knockoutOpen = PUBLIC_KNOCKOUT_SCHEDULE || PUBLIC_GROUPS_LIVE;
   const active: Board = groupsOpen
-    ? (board ?? (nowStage === "playin" ? "playin" : nowStage && nowStage !== "group" && PUBLIC_GROUPS_LIVE ? "knockout" : "groups"))
+    ? (board ?? (nowStage === "playin" ? "playin" : nowStage && nowStage !== "group" && knockoutOpen ? "knockout" : "groups"))
     : "playin";
   const groupMatches = data.matches.filter((m) => m.stage === "group");
   const playInMatches = data.matches.filter((m) => m.stage === "playin");
@@ -46,17 +47,15 @@ export default function SchedulePage() {
           </BoardTab>
           <BoardTab
             active={active === "knockout"}
-            disabled={!PUBLIC_GROUPS_LIVE}
+            disabled={!knockoutOpen}
             onClick={() => setBoard("knockout")}
           >
             Knockout
           </BoardTab>
         </div>
-        {PUBLIC_GROUPS_LIVE ? null : (
+        {groupsOpen && knockoutOpen ? null : (
           <p className="mb-6 text-sm text-[var(--ink-soft)]">
-            {groupsOpen
-              ? "Knockout rooms open with the last-chance round."
-              : "The group stage and knockout boards open once the group draw is done. Until then, only the play-in is scheduled."}
+            The group stage and knockout boards open once the group draw is done. Until then, only the play-in is scheduled.
           </p>
         )}
 

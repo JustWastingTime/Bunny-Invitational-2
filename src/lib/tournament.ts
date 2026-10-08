@@ -12,6 +12,7 @@ import {
   PLAY_IN_STAGE,
   PUBLIC_FIELD_LIVE,
   PUBLIC_GROUP_SCHEDULE,
+  PUBLIC_KNOCKOUT_SCHEDULE,
   PUBLIC_GROUPS_LIVE,
   PUBLIC_TOURNAMENT_LIVE,
   scheduledDay,
@@ -52,7 +53,18 @@ export async function buildPublicPayload(opts?: { reveal?: boolean }) {
     })),
   );
   const playInTeamIds = new Set(teams.filter((t) => t.kind === TEAM_KIND_PLAYIN).map((t) => t.id));
-  const { main: pop, playin: playInPop, forTeam } = splitPopularity(rosters, playInTeamIds);
+  const { forTeam } = splitPopularity(rosters, playInTeamIds);
+  const countedRosters: RosterEntry[] = teams.flatMap((t) =>
+    t.umaEntries
+      .filter((e) => e.entered)
+      .map((e) => ({
+        teamId: t.id,
+        category: e.category,
+        slot: e.slot,
+        spriteId: e.spriteId,
+      })),
+  );
+  const { main: pop, playin: playInPop } = splitPopularity(countedRosters, playInTeamIds);
   const matchRefs: MatchRef[] = matches;
 
   const publicTeams = teams.map((t) => ({
@@ -65,7 +77,7 @@ export async function buildPublicPayload(opts?: { reveal?: boolean }) {
     group: t.group,
     groupSlot: t.groupSlot,
     kind: t.kind === TEAM_KIND_PLAYIN ? "playin" : "main",
-    roster: t.umaEntries.map((e) => {
+    roster: (reveal || (PUBLIC_FIELD_LIVE && t.kind !== TEAM_KIND_PLAYIN) ? t.umaEntries.filter((e) => e.entered) : t.umaEntries).map((e) => {
       const showRoster = reveal || (PUBLIC_FIELD_LIVE && t.kind !== TEAM_KIND_PLAYIN);
       if (!showRoster) return unpublishedUma(e.category, e.slot);
       const pool = t.kind === TEAM_KIND_PLAYIN ? playInPop : pop;
@@ -195,8 +207,14 @@ export async function buildPublicPayload(opts?: { reveal?: boolean }) {
     });
 
   const hideGroups = !reveal && !PUBLIC_GROUPS_LIVE;
+  const knockoutStages = new Set(["qf", "semi", "gf"]);
   const visibleMatches = hideGroups
-    ? publicMatches.filter((m) => m.stage === "playin" || (PUBLIC_GROUP_SCHEDULE && m.stage === "group"))
+    ? publicMatches.filter(
+        (m) =>
+          m.stage === "playin" ||
+          (PUBLIC_GROUP_SCHEDULE && m.stage === "group") ||
+          (PUBLIC_KNOCKOUT_SCHEDULE && knockoutStages.has(m.stage)),
+      )
     : publicMatches;
   const visibleGroups = hideGroups ? [] : groups;
   const visibleGf = hideGroups ? [] : gfTeams;

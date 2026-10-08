@@ -11,27 +11,6 @@ import { addFinish, emptyFinish, finishKey } from "./uma-finish";
 
 export type { PlayInPayload };
 
-function blankUma(category: string, slot: number): PublicUma {
-  return {
-    category,
-    slot,
-    trainer: "",
-    umaName: "TBD",
-    spriteId: "",
-    spritePath: null,
-    rating: null,
-    score: null,
-    style: null,
-    styleLabel: null,
-    aptitudes: { terrain: null, distance: null, style: null },
-    stats: { speed: 0, stamina: 0, power: 0, guts: 0, wisdom: 0 },
-    skills: [],
-    isUnique: false,
-    popularityRank: null,
-    pickCount: 0,
-  };
-}
-
 export async function buildPlayInRosters(): Promise<PlayInPayload> {
   const [teams, matches] = await Promise.all([
     prisma.team.findMany({
@@ -54,7 +33,14 @@ export async function buildPlayInRosters(): Promise<PlayInPayload> {
       spriteId: entry.spriteId,
     })),
   );
-  const pop = popularityFromRosters(rosterEntries);
+  const scoringPop = popularityFromRosters(rosterEntries);
+  const pop = popularityFromRosters(
+    teams.flatMap((team) =>
+      team.umaEntries
+        .filter((entry) => entry.entered)
+        .map((entry) => ({ teamId: team.id, spriteId: entry.spriteId })),
+    ),
+  );
   const finishes: Record<string, UmaFinishRecord> = {};
   const scoredMatches = matches.map((match) =>
     scoreMatch(
@@ -77,7 +63,7 @@ export async function buildPlayInRosters(): Promise<PlayInPayload> {
         })),
       },
       rosterEntries,
-      pop,
+      scoringPop,
     ),
   );
 
@@ -101,11 +87,11 @@ export async function buildPlayInRosters(): Promise<PlayInPayload> {
       groupSlot: team.groupSlot,
       kind: "playin",
       roster: CATEGORIES.flatMap((category) =>
-        [0, 1, 2].map((slot) => {
+        [0, 1, 2].flatMap((slot) => {
           const entry = team.umaEntries.find((row) => row.category === category && row.slot === slot);
-          if (!entry) return blankUma(category, slot);
+          if (!entry?.entered) return [];
           const info = pop.get(entry.spriteId);
-          return {
+          return [{
             category,
             slot,
             trainer: entry.trainer,
@@ -128,7 +114,7 @@ export async function buildPlayInRosters(): Promise<PlayInPayload> {
             isUnique: info?.unique ?? false,
             popularityRank: info?.rank ?? null,
             pickCount: info?.count ?? 0,
-          } satisfies PublicUma;
+          } satisfies PublicUma];
         }),
       ),
     }));

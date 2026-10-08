@@ -11,9 +11,9 @@ const MENU_ID = "site-menu";
 const LINKS = [
   { href: "/", label: "Home" },
   { href: "/schedule", label: "Schedule" },
-  { href: "/play-in", label: "Play-in" },
   { href: "/scoreboard", label: "Scoreboard" },
   { href: "/teams", label: "Teams" },
+  { href: "/play-in", label: "Play-in" },
   { href: "/stats", label: "Stats", live: true },
   { href: "/rules", label: "Rules" },
 ];

@@ -16,6 +16,7 @@ type Runner = {
   style: string | null;
   styleWarn: boolean;
   note: string;
+  entered: boolean;
 };
 
 type BoardTeam = {
@@ -65,6 +66,10 @@ function roomKey(matchId: string, category: string, teamId: string, slot: number
 
 function runnerAt(team: BoardTeam | undefined, category: string, slot: number) {
   return team?.runners.find((runner) => runner.category === category && runner.slot === slot);
+}
+
+function activeSlots(team: BoardTeam, category: string) {
+  return [0, 1, 2].filter((slot) => runnerAt(team, category, slot)?.entered);
 }
 
 function playerName(runner: Runner | undefined) {
@@ -469,11 +474,9 @@ function CodeSheet({
           Club
         </div>
         {categories.map((cat) => {
-          const total = board.teams.length * 3;
-          const got = board.teams.reduce(
-            (sum, team) => sum + [0, 1, 2].filter((slot) => isDone(codeKey(team.id, cat.id, slot))).length,
-            0,
-          );
+          const keys = board.teams.flatMap((team) => activeSlots(team, cat.id).map((slot) => codeKey(team.id, cat.id, slot)));
+          const total = keys.length;
+          const got = keys.filter((key) => isDone(key)).length;
           return (
             <div key={cat.id} className="border-b border-l border-[var(--line)] px-2 py-2">
               <div className="text-[0.68rem] font-extrabold uppercase tracking-[0.08em]">{cat.label}</div>
@@ -514,7 +517,9 @@ function TeamCodeRow({
   onToggle: (key: string) => void;
   onPatch: (teamId: string, category: string, slot: number, patch: { styleWarn?: boolean; note?: string }) => void;
 }) {
-  const teamDone = categories.every((cat) => [0, 1, 2].every((slot) => isDone(codeKey(team.id, cat.id, slot))));
+  const counted = categories.flatMap((cat) => activeSlots(team, cat.id).map((slot) => codeKey(team.id, cat.id, slot)));
+  if (counted.length === 0) return null;
+  const teamDone = counted.every((key) => isDone(key));
   if (openOnly && teamDone) return null;
   return (
     <>
@@ -527,7 +532,7 @@ function TeamCodeRow({
       </div>
       {categories.map((cat) => (
         <div key={cat.id} className="border-l border-t border-[var(--line)] px-1 py-1">
-          {[0, 1, 2].map((slot) => {
+          {activeSlots(team, cat.id).map((slot) => {
             const key = codeKey(team.id, cat.id, slot);
             const checked = isDone(key);
             if (openOnly && checked) return null;
@@ -574,7 +579,11 @@ function RoomSheet({
       <div className="flex flex-wrap gap-2">
         {categories.map((cat) => {
           const slots = matches.flatMap((match) =>
-            match.teams.filter((slot) => slot.teamId).flatMap((slot) => [0, 1, 2].map((index) => roomKey(match.id, cat.id, slot.teamId as string, index))),
+            match.teams.filter((slot) => slot.teamId).flatMap((slot) => {
+              const team = teamsById.get(slot.teamId as string);
+              if (!team) return [];
+              return activeSlots(team, cat.id).map((index) => roomKey(match.id, cat.id, slot.teamId as string, index));
+            }),
           );
           const got = slots.filter((key) => isDone(key)).length;
           return (
@@ -698,9 +707,11 @@ function MatchColumn({
   isDone: (key: string) => boolean;
   onToggle: (key: string) => void;
 }) {
-  const keys = match.teams.flatMap((slot) =>
-    slot.teamId ? [0, 1, 2].map((index) => roomKey(match.id, category, slot.teamId as string, index)) : [],
-  );
+  const keys = match.teams.flatMap((slot) => {
+    const team = slot.teamId ? teamsById.get(slot.teamId) : undefined;
+    if (!team) return [];
+    return activeSlots(team, category).map((index) => roomKey(match.id, category, team.id, index));
+  });
   const got = keys.filter((key) => isDone(key)).length;
   const complete = keys.length > 0 && got === keys.length;
   return (
@@ -728,7 +739,7 @@ function MatchColumn({
                 </span>
               </div>
               {team
-                ? [0, 1, 2]
+                ? activeSlots(team, category)
                     .map((index) => ({ index, runner: runnerAt(team, category, index) }))
                     .sort((a, b) => scoreNumber(b.runner?.score) - scoreNumber(a.runner?.score))
                     .map(({ index, runner }) => {

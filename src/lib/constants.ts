@@ -17,10 +17,12 @@ export const CATEGORY_LABEL: Record<Category, string> = {
   dirt: "Dirt",
 };
 
-/** Public group tables, group-stage schedule, and knockout. Independent of uma/stats reveal. */
+/** Public group tables and the grand-final points list. Independent of uma/stats reveal. */
 export const PUBLIC_GROUPS_LIVE = false;
-/** Group-stage matches on the schedule. Standings and knockout stay behind PUBLIC_GROUPS_LIVE. */
+/** Group-stage matches on the schedule. Standings stay behind PUBLIC_GROUPS_LIVE. */
 export const PUBLIC_GROUP_SCHEDULE = true;
+/** Last-chance, semi, and final rooms on the schedule. Names fill from the group table once those matches are done. */
+export const PUBLIC_KNOCKOUT_SCHEDULE = true;
 
 export type TrackPiece = "straight" | "corner";
 

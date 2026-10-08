@@ -27,6 +27,7 @@ type Runner = {
   style: string | null;
   styleWarn: boolean;
   note: string;
+  entered: boolean;
 };
 
 type BoardTeam = {
@@ -58,6 +59,7 @@ function runnersOf(
     style: string | null;
     styleWarn: boolean;
     note: string;
+    entered: boolean;
   }[],
 ): Runner[] {
   return CATEGORIES.flatMap((category) =>
@@ -74,6 +76,7 @@ function runnersOf(
         style: row?.style ?? null,
         styleWarn: Boolean(row?.styleWarn),
         note: row?.note?.trim() ?? "",
+        entered: Boolean(row?.entered),
       };
     }),
   );
