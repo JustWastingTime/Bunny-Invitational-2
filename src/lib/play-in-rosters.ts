@@ -172,6 +172,7 @@ export async function buildPlayInRosters(): Promise<PlayInPayload> {
       ],
     })),
     pop,
+    new Map(Object.entries(skillRarity)),
   );
 
   return {

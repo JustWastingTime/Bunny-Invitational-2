@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { spriteFileName, spriteLocalPath } from "@/lib/sprites";
 import type { PublicPayload } from "@/lib/types";
 
 export function FieldStats({ stats }: { stats: PublicPayload["stats"] }) {
@@ -78,7 +79,12 @@ export function FieldStats({ stats }: { stats: PublicPayload["stats"] }) {
               {stats.umaPopulation.map((uma) => (
                 <tr key={uma.spriteId}>
                   <td>
-                    {uma.name} {uma.unique ? <span className="text-xs text-[var(--coral-ink)]">unique</span> : null}
+                    <span className="flex items-center gap-2">
+                      <UmaSprite spriteId={uma.spriteId} />
+                      <span>
+                        {uma.name} {uma.unique ? <span className="text-xs text-[var(--coral-ink)]">unique</span> : null}
+                      </span>
+                    </span>
                   </td>
                   <td className="text-right">{uma.count}</td>
                   <td className="text-right">{uma.starts}</td>
@@ -93,35 +99,43 @@ export function FieldStats({ stats }: { stats: PublicPayload["stats"] }) {
       ) : null}
 
       {tab === "teams" ? (
-        <div className="grid gap-10 md:grid-cols-2">
-          <section>
-            <h2 className="mb-2 font-[family-name:var(--font-display)] text-2xl">Build stats (not standings)</h2>
-            <ol>
-              {stats.teamPowerByStats.slice(0, 10).map((team, index) => (
-                <li key={team.teamId} className="flex justify-between py-1.5 text-sm">
-                  <span>
-                    {index + 1}. {team.name}
-                  </span>
-                  <span className="tabular-nums">{team.totalStats.toLocaleString()}</span>
-                </li>
-              ))}
-            </ol>
-          </section>
-          <section>
-            <h2 className="mb-2 font-[family-name:var(--font-display)] text-2xl">Most skills</h2>
-            <ol>
-              {stats.teamPowerBySkills.slice(0, 10).map((team, index) => (
-                <li key={team.teamId} className="flex justify-between py-1.5 text-sm">
-                  <span>
-                    {index + 1}. {team.name}
-                  </span>
-                  <span className="tabular-nums">{team.skills}</span>
-                </li>
-              ))}
-            </ol>
+        <div className="grid gap-6">
+          <section className="min-w-0 overflow-x-auto rounded-2xl bg-[var(--surface)]">
+            <h2 className="px-4 pt-4 font-[family-name:var(--font-display)] text-2xl">Stats</h2>
+            <table className="ink-table min-w-[36rem]">
+              <thead>
+                <tr>
+                  <th scope="col">Team</th>
+                  <th scope="col" className="text-right">
+                    Stats
+                  </th>
+                  <th scope="col" className="text-right">
+                    Rating
+                  </th>
+                  <th scope="col" className="text-right">
+                    Most skills
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.teamPowerByStats.map((team, index) => (
+                  <tr key={team.teamId}>
+                    <td>
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-3 w-3 shrink-0" style={{ background: team.color }} />
+                        {index + 1}. {team.name}
+                      </span>
+                    </td>
+                    <td className="text-right tabular-nums">{team.totalStats.toLocaleString()}</td>
+                    <td className="text-right tabular-nums">{(team.rating ?? 0).toLocaleString()}</td>
+                    <td className="text-right tabular-nums">{team.skills}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </section>
           {stats.mostUniqueTeam ? (
-            <p className="text-sm text-[var(--ink-soft)] md:col-span-2">
+            <p className="text-sm text-[var(--ink-soft)]">
               Most unique costumes: <strong>{stats.mostUniqueTeam.name}</strong> ({stats.mostUniqueTeam.uniquePicks})
             </p>
           ) : null}
@@ -135,6 +149,27 @@ export function FieldStats({ stats }: { stats: PublicPayload["stats"] }) {
         </div>
       ) : null}
     </div>
+  );
+}
+
+function UmaSprite({ spriteId }: { spriteId: string }) {
+  const local = spriteLocalPath(spriteId);
+  const remote = spriteFileName(spriteId);
+  const src = local || remote;
+  if (!src) return <span className="inline-block h-8 w-8" />;
+  return (
+    <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt=""
+        className="h-8 w-8 object-contain"
+        onError={(event) => {
+          if (!remote || event.currentTarget.src === remote) return;
+          event.currentTarget.src = remote;
+        }}
+      />
+    </span>
   );
 }
 

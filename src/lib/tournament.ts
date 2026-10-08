@@ -26,6 +26,7 @@ import {
   type RosterEntry,
 } from "./standings";
 import { parseSkills, spriteFileName } from "./sprites";
+import { getTazunaCatalog } from "./tazuna-catalog";
 import { overlayFromRow } from "./overlay-gates";
 import { loadOverlayRow } from "./overlay-store";
 
@@ -211,8 +212,9 @@ export async function buildPublicPayload(opts?: { reveal?: boolean }) {
             color: t.color,
             roster: t.roster,
           })),
-        publicMatches,
+        publicMatches.filter((match) => match.stage !== PLAY_IN_STAGE),
         pop,
+        await skillRarityMap(),
       )
     : {
         uniqueCount: 0,
@@ -305,6 +307,32 @@ function umaBaseName(name: string) {
   return name.replace(/\s*\(.*\)\s*$/, "").trim();
 }
 
+const RATING_TIERS = ["G", "F", "E", "D", "C", "B", "A", "S", "SS", "UG", "UF", "UE", "UD", "UC", "UB", "UA"];
+
+/** Letter ranks plus a step. UG1 sits above UG, and UF sits above UG9. */
+export function ratingPoints(rating: string | null | undefined) {
+  const raw = (rating ?? "").trim().toUpperCase();
+  const match = raw.match(/^(SS|UG|UF|UE|UD|UC|UB|UA|[SABCDEFG])(\+)?(\d+)?$/);
+  if (!match) return 0;
+  const tier = RATING_TIERS.indexOf(match[1]);
+  if (tier < 0) return 0;
+  return tier * 12 + (match[2] ? 1 : 0) + (match[3] ? Number(match[3]) : 0);
+}
+
+async function skillRarityMap() {
+  const rarity = new Map<string, string>();
+  try {
+    const catalog = await getTazunaCatalog();
+    for (const skill of catalog.skills) {
+      const name = plainSkillName(skill.name);
+      if (name) rarity.set(name, skill.rarity || "normal");
+    }
+  } catch {
+    /* unknown skills stay in the meta as white */
+  }
+  return rarity;
+}
+
 export function buildStats(
   teams: {
     id: string;
@@ -315,6 +343,7 @@ export function buildStats(
       umaName: string;
       spriteId: string;
       skills: string[];
+      rating?: string | null;
       stats: { speed: number; stamina: number; power: number; guts: number; wisdom: number };
       aptitudes: { terrain: string | null; distance: string | null; style: string | null };
       isUnique: boolean;
@@ -322,6 +351,7 @@ export function buildStats(
   }[],
   matches: { races: { category: string; placements: { place: number; teamId: string; slot: number; umaName: string; spriteId: string; net: number }[] }[] }[],
   pop: ReturnType<typeof popularityFromRosters>,
+  skillRarity: Map<string, string> = new Map(),
 ) {
   type UmaAgg = {
     spriteId: string;
@@ -350,7 +380,7 @@ export function buildStats(
       bySprite.set(u.spriteId, cur);
       for (const skill of u.skills) {
         const name = plainSkillName(skill);
-        if (!name) continue;
+        if (!name || (skillRarity.get(name) ?? "").toLowerCase() === "unique") continue;
         skillCounts.set(name, (skillCounts.get(name) ?? 0) + 1);
       }
     }
@@ -401,6 +431,7 @@ export function buildStats(
       shortName: t.shortName,
       color: t.color,
       totalStats: Math.round(totalStats),
+      rating: t.roster.reduce((sum, uma) => sum + ratingPoints(uma.rating), 0),
       skills,
       uniquePicks: t.roster.filter((u) => u.isUnique).length,
     };

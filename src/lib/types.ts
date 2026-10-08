@@ -141,8 +141,8 @@ export type PublicPayload = {
     }[];
     skillsCommon: { name: string; count: number }[];
     skillsRare: { name: string; count: number }[];
-    teamPowerByStats: { teamId: string; name: string; shortName: string; color: string; totalStats: number; skills: number; uniquePicks: number }[];
-    teamPowerBySkills: { teamId: string; name: string; shortName: string; color: string; totalStats: number; skills: number; uniquePicks: number }[];
+    teamPowerByStats: { teamId: string; name: string; shortName: string; color: string; totalStats: number; rating: number; skills: number; uniquePicks: number }[];
+    teamPowerBySkills: { teamId: string; name: string; shortName: string; color: string; totalStats: number; rating: number; skills: number; uniquePicks: number }[];
     mostUniqueTeam: { teamId: string; name: string; uniquePicks: number } | null;
   };
 };
