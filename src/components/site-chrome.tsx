@@ -18,10 +18,14 @@ const LINKS = [
   { href: "/rules", label: "Rules" },
 ];
 
+function listedLinks() {
+  return LINKS.filter((link) => PUBLIC_TOURNAMENT_LIVE || !("live" in link && link.live));
+}
+
 export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const links = LINKS.filter((link) => PUBLIC_TOURNAMENT_LIVE || !("live" in link && link.live));
+  const links = listedLinks();
 
   useEffect(() => {
     if (!open) return;
@@ -118,7 +122,7 @@ export function SiteFooter() {
             </p>
           </div>
           <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-            {LINKS.map((link) => (
+            {listedLinks().map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

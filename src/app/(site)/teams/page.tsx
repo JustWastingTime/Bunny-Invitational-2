@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { ComingSoon, DataError, Loading, PageTitle } from "@/components/site-chrome";
 import { usePublicData } from "@/components/use-public-data";
-import { PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
+import { PUBLIC_FIELD_LIVE, PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
 import type { PublicTeam } from "@/lib/types";
 
 export default function TeamsPage() {
   const { data, error } = usePublicData(15000);
-  if (!PUBLIC_TOURNAMENT_LIVE) {
+  if (!PUBLIC_FIELD_LIVE && !PUBLIC_TOURNAMENT_LIVE) {
     return (
       <ComingSoon kicker="The field" title="Teams">
         Club rosters publish after uma submissions lock.
@@ -26,8 +26,13 @@ export default function TeamsPage() {
   return (
     <div>
       <PageTitle kicker="The field" title="Teams">
-        21 clubs plus seven play-ins. Open a team for stats, skills, and in-tournament form.
+        21 clubs across groups A, B, and C. Open a team for the cards they submitted.
       </PageTitle>
+      <p className="mb-8">
+        <Link href="/stats" className="text-sm font-semibold text-[var(--coral-ink)] underline">
+          Main field stats
+        </Link>
+      </p>
       <div className="grid gap-10 xl:grid-cols-3">
         {grouped.map(({ g, teams }) => (
           <section key={g}>
@@ -42,7 +47,7 @@ export default function TeamsPage() {
           </section>
         ))}
       </div>
-      {playIn.length ? (
+      {PUBLIC_TOURNAMENT_LIVE && playIn.length ? (
         <section className="mt-10">
           <h2 className="mb-2 font-[family-name:var(--font-display)] text-2xl">Play-in</h2>
           <p className="mb-3 text-sm text-[var(--ink-soft)]">

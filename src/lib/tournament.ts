@@ -10,6 +10,7 @@ import {
   TOURNAMENT_NAME,
   PLAY_IN_GROUP,
   PLAY_IN_STAGE,
+  PUBLIC_FIELD_LIVE,
   PUBLIC_GROUPS_LIVE,
   PUBLIC_TOURNAMENT_LIVE,
   scheduledDay,
@@ -63,7 +64,8 @@ export async function buildPublicPayload(opts?: { reveal?: boolean }) {
     groupSlot: t.groupSlot,
     kind: t.kind === TEAM_KIND_PLAYIN ? "playin" : "main",
     roster: t.umaEntries.map((e) => {
-      if (!reveal) return unpublishedUma(e.category, e.slot);
+      const showRoster = reveal || (PUBLIC_FIELD_LIVE && t.kind !== TEAM_KIND_PLAYIN);
+      if (!showRoster) return unpublishedUma(e.category, e.slot);
       const pool = t.kind === TEAM_KIND_PLAYIN ? playInPop : pop;
       return {
       category: e.category,
@@ -198,7 +200,7 @@ export async function buildPublicPayload(opts?: { reveal?: boolean }) {
   const visibleGf = hideGroups ? [] : gfTeams;
 
   const nowNext = resolveNowNext(publicMatches, overlay);
-  const stats = reveal
+  const stats = reveal || PUBLIC_FIELD_LIVE
     ? buildStats(
         publicTeams
           .filter((t) => t.kind !== "playin")

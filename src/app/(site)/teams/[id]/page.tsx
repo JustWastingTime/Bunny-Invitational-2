@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
-import { CATEGORY_LABEL, CATEGORIES, PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
+import { CATEGORY_LABEL, CATEGORIES, PUBLIC_FIELD_LIVE, PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
 import { ComingSoon, DataError, Loading } from "@/components/site-chrome";
 import { UmaRosterCard } from "@/components/uma-roster-card";
 import { usePublicData } from "@/components/use-public-data";
@@ -11,7 +11,7 @@ import { addFinish, emptyFinish } from "@/lib/uma-finish";
 export default function TeamDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { data, error } = usePublicData(15000);
-  const skillRarity = useSkillRarity(PUBLIC_TOURNAMENT_LIVE);
+  const skillRarity = useSkillRarity(PUBLIC_FIELD_LIVE || PUBLIC_TOURNAMENT_LIVE);
 
   const finishes = useMemo(() => {
     const map = new Map<string, ReturnType<typeof emptyFinish>>();
@@ -30,7 +30,7 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
     return map;
   }, [data, id]);
 
-  if (!PUBLIC_TOURNAMENT_LIVE) {
+  if (!PUBLIC_FIELD_LIVE && !PUBLIC_TOURNAMENT_LIVE) {
     return (
       <ComingSoon kicker="The field" title="Teams">
         Club rosters publish after uma submissions lock.
@@ -49,6 +49,16 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
         </Link>
       </div>
     );
+  if (team.kind === "playin" && !PUBLIC_TOURNAMENT_LIVE) {
+    return (
+      <div className="rounded-2xl bg-[var(--surface)] px-5 py-4">
+        <p className="font-semibold text-[var(--ink)]">{team.name} is in the play-in.</p>
+        <Link href={`/play-in#${team.id}`} className="mt-3 inline-block font-semibold text-[var(--coral-ink)] underline">
+          Open their play-in cards
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-8">

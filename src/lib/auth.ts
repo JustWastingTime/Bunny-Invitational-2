@@ -54,6 +54,8 @@ export const authOptions: NextAuthOptions = {
         DiscordProvider({
           clientId: process.env.DISCORD_CLIENT_ID,
           clientSecret: process.env.DISCORD_CLIENT_SECRET ?? "",
+          // Discord now returns iss=https://discord.com on the callback. Without this, that return trip throws.
+          issuer: "https://discord.com",
           // Email is not used. Asking for it makes Discord refuse accounts that have no email.
           authorization: { params: { scope: "identify" } },
           profile(profile) {

@@ -1,8 +1,10 @@
 export const TOURNAMENT_NAME = "Bunny Invitational 2";
 /** Discord account that can open staff settings and grant desk access. */
 export const OWNER_DISCORD_ID = "217274197553053696";
-/** Public site: team/stats pages, real umas, and live match cues. Staff desk is unchanged. */
+/** Public site: navbar links for teams/stats, real umas on the scoreboard, and live match cues. */
 export const PUBLIC_TOURNAMENT_LIVE = false;
+/** Main-field rosters on /teams and /stats. Those pages stay out of the navbar until the flag above is on. */
+export const PUBLIC_FIELD_LIVE = true;
 
 export const CATEGORIES = ["sprint", "mile", "medium", "long", "dirt"] as const;
 export type Category = (typeof CATEGORIES)[number];
