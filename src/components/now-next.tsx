@@ -37,7 +37,7 @@ function CueBlock({ kind, cue, index }: { kind: "now" | "next"; cue: Cue; index:
         </>
       ) : (
         <p className="text-[var(--ink-soft)]">
-          {isNow ? "Waiting for the first race." : "That’s the last race on the board."}
+          {isNow ? "Waiting for groups to start." : "The next race follows once a group match is on the overlay."}
         </p>
       )}
     </article>

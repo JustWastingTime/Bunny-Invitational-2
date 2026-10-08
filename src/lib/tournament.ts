@@ -11,6 +11,7 @@ import {
   PLAY_IN_GROUP,
   PLAY_IN_STAGE,
   PUBLIC_FIELD_LIVE,
+  PUBLIC_GROUP_SCHEDULE,
   PUBLIC_GROUPS_LIVE,
   PUBLIC_TOURNAMENT_LIVE,
   scheduledDay,
@@ -195,7 +196,7 @@ export async function buildPublicPayload(opts?: { reveal?: boolean }) {
 
   const hideGroups = !reveal && !PUBLIC_GROUPS_LIVE;
   const visibleMatches = hideGroups
-    ? publicMatches.filter((m) => m.stage === "playin")
+    ? publicMatches.filter((m) => m.stage === "playin" || (PUBLIC_GROUP_SCHEDULE && m.stage === "group"))
     : publicMatches;
   const visibleGroups = hideGroups ? [] : groups;
   const visibleGf = hideGroups ? [] : gfTeams;
@@ -224,6 +225,7 @@ export async function buildPublicPayload(opts?: { reveal?: boolean }) {
         skillsCommon: [],
         skillsRare: [],
         teamPowerByStats: [],
+        teamPowerByScore: [],
         teamPowerBySkills: [],
         mostUniqueTeam: null,
       };
@@ -269,23 +271,23 @@ function resolveNowNext(
   matches: {
     id: string;
     label: string;
+    stage: string;
     sortOrder: number;
     complete: boolean;
     teams: { name: string; color: string }[];
     races: { category: string; label: string; placements: unknown[] }[];
   }[],
-  overlay: { activeMatchId: string | null; activeCategory: string },
+  overlay: { activeMatchId: string | null; activeCategory: string; visible: boolean },
 ) {
-  const nowMatch = overlay.activeMatchId
-    ? matches.find((m) => m.id === overlay.activeMatchId)
-    : matches.find((m) => !m.complete) ?? matches[0];
+  if (!overlay.visible || !overlay.activeMatchId) return { now: null, next: null };
+  const nowMatch = matches.find((m) => m.id === overlay.activeMatchId && m.stage !== "playin");
   if (!nowMatch) return { now: null, next: null };
 
   const cat = (overlay.activeCategory as Category) || "sprint";
   const now = toCue(nowMatch, cat);
   const followingCat = nextCategory(cat);
   if (followingCat) return { now, next: toCue(nowMatch, followingCat) };
-  const nextMatch = matches.find((m) => m.sortOrder > nowMatch.sortOrder);
+  const nextMatch = matches.find((m) => m.stage !== "playin" && m.sortOrder > nowMatch.sortOrder);
   if (!nextMatch) return { now, next: null };
   return { now, next: toCue(nextMatch, "sprint") };
 }
@@ -307,16 +309,9 @@ function umaBaseName(name: string) {
   return name.replace(/\s*\(.*\)\s*$/, "").trim();
 }
 
-const RATING_TIERS = ["G", "F", "E", "D", "C", "B", "A", "S", "SS", "UG", "UF", "UE", "UD", "UC", "UB", "UA"];
-
-/** Letter ranks plus a step. UG1 sits above UG, and UF sits above UG9. */
-export function ratingPoints(rating: string | null | undefined) {
-  const raw = (rating ?? "").trim().toUpperCase();
-  const match = raw.match(/^(SS|UG|UF|UE|UD|UC|UB|UA|[SABCDEFG])(\+)?(\d+)?$/);
-  if (!match) return 0;
-  const tier = RATING_TIERS.indexOf(match[1]);
-  if (tier < 0) return 0;
-  return tier * 12 + (match[2] ? 1 : 0) + (match[3] ? Number(match[3]) : 0);
+function scoreTotal(score: string | null | undefined) {
+  const n = Number(String(score ?? "").replace(/[^\d.]/g, ""));
+  return Number.isFinite(n) ? n : 0;
 }
 
 async function skillRarityMap() {
@@ -343,7 +338,7 @@ export function buildStats(
       umaName: string;
       spriteId: string;
       skills: string[];
-      rating?: string | null;
+      score?: string | null;
       stats: { speed: number; stamina: number; power: number; guts: number; wisdom: number };
       aptitudes: { terrain: string | null; distance: string | null; style: string | null };
       isUnique: boolean;
@@ -417,12 +412,14 @@ export function buildStats(
 
   const teamPower = teams.map((t) => {
     let totalStats = 0;
+    let totalScore = 0;
     let skills = 0;
     for (const u of t.roster) {
       const spd = u.stats.speed * (u.aptitudes.distance === "S" ? 1.1 : 1);
       const pow = u.stats.power * (u.aptitudes.terrain === "S" ? 1.1 : 1);
       const wit = u.stats.wisdom * (u.aptitudes.style === "S" ? 1.1 : 1);
       totalStats += spd + u.stats.stamina + pow + u.stats.guts + wit;
+      totalScore += scoreTotal(u.score);
       skills += u.skills.length;
     }
     return {
@@ -431,7 +428,7 @@ export function buildStats(
       shortName: t.shortName,
       color: t.color,
       totalStats: Math.round(totalStats),
-      rating: t.roster.reduce((sum, uma) => sum + ratingPoints(uma.rating), 0),
+      totalScore: Math.round(totalScore),
       skills,
       uniquePicks: t.roster.filter((u) => u.isUnique).length,
     };
@@ -448,8 +445,9 @@ export function buildStats(
     umaPopulation,
     skillsCommon: skillList.slice(0, 12),
     skillsRare: [...skillList].filter((s) => s.count >= 1).sort((a, b) => a.count - b.count || a.name.localeCompare(b.name)).slice(0, 12),
-    teamPowerByStats: [...teamPower].sort((a, b) => b.totalStats - a.totalStats),
-    teamPowerBySkills: [...teamPower].sort((a, b) => b.skills - a.skills),
+    teamPowerByStats: [...teamPower].sort((a, b) => b.totalStats - a.totalStats || a.name.localeCompare(b.name)),
+    teamPowerByScore: [...teamPower].sort((a, b) => b.totalScore - a.totalScore || a.name.localeCompare(b.name)),
+    teamPowerBySkills: [...teamPower].sort((a, b) => b.skills - a.skills || a.name.localeCompare(b.name)),
     mostUniqueTeam: [...teamPower].sort((a, b) => b.uniquePicks - a.uniquePicks)[0] ?? null,
   };
 }

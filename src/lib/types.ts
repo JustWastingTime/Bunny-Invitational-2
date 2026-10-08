@@ -101,6 +101,17 @@ export type Cue = {
   teams: { name: string; color: string }[];
 } | null;
 
+export type TeamPower = {
+  teamId: string;
+  name: string;
+  shortName: string;
+  color: string;
+  totalStats: number;
+  totalScore: number;
+  skills: number;
+  uniquePicks: number;
+};
+
 export type PublicPayload = {
   tournament: string;
   updatedAt: string;
@@ -141,8 +152,9 @@ export type PublicPayload = {
     }[];
     skillsCommon: { name: string; count: number }[];
     skillsRare: { name: string; count: number }[];
-    teamPowerByStats: { teamId: string; name: string; shortName: string; color: string; totalStats: number; rating: number; skills: number; uniquePicks: number }[];
-    teamPowerBySkills: { teamId: string; name: string; shortName: string; color: string; totalStats: number; rating: number; skills: number; uniquePicks: number }[];
+    teamPowerByStats: TeamPower[];
+    teamPowerByScore: TeamPower[];
+    teamPowerBySkills: TeamPower[];
     mostUniqueTeam: { teamId: string; name: string; uniquePicks: number } | null;
   };
 };

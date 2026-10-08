@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PLAY_IN_EVENT_LABEL, PUBLIC_GROUPS_LIVE, mainStageDayLabel } from "@/lib/constants";
+import { PLAY_IN_EVENT_LABEL, PUBLIC_GROUP_SCHEDULE, PUBLIC_GROUPS_LIVE, mainStageDayLabel } from "@/lib/constants";
 import { NowNext } from "@/components/now-next";
 import { GroupSchedule, KnockoutBoard, PlayInSchedule } from "@/components/tournament-ui";
 import { DataError, Loading, PageTitle } from "@/components/site-chrome";
@@ -15,8 +15,9 @@ export default function SchedulePage() {
   if (!data) return error ? <DataError what="schedule" /> : <Loading what="schedule" />;
 
   const nowStage = data.matches.find((m) => m.id === data.now?.matchId)?.stage;
-  const active: Board = PUBLIC_GROUPS_LIVE
-    ? (board ?? (nowStage === "playin" ? "playin" : nowStage && nowStage !== "group" ? "knockout" : "groups"))
+  const groupsOpen = PUBLIC_GROUP_SCHEDULE || PUBLIC_GROUPS_LIVE;
+  const active: Board = groupsOpen
+    ? (board ?? (nowStage === "playin" ? "playin" : nowStage && nowStage !== "group" && PUBLIC_GROUPS_LIVE ? "knockout" : "groups"))
     : "playin";
   const groupMatches = data.matches.filter((m) => m.stage === "group");
   const playInMatches = data.matches.filter((m) => m.stage === "playin");
@@ -25,7 +26,7 @@ export default function SchedulePage() {
   return (
     <div className="grid gap-10">
       <PageTitle kicker="Order of play" title="Schedule">
-        {PUBLIC_GROUPS_LIVE
+        {groupsOpen
           ? `Play-in is a battle between seven second clubs — same 3v3v3 as a group, all on ${PLAY_IN_EVENT_LABEL}, with its own oshi and popularity pool. The main stage is three days: group matches 1–3 on ${mainStageDayLabel(1)}, matches 4–7 on ${mainStageDayLabel(2)}, then last chance, semis, and finals on ${mainStageDayLabel(3)}.`
           : `Play-ins. Seven in. One remains. ${PLAY_IN_EVENT_LABEL}. Group draw lands closer to the main stage.`}
       </PageTitle>
@@ -38,7 +39,7 @@ export default function SchedulePage() {
           </BoardTab>
           <BoardTab
             active={active === "groups"}
-            disabled={!PUBLIC_GROUPS_LIVE}
+            disabled={!groupsOpen}
             onClick={() => setBoard("groups")}
           >
             Group stage
@@ -53,8 +54,9 @@ export default function SchedulePage() {
         </div>
         {PUBLIC_GROUPS_LIVE ? null : (
           <p className="mb-6 text-sm text-[var(--ink-soft)]">
-            The group stage and knockout boards open once the group draw is done. Until then, only the play-in is
-            scheduled.
+            {groupsOpen
+              ? "Knockout rooms open with the last-chance round."
+              : "The group stage and knockout boards open once the group draw is done. Until then, only the play-in is scheduled."}
           </p>
         )}
 

@@ -19,6 +19,8 @@ export const CATEGORY_LABEL: Record<Category, string> = {
 
 /** Public group tables, group-stage schedule, and knockout. Independent of uma/stats reveal. */
 export const PUBLIC_GROUPS_LIVE = false;
+/** Group-stage matches on the schedule. Standings and knockout stay behind PUBLIC_GROUPS_LIVE. */
+export const PUBLIC_GROUP_SCHEDULE = true;
 
 export type TrackPiece = "straight" | "corner";
 
