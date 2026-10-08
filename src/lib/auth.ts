@@ -2,6 +2,7 @@ import type { NextAuthOptions, Session } from "next-auth";
 import DiscordProvider from "next-auth/providers/discord";
 import { getServerSession } from "next-auth";
 import { OWNER_DISCORD_ID } from "./constants";
+import { rememberAuthFailure } from "./auth-debug";
 import { staffDiscordIds } from "./staff-access";
 
 declare module "next-auth" {
@@ -72,6 +73,20 @@ export const authOptions: NextAuthOptions = {
     : [],
   secret: process.env.NEXTAUTH_SECRET ?? "dev-secret-change-me-please-use-a-long-value",
   pages: { signIn: "/login", error: "/login" },
+  logger: {
+    error(code, metadata) {
+      const meta =
+        metadata instanceof Error
+          ? { error: metadata }
+          : (metadata as { error?: unknown; error_description?: unknown } | undefined);
+      const error = meta?.error;
+      const message = error instanceof Error ? error.message : typeof error === "string" ? error : "";
+      const description = typeof meta?.error_description === "string" ? meta.error_description : "";
+      const detail = [message, description].filter(Boolean).join(" — ") || String(code);
+      rememberAuthFailure(String(code), detail);
+      console.error(`[auth] ${code}: ${detail}`);
+    },
+  },
   callbacks: {
     async jwt({ token, account }) {
       if (account?.providerAccountId) token.sub = account.providerAccountId;

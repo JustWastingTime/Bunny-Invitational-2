@@ -1,3 +1,4 @@
+import { recentAuthFailure } from "@/lib/auth-debug";
 import { getSession, isStaffSession } from "@/lib/auth";
 import { DiscordSignIn, DiscordSignOut } from "./login-actions";
 
@@ -11,6 +12,7 @@ export default async function LoginPage({
   const session = await getSession();
   const signedInId = session?.user?.id;
   const onRoster = await isStaffSession(session);
+  const failure = error && error !== "NotStaff" ? recentAuthFailure() : null;
 
   return (
     <div className="mx-auto grid max-w-md flex-1 place-content-center gap-4 px-4 py-24 text-center">
@@ -25,6 +27,9 @@ export default async function LoginPage({
         <p className="text-[var(--ink-soft)]">
           Discord did not finish signing in. Stay in a normal browser, on the Discord account that was added, and try
           again.
+          <span className="mt-2 block font-mono text-xs text-[var(--ink)]">
+            {failure ? `${failure.code}: ${failure.detail}` : error}
+          </span>
         </p>
       ) : (
         <p className="text-[var(--ink-soft)]">
