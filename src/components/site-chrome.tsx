@@ -10,8 +10,8 @@ const MENU_ID = "site-menu";
 
 const LINKS: { href: string; label: string; live?: boolean; board?: boolean }[] = [
   { href: "/", label: "Home" },
-  { href: "/schedule", label: "Schedule", board: true },
-  { href: "/scoreboard", label: "Scoreboard", board: true },
+  { href: "/schedule", label: "Schedule" },
+  { href: "/scoreboard", label: "Scoreboard" },
   { href: "/teams", label: "Teams" },
   { href: "/play-in", label: "Play-in", board: true },
   { href: "/stats", label: "Stats", live: true },

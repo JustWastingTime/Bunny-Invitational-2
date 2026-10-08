@@ -2,26 +2,21 @@
 
 import { useMemo, useState } from "react";
 import { NowNext } from "@/components/now-next";
-import { ComingSoon, DataError, Loading, PageTitle } from "@/components/site-chrome";
+import { DataError, Loading, PageTitle } from "@/components/site-chrome";
 import { GroupTable, KnockoutBoard, ScorerList } from "@/components/tournament-ui";
 import { usePublicData } from "@/components/use-public-data";
-import { PUBLIC_BOARDS_LIVE, PUBLIC_GROUPS_LIVE, PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
+import { PUBLIC_GROUPS_LIVE, PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
 
 export default function ScoreboardPage() {
   const { data, error } = usePublicData(3000);
   const [matchId, setMatchId] = useState<string | null>(null);
+  const matches = useMemo(() => data?.matches.filter((match) => match.stage !== "playin") ?? [], [data]);
   const selected = useMemo(() => {
     if (!data) return null;
-    return data.matches.find((m) => m.id === (matchId ?? data.now?.matchId ?? data.matches[0]?.id)) ?? null;
-  }, [data, matchId]);
+    const preferred = matchId ?? (data.now && matches.some((match) => match.id === data.now?.matchId) ? data.now.matchId : matches[0]?.id);
+    return matches.find((match) => match.id === preferred) ?? null;
+  }, [data, matchId, matches]);
 
-  if (!PUBLIC_BOARDS_LIVE) {
-    return (
-      <ComingSoon kicker="The board" title="Scoreboard">
-        Standings are off the public site for now.
-      </ComingSoon>
-    );
-  }
   if (!data) return error ? <DataError what="scoreboard" /> : <Loading what="scoreboard" />;
 
   return (
@@ -29,7 +24,7 @@ export default function ScoreboardPage() {
       <PageTitle kicker={PUBLIC_TOURNAMENT_LIVE ? "Live" : "The board"} title="Scoreboard">
         {PUBLIC_GROUPS_LIVE
           ? "Group tables, knockout, and who actually scored the points."
-          : "Play-in standings until the group draw. Maps are up on the Maps page."}
+          : "Main-stage results. Group tables open once those matches are done."}
       </PageTitle>
       <NowNext now={data.now} next={data.next} />
 
@@ -39,10 +34,6 @@ export default function ScoreboardPage() {
             <GroupTable key={g.id} group={g.id} standings={g.standings} />
           ))}
         </div>
-      ) : null}
-
-      {data.playIn?.standings?.length ? (
-        <GroupTable group="Play-in" standings={data.playIn.standings} />
       ) : null}
 
       {PUBLIC_GROUPS_LIVE ? <KnockoutBoard data={data} /> : null}
@@ -57,7 +48,7 @@ export default function ScoreboardPage() {
               value={selected?.id ?? ""}
               onChange={(e) => setMatchId(e.target.value)}
             >
-              {data.matches.map((m) => (
+              {matches.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.label}
                 </option>
