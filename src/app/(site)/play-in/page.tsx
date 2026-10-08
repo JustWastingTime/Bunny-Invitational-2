@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CATEGORIES, CATEGORY_LABEL } from "@/lib/constants";
-import { DataError, Loading, PageTitle } from "@/components/site-chrome";
+import { CATEGORIES, CATEGORY_LABEL, PUBLIC_BOARDS_LIVE } from "@/lib/constants";
+import { ComingSoon, DataError, Loading, PageTitle } from "@/components/site-chrome";
 import { UmaRosterCard } from "@/components/uma-roster-card";
 import { usePlayInData } from "@/components/use-play-in-data";
 import { finishKey } from "@/lib/uma-finish";
@@ -22,6 +22,13 @@ export default function PlayInRostersPage() {
     });
   }, [data]);
 
+  if (!PUBLIC_BOARDS_LIVE) {
+    return (
+      <ComingSoon kicker="Qualifier" title="Play-in">
+        The play-in is off the public site for now.
+      </ComingSoon>
+    );
+  }
   if (!data) return error ? <DataError what="play-in field" /> : <Loading what="play-in field" />;
 
   const selected = data.teams.find((team) => team.id === teamId) ?? data.teams[0];

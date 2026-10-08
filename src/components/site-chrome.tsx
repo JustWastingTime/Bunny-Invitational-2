@@ -3,23 +3,27 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
+import { PUBLIC_BOARDS_LIVE, PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const MENU_ID = "site-menu";
 
-const LINKS = [
+const LINKS: { href: string; label: string; live?: boolean; board?: boolean }[] = [
   { href: "/", label: "Home" },
-  { href: "/schedule", label: "Schedule" },
-  { href: "/scoreboard", label: "Scoreboard" },
+  { href: "/schedule", label: "Schedule", board: true },
+  { href: "/scoreboard", label: "Scoreboard", board: true },
   { href: "/teams", label: "Teams" },
-  { href: "/play-in", label: "Play-in" },
+  { href: "/play-in", label: "Play-in", board: true },
   { href: "/stats", label: "Stats", live: true },
   { href: "/rules", label: "Rules" },
 ];
 
 function listedLinks() {
-  return LINKS.filter((link) => PUBLIC_TOURNAMENT_LIVE || !("live" in link && link.live));
+  return LINKS.filter((link) => {
+    if (link.live && !PUBLIC_TOURNAMENT_LIVE) return false;
+    if (link.board && !PUBLIC_BOARDS_LIVE) return false;
+    return true;
+  });
 }
 
 export function SiteHeader() {

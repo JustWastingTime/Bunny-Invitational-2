@@ -20,7 +20,7 @@ export default function NotFound() {
             This one never left the gate.
           </h1>
           <p className="mt-4 max-w-[52ch] text-[var(--ink-soft)]">
-            The page you asked for isn&rsquo;t on the card. Check the schedule, or head back to the meeting.
+            The page you asked for isn&rsquo;t on the card. Head back to the meeting.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link
@@ -30,10 +30,10 @@ export default function NotFound() {
               Back to the meeting
             </Link>
             <Link
-              href="/schedule"
+              href="/teams"
               className="lift inline-flex items-center bg-[var(--surface-2)] px-5 py-2.5 text-sm font-extrabold uppercase tracking-[0.1em] ring-1 ring-[var(--line-strong)]"
             >
-              Order of play
+              The clubs
             </Link>
           </div>
         </div>

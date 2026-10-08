@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
-import { CATEGORY_LABEL, CATEGORIES, PUBLIC_FIELD_LIVE, PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
+import { CATEGORY_LABEL, CATEGORIES, PUBLIC_BOARDS_LIVE, PUBLIC_FIELD_LIVE, PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
 import { ComingSoon, DataError, Loading } from "@/components/site-chrome";
 import { UmaRosterCard } from "@/components/uma-roster-card";
 import { usePublicData } from "@/components/use-public-data";
@@ -53,9 +53,13 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
     return (
       <div className="rounded-2xl bg-[var(--surface)] px-5 py-4">
         <p className="font-semibold text-[var(--ink)]">{team.name} is in the play-in.</p>
-        <Link href={`/play-in#${team.id}`} className="mt-3 inline-block font-semibold text-[var(--coral-ink)] underline">
-          Open their play-in cards
-        </Link>
+        {PUBLIC_BOARDS_LIVE ? (
+          <Link href={`/play-in#${team.id}`} className="mt-3 inline-block font-semibold text-[var(--coral-ink)] underline">
+            Open their play-in cards
+          </Link>
+        ) : (
+          <p className="mt-1 text-sm text-[var(--ink-soft)]">Their cards stay off the public site for now.</p>
+        )}
       </div>
     );
   }

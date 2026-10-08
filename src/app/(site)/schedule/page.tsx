@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { PLAY_IN_EVENT_LABEL, PUBLIC_GROUP_SCHEDULE, PUBLIC_GROUPS_LIVE, PUBLIC_KNOCKOUT_SCHEDULE, mainStageDayLabel } from "@/lib/constants";
+import { PLAY_IN_EVENT_LABEL, PUBLIC_BOARDS_LIVE, PUBLIC_GROUP_SCHEDULE, PUBLIC_GROUPS_LIVE, PUBLIC_KNOCKOUT_SCHEDULE, mainStageDayLabel } from "@/lib/constants";
 import { NowNext } from "@/components/now-next";
 import { GroupSchedule, KnockoutBoard, PlayInSchedule } from "@/components/tournament-ui";
-import { DataError, Loading, PageTitle } from "@/components/site-chrome";
+import { ComingSoon, DataError, Loading, PageTitle } from "@/components/site-chrome";
 import { usePublicData } from "@/components/use-public-data";
 
 type Board = "groups" | "playin" | "knockout";
@@ -12,6 +12,13 @@ type Board = "groups" | "playin" | "knockout";
 export default function SchedulePage() {
   const { data, error } = usePublicData();
   const [board, setBoard] = useState<Board | null>(null);
+  if (!PUBLIC_BOARDS_LIVE) {
+    return (
+      <ComingSoon kicker="Order of play" title="Schedule">
+        The match order is off the public site for now.
+      </ComingSoon>
+    );
+  }
   if (!data) return error ? <DataError what="schedule" /> : <Loading what="schedule" />;
 
   const nowStage = data.matches.find((m) => m.id === data.now?.matchId)?.stage;

@@ -5,6 +5,8 @@ export const OWNER_DISCORD_ID = "217274197553053696";
 export const PUBLIC_TOURNAMENT_LIVE = false;
 /** Main-field rosters on /teams and /stats. Those pages stay out of the navbar until the flag above is on. */
 export const PUBLIC_FIELD_LIVE = true;
+/** Schedule, scoreboard, and play-in. Direct links stay closed while this is off. */
+export const PUBLIC_BOARDS_LIVE = false;
 
 export const CATEGORIES = ["sprint", "mile", "medium", "long", "dirt"] as const;
 export type Category = (typeof CATEGORIES)[number];

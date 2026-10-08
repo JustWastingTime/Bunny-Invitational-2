@@ -12,6 +12,7 @@ import {
   GROUPS,
   PLAY_IN_EVENT_LABEL,
   PLAY_IN_TEAM_COUNT,
+  PUBLIC_BOARDS_LIVE,
   PUBLIC_GROUPS_LIVE,
   PUBLIC_TOURNAMENT_LIVE,
   TEAMS_PER_GROUP,
@@ -55,12 +56,18 @@ export default function HomePage() {
               final.
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
-              <ActionButton href="/scoreboard">
-                {PUBLIC_TOURNAMENT_LIVE ? "Live scoreboard" : "Open the scoreboard"}
-              </ActionButton>
-              <ActionButton href="/schedule" tone="ghost">
-                Order of play
-              </ActionButton>
+              {PUBLIC_BOARDS_LIVE ? (
+                <>
+                  <ActionButton href="/scoreboard">
+                    {PUBLIC_TOURNAMENT_LIVE ? "Live scoreboard" : "Open the scoreboard"}
+                  </ActionButton>
+                  <ActionButton href="/schedule" tone="ghost">
+                    Order of play
+                  </ActionButton>
+                </>
+              ) : (
+                <ActionButton href="/teams">Meet the clubs</ActionButton>
+              )}
             </div>
           </div>
         </div>

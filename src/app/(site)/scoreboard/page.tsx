@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { NowNext } from "@/components/now-next";
-import { DataError, Loading, PageTitle } from "@/components/site-chrome";
+import { ComingSoon, DataError, Loading, PageTitle } from "@/components/site-chrome";
 import { GroupTable, KnockoutBoard, ScorerList } from "@/components/tournament-ui";
 import { usePublicData } from "@/components/use-public-data";
-import { PUBLIC_GROUPS_LIVE, PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
+import { PUBLIC_BOARDS_LIVE, PUBLIC_GROUPS_LIVE, PUBLIC_TOURNAMENT_LIVE } from "@/lib/constants";
 
 export default function ScoreboardPage() {
   const { data, error } = usePublicData(3000);
@@ -15,6 +15,13 @@ export default function ScoreboardPage() {
     return data.matches.find((m) => m.id === (matchId ?? data.now?.matchId ?? data.matches[0]?.id)) ?? null;
   }, [data, matchId]);
 
+  if (!PUBLIC_BOARDS_LIVE) {
+    return (
+      <ComingSoon kicker="The board" title="Scoreboard">
+        Standings are off the public site for now.
+      </ComingSoon>
+    );
+  }
   if (!data) return error ? <DataError what="scoreboard" /> : <Loading what="scoreboard" />;
 
   return (
