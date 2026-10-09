@@ -577,6 +577,28 @@
   grid-template-rows: 1fr 1fr;
 }
 
+.brief-grid-fill {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr;
+}
+
+.brief-grid-fill .brief-card {
+  align-items: flex-start;
+}
+
+.brief-runners {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 16px;
+  margin-top: 8px;
+}
+
+.brief-runners .brief-runner {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.25;
+}
+
 .brief-grid-unique {
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: 1fr 1fr;

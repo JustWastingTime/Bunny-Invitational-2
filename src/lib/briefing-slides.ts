@@ -70,7 +70,8 @@ export type BriefSlide =
   | { id: string; kind: "costumes"; tone: "penalty" | "pair" | "unique"; title: string; umas: BriefUma[]; page: number; pages: number };
 
 const PENALTY_PER_SLIDE = 4;
-const PAIR_PER_SLIDE = 4;
+const PENALTY_REST_PER_SLIDE = 2;
+const PAIR_PER_SLIDE = 8;
 const UNIQUE_PER_SLIDE = 8;
 
 export function briefingPool(stage: string | null | undefined): BriefPool {
@@ -157,7 +158,7 @@ export function buildBriefingSlides(teams: PublicTeam[], pool: BriefPool): Brief
   } else {
     pushCostumePages(slides, heroes, "penalty", "Meta penalty");
   }
-  pushCostumePages(slides, rest, "penalty", "Meta penalty");
+  pushCostumePages(slides, rest, "penalty", "Meta penalty", PENALTY_REST_PER_SLIDE);
 
   pushCostumePages(slides, pairs, "pair", "Oshi +1");
   pushCostumePages(slides, unique.sort(byName), "unique", "Oshi +2");
@@ -165,8 +166,13 @@ export function buildBriefingSlides(teams: PublicTeam[], pool: BriefPool): Brief
   return slides;
 }
 
-function pushCostumePages(slides: BriefSlide[], umas: BriefUma[], tone: "penalty" | "pair" | "unique", title: string) {
-  const size = tone === "unique" ? UNIQUE_PER_SLIDE : tone === "pair" ? PAIR_PER_SLIDE : PENALTY_PER_SLIDE;
+function pushCostumePages(
+  slides: BriefSlide[],
+  umas: BriefUma[],
+  tone: "penalty" | "pair" | "unique",
+  title: string,
+  size = tone === "unique" ? UNIQUE_PER_SLIDE : tone === "pair" ? PAIR_PER_SLIDE : PENALTY_PER_SLIDE,
+) {
   chunk(umas, size).forEach((pageUmas, page, all) => {
     slides.push({
       id: `${tone}-${page}-${pageUmas[0]?.spriteId ?? page}`,

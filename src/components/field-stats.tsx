@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { spriteFileName, spriteLocalPath } from "@/lib/sprites";
-import type { PublicPayload, TeamPower } from "@/lib/types";
+import type { PublicPayload, PublicTeam, TeamPower, TopScoreUma } from "@/lib/types";
 
-export function FieldStats({ stats }: { stats: PublicPayload["stats"] }) {
+export function FieldStats({ stats, teams }: { stats: PublicPayload["stats"]; teams?: PublicTeam[] }) {
   const [tab, setTab] = useState<"umas" | "teams" | "skills">("umas");
+  const topScores = stats.topScores?.length ? stats.topScores : scoresFromTeams(teams);
 
   return (
     <div className="grid gap-8">
@@ -27,6 +29,34 @@ export function FieldStats({ stats }: { stats: PublicPayload["stats"] }) {
           </dd>
         </div>
       </dl>
+
+      {topScores.length ? (
+        <section>
+          <h2 className="mb-2 font-[family-name:var(--font-display)] text-2xl">Highest scores</h2>
+          <ol className="grid gap-1">
+            {topScores.map((uma, index) => (
+              <li key={`${uma.teamId}-${uma.category}-${uma.slot}`}>
+                <Link
+                  href={`/teams/${uma.teamId}`}
+                  className="flex items-center gap-3 rounded-xl px-2 py-1.5 text-sm hover:bg-[var(--surface)]"
+                >
+                  <span className="w-6 shrink-0 tabular-nums text-[var(--ink-soft)]">{index + 1}</span>
+                  <UmaSprite spriteId={uma.spriteId} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold">{uma.umaName}</span>
+                    <span className="flex min-w-0 items-center gap-2 text-[var(--ink-soft)]">
+                      <span className="h-2.5 w-2.5 shrink-0" style={{ background: uma.color }} />
+                      <span className="truncate">{uma.trainer || uma.teamName}</span>
+                    </span>
+                  </span>
+                  <span className="shrink-0 font-bold tracking-wide">{uma.rating || "—"}</span>
+                  <span className="w-[4.5rem] shrink-0 text-right tabular-nums">{uma.score.toLocaleString()}</span>
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
         {(
@@ -119,6 +149,30 @@ export function FieldStats({ stats }: { stats: PublicPayload["stats"] }) {
       ) : null}
     </div>
   );
+}
+
+function scoresFromTeams(teams: PublicTeam[] | undefined): TopScoreUma[] {
+  if (!teams?.length) return [];
+  return teams
+    .filter((team) => team.kind !== "playin")
+    .flatMap((team) =>
+      team.roster.map((uma) => ({
+        teamId: team.id,
+        teamName: team.name,
+        shortName: team.shortName,
+        color: team.color,
+        trainer: uma.trainer.trim(),
+        umaName: uma.umaName,
+        spriteId: uma.spriteId,
+        rating: uma.rating?.trim() ?? "",
+        score: Number(String(uma.score ?? "").replace(/[^\d.]/g, "")) || 0,
+        category: uma.category,
+        slot: uma.slot,
+      })),
+    )
+    .filter((uma) => uma.score > 0)
+    .sort((a, b) => b.score - a.score || a.umaName.localeCompare(b.umaName))
+    .slice(0, 10);
 }
 
 function TeamRank({

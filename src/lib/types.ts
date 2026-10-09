@@ -101,6 +101,20 @@ export type Cue = {
   teams: { name: string; color: string }[];
 } | null;
 
+export type TopScoreUma = {
+  teamId: string;
+  teamName: string;
+  shortName: string;
+  color: string;
+  trainer: string;
+  umaName: string;
+  spriteId: string;
+  rating: string;
+  score: number;
+  category: string;
+  slot: number;
+};
+
 export type TeamPower = {
   teamId: string;
   name: string;
@@ -152,6 +166,7 @@ export type PublicPayload = {
     }[];
     skillsCommon: { name: string; count: number }[];
     skillsRare: { name: string; count: number }[];
+    topScores: TopScoreUma[];
     teamPowerByStats: TeamPower[];
     teamPowerByScore: TeamPower[];
     teamPowerBySkills: TeamPower[];

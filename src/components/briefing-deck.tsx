@@ -368,7 +368,7 @@ function CostumesSlide({ slide }: { slide: Extract<BriefSlide, { kind: "costumes
   return (
     <div className="brief-stack">
       <h1>{slide.title}</h1>
-      <div className={`brief-grid ${slide.tone === "unique" ? "brief-grid-unique" : "brief-grid-pair"}`}>
+      <div className={`brief-grid ${slide.tone === "penalty" ? (slide.umas.length <= 2 ? "brief-grid-fill" : "brief-grid-pair") : "brief-grid-unique"}`}>
         {slide.umas.map((uma) => (
           <article key={uma.spriteId} className="brief-card">
             <Sprite spriteId={uma.spriteId} name={uma.name} />
@@ -376,14 +376,15 @@ function CostumesSlide({ slide }: { slide: Extract<BriefSlide, { kind: "costumes
               <h2>{uma.name}</h2>
               <Badges uma={uma} />
               <p className="brief-runner">{uma.count} {uma.count === 1 ? "trainer" : "trainers"}</p>
-              {uma.runners.length <= 2
-                ? uma.runners.map((runner, i) => <RunnerLine key={`${runner.team}-${runner.trainer}-${i}`} runner={runner} />)
-                : (
-                  <p className="brief-runner">
-                    {uma.runners.slice(0, 4).map((runner) => runner.short).join(" · ")}
-                    {uma.runners.length > 4 ? ` +${uma.runners.length - 4}` : ""}
-                  </p>
-                )}
+              {slide.tone === "penalty" ? (
+                <div className="brief-runners">
+                  {uma.runners.map((runner, i) => (
+                    <RunnerLine key={`${runner.team}-${runner.trainer}-${i}`} runner={runner} />
+                  ))}
+                </div>
+              ) : (
+                uma.runners.map((runner, i) => <RunnerLine key={`${runner.team}-${runner.trainer}-${i}`} runner={runner} />)
+              )}
             </div>
           </article>
         ))}

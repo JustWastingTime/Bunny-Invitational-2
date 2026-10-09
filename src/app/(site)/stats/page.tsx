@@ -25,7 +25,7 @@ export default function StatsPage() {
       <PageTitle kicker="The meta" title="Stats">
         Picks, skills, and power across the 21 main-field clubs. Play-in counts stay on their own page.
       </PageTitle>
-      <FieldStats stats={data.stats} />
+      <FieldStats stats={data.stats} teams={data.teams} />
     </div>
   );
 }

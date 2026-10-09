@@ -240,6 +240,7 @@ export async function buildPublicPayload(opts?: { reveal?: boolean }) {
         mostPopular: null,
         mostPopularCombined: null,
         umaPopulation: [],
+        topScores: [],
         skillsCommon: [],
         skillsRare: [],
         teamPowerByStats: [],
@@ -355,6 +356,10 @@ export function buildStats(
     roster: {
       umaName: string;
       spriteId: string;
+      trainer?: string;
+      rating?: string | null;
+      category?: string;
+      slot?: number;
       skills: string[];
       score?: string | null;
       stats: { speed: number; stamina: number; power: number; guts: number; wisdom: number };
@@ -452,6 +457,26 @@ export function buildStats(
     };
   });
 
+  const topScores = teams
+    .flatMap((team) =>
+      team.roster.map((uma, index) => ({
+        teamId: team.id,
+        teamName: team.name,
+        shortName: team.shortName,
+        color: team.color,
+        trainer: uma.trainer?.trim() ?? "",
+        umaName: uma.umaName,
+        spriteId: uma.spriteId,
+        rating: uma.rating?.trim() ?? "",
+        score: scoreTotal(uma.score),
+        category: uma.category ?? "",
+        slot: uma.slot ?? index,
+      })),
+    )
+    .filter((uma) => uma.score > 0)
+    .sort((a, b) => b.score - a.score || a.umaName.localeCompare(b.umaName))
+    .slice(0, 10);
+
   const skillList = [...skillCounts.entries()]
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
@@ -461,6 +486,7 @@ export function buildStats(
     mostPopular: umaPopulation[0] ?? null,
     mostPopularCombined: [...combined.values()].sort((a, b) => b.count - a.count)[0] ?? null,
     umaPopulation,
+    topScores,
     skillsCommon: skillList.slice(0, 12),
     skillsRare: [...skillList].filter((s) => s.count >= 1).sort((a, b) => a.count - b.count || a.name.localeCompare(b.name)).slice(0, 12),
     teamPowerByStats: [...teamPower].sort((a, b) => b.totalStats - a.totalStats || a.name.localeCompare(b.name)),
