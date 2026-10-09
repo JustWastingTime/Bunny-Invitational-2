@@ -138,17 +138,16 @@ export async function buildPublicPayload(opts?: { reveal?: boolean }) {
             .map((p) => {
               const team = teamById.get(p.teamId);
               const entry = team?.umaEntries.find((e) => e.category === category && e.slot === p.slot);
-              const showUma = reveal || m.stage === PLAY_IN_STAGE;
               return {
                 place: p.place,
                 teamId: p.teamId,
                 teamName: team?.name ?? p.teamId,
                 teamColor: team?.color ?? "#c9a227",
                 slot: p.slot,
-                trainer: showUma ? (entry?.trainer ?? "") : "",
-                umaName: showUma ? (entry?.umaName ?? "Unknown") : "TBD",
-                spriteId: showUma ? (entry?.spriteId ?? p.spriteId) : "",
-                spritePath: showUma ? spriteFileName(entry?.spriteId ?? p.spriteId) : null,
+                trainer: entry?.trainer ?? "",
+                umaName: entry?.umaName ?? "Unknown",
+                spriteId: entry?.spriteId ?? p.spriteId,
+                spritePath: spriteFileName(entry?.spriteId ?? p.spriteId),
                 base: p.base,
                 penalty: p.penalty,
                 uniqueBonus: p.uniqueBonus,
@@ -216,7 +215,7 @@ export async function buildPublicPayload(opts?: { reveal?: boolean }) {
           (PUBLIC_KNOCKOUT_SCHEDULE && knockoutStages.has(m.stage)),
       )
     : publicMatches;
-  const visibleGroups = hideGroups ? [] : groups;
+  const visibleGroups = groups;
   const visibleGf = hideGroups ? [] : gfTeams;
 
   const nowNext = resolveNowNext(publicMatches, overlay);
@@ -286,11 +285,24 @@ function unpublishedUma(category: string, slot: number) {
   };
 }
 
+function cueRank(match: { id: string; stage: string; group: string | null; sortOrder: number }) {
+  if (match.stage === "group") {
+    const n = Number(match.id.split("-").pop());
+    const matchNo = Number.isFinite(n) ? n : 99;
+    const day = matchNo <= 3 ? 0 : 1;
+    const group = match.group === "A" ? 0 : match.group === "B" ? 1 : match.group === "C" ? 2 : 9;
+    const slot = day === 0 ? matchNo : matchNo - 3;
+    return day * 100 + group * 10 + slot;
+  }
+  return 1000 + match.sortOrder;
+}
+
 function resolveNowNext(
   matches: {
     id: string;
     label: string;
     stage: string;
+    group: string | null;
     sortOrder: number;
     complete: boolean;
     teams: { name: string; color: string }[];
@@ -306,7 +318,10 @@ function resolveNowNext(
   const now = toCue(nowMatch, cat);
   const followingCat = nextCategory(cat);
   if (followingCat) return { now, next: toCue(nowMatch, followingCat) };
-  const nextMatch = matches.find((m) => m.stage !== "playin" && m.sortOrder > nowMatch.sortOrder);
+  const nowRank = cueRank(nowMatch);
+  const nextMatch = matches
+    .filter((m) => m.stage !== "playin" && cueRank(m) > nowRank)
+    .sort((a, b) => cueRank(a) - cueRank(b))[0];
   if (!nextMatch) return { now, next: null };
   return { now, next: toCue(nextMatch, "sprint") };
 }

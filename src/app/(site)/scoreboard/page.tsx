@@ -24,11 +24,11 @@ export default function ScoreboardPage() {
       <PageTitle kicker={PUBLIC_TOURNAMENT_LIVE ? "Live" : "The board"} title="Scoreboard">
         {PUBLIC_GROUPS_LIVE
           ? "Group tables, knockout, and who actually scored the points."
-          : "Main-stage results. Group tables open once those matches are done."}
+          : "Group scores and who actually scored the points."}
       </PageTitle>
       <NowNext now={data.now} next={data.next} />
 
-      {PUBLIC_GROUPS_LIVE ? (
+      {data.groups.length ? (
         <div className="grid gap-10 xl:grid-cols-3">
           {data.groups.map((g) => (
             <GroupTable key={g.id} group={g.id} standings={g.standings} />
