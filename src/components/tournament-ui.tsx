@@ -232,8 +232,12 @@ function DayColumn({
   );
 }
 
+function listedScorer(placement: PublicPlacement) {
+  return placement.net !== 0 || (placement.place >= 1 && placement.place <= 5);
+}
+
 export function ScorerList({ match }: { match: PublicMatch }) {
-  const any = match.races.some((race) => race.placements.some((p) => p.net !== 0));
+  const any = match.races.some((race) => race.placements.some(listedScorer));
   if (!any)
     return (
       <p className="border-l-4 border-[var(--gold)] bg-[var(--surface)] px-5 py-4 text-sm text-[var(--ink-soft)]">
@@ -243,7 +247,7 @@ export function ScorerList({ match }: { match: PublicMatch }) {
   return (
     <div className="grid gap-6">
       {match.races.map((race) => {
-        const scorers = race.placements.filter((p) => p.net !== 0).sort((a, b) => a.place - b.place);
+        const scorers = race.placements.filter(listedScorer).sort((a, b) => a.place - b.place);
         return (
           <section key={race.category} className="min-w-0">
             <h3 className="mb-2 font-[family-name:var(--font-display)] text-2xl">{race.label}</h3>
