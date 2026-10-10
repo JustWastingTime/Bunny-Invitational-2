@@ -76,8 +76,9 @@ export async function seedKnockoutSlots() {
     qfWinners.set(qf.id, match ? matchWinnerId(match, rosters, pop) : null);
   }
 
-  const allQfDone = [...qfWinners.values()].every(Boolean);
-  if (groupsComplete && allQfDone) {
+  // The two group clubs are known as soon as the groups finish. The third
+  // slot stays empty until that semi's last-chance qualifier has a winner.
+  if (groupsComplete) {
     for (const semi of SEMI_SEEDS) {
       const ids = [
         teamAt(semi.first[0], semi.first[1]),

@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 import { spriteFileName, spriteLocalPath } from "@/lib/sprites";
-import type { PublicPayload, PublicTeam, TeamPower, TopScoreUma } from "@/lib/types";
+import type { PlayerForm, PublicPayload, PublicTeam, TeamPower, TopScoreUma } from "@/lib/types";
 
 export function FieldStats({ stats, teams }: { stats: PublicPayload["stats"]; teams?: PublicTeam[] }) {
-  const [tab, setTab] = useState<"umas" | "teams" | "skills">("umas");
+  const [tab, setTab] = useState<"umas" | "teams" | "skills" | "players">("umas");
   const topScores = stats.topScores?.length ? stats.topScores : scoresFromTeams(teams);
 
   return (
@@ -62,6 +62,7 @@ export function FieldStats({ stats, teams }: { stats: PublicPayload["stats"]; te
         {(
           [
             ["umas", "Uma population"],
+            ["players", "Players"],
             ["teams", "Team strength"],
             ["skills", "Skill meta"],
           ] as const
@@ -128,6 +129,8 @@ export function FieldStats({ stats, teams }: { stats: PublicPayload["stats"]; te
         </div>
       ) : null}
 
+      {tab === "players" ? <PlayerTable rows={stats.playerTable ?? []} /> : null}
+
       {tab === "teams" ? (
         <div className="grid gap-10 lg:grid-cols-3">
           <TeamRank title="Stats" teams={stats.teamPowerByStats} value={(team) => team.totalStats.toLocaleString()} />
@@ -173,6 +176,79 @@ function scoresFromTeams(teams: PublicTeam[] | undefined): TopScoreUma[] {
     .filter((uma) => uma.score > 0)
     .sort((a, b) => b.score - a.score || a.umaName.localeCompare(b.umaName))
     .slice(0, 10);
+}
+
+function signedPoints(n: number) {
+  if (n > 0) return `+${n}`;
+  return String(n);
+}
+
+function PlayerTable({ rows }: { rows: PlayerForm[] }) {
+  if (!rows.length) {
+    return <p className="text-sm text-[var(--ink-soft)]">No races scored yet.</p>;
+  }
+  return (
+    <div className="min-w-0 overflow-x-auto rounded-2xl bg-[var(--surface)]">
+      <table className="ink-table min-w-[52rem]">
+        <thead>
+          <tr>
+            <th scope="col">Player</th>
+            <th scope="col">Team</th>
+            <th scope="col" className="text-right">
+              PPG
+            </th>
+            <th scope="col" className="text-right">
+              GP
+            </th>
+            <th scope="col" className="text-right">
+              Pts
+            </th>
+            <th scope="col" className="text-right">
+              Place
+            </th>
+            <th scope="col" className="text-right">
+              Oshi
+            </th>
+            <th scope="col" className="text-right">
+              Penalty
+            </th>
+            <th scope="col" className="text-right">
+              Wins
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => (
+            <tr key={`${row.teamId}-${row.category}-${row.slot}`}>
+              <td>
+                <Link href={`/teams/${row.teamId}`} className="flex items-center gap-2">
+                  <span className="w-5 shrink-0 tabular-nums text-[var(--ink-soft)]">{index + 1}</span>
+                  <UmaSprite spriteId={row.spriteId} />
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold">{row.trainer || "—"}</span>
+                    <span className="block truncate text-sm text-[var(--ink-soft)]">{row.umaName}</span>
+                  </span>
+                </Link>
+              </td>
+              <td>
+                <Link href={`/teams/${row.teamId}`} className="inline-flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 shrink-0" style={{ background: row.color }} />
+                  {row.shortName}
+                </Link>
+              </td>
+              <td className="text-right font-semibold tabular-nums">{row.ppg.toFixed(1)}</td>
+              <td className="text-right tabular-nums">{row.games}</td>
+              <td className="text-right tabular-nums">{signedPoints(row.points)}</td>
+              <td className="text-right tabular-nums">{row.placePoints}</td>
+              <td className="text-right tabular-nums">{signedPoints(row.oshi)}</td>
+              <td className="text-right tabular-nums">{signedPoints(row.penalty)}</td>
+              <td className="text-right tabular-nums">{row.wins}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 function TeamRank({

@@ -15,6 +15,7 @@ import {
   PUBLIC_KNOCKOUT_SCHEDULE,
   PUBLIC_GROUPS_LIVE,
   PUBLIC_TOURNAMENT_LIVE,
+  SEMI_SEEDS,
   scheduledDay,
   type Category,
 } from "./constants";
@@ -240,6 +241,7 @@ export async function buildPublicPayload(opts?: { reveal?: boolean }) {
         mostPopularCombined: null,
         umaPopulation: [],
         topScores: [],
+        playerTable: [],
         skillsCommon: [],
         skillsRare: [],
         teamPowerByStats: [],
@@ -247,6 +249,8 @@ export async function buildPublicPayload(opts?: { reveal?: boolean }) {
         teamPowerBySkills: [],
         mostUniqueTeam: null,
       };
+
+  fillKnownSemiTeams(publicMatches, groups, teamById);
 
   return {
     tournament: TOURNAMENT_NAME,
@@ -262,6 +266,47 @@ export async function buildPublicPayload(opts?: { reveal?: boolean }) {
     grandFinal: visibleGf,
     stats,
   };
+}
+
+/** Group places are known before the last-chance winner. Show those two clubs now. */
+function fillKnownSemiTeams(
+  matches: {
+    id: string;
+    winnerId: string | null;
+    teams: { slot: number; teamId: string | null; name: string; shortName: string; color: string }[];
+  }[],
+  groups: { id: string; standings: { rank: number; teamId: string; matchesPlayed: number }[] }[],
+  teamById: Map<string, { name: string; shortName: string | null; color: string }>,
+) {
+  const groupsComplete = groups.every(
+    (group) => group.standings.length === 7 && group.standings.every((row) => row.matchesPlayed >= 3),
+  );
+  if (!groupsComplete) return;
+
+  function teamAt(group: string, place: number) {
+    return groups.find((row) => row.id === group)?.standings.find((row) => row.rank === place)?.teamId ?? null;
+  }
+
+  for (const semi of SEMI_SEEDS) {
+    const match = matches.find((row) => row.id === semi.id);
+    if (!match) continue;
+    const qualifier = matches.find((row) => row.id === semi.qfId);
+    const picks = [
+      teamAt(semi.first[0], semi.first[1]),
+      teamAt(semi.second[0], semi.second[1]),
+      qualifier?.winnerId ?? null,
+    ];
+    picks.forEach((teamId, slot) => {
+      const current = match.teams.find((team) => team.slot === slot);
+      if (!current || current.teamId || !teamId) return;
+      const team = teamById.get(teamId);
+      if (!team) return;
+      current.teamId = teamId;
+      current.name = team.name;
+      current.shortName = team.shortName ?? team.name;
+      current.color = team.color;
+    });
+  }
 }
 
 function unpublishedUma(category: string, slot: number) {
@@ -382,7 +427,25 @@ export function buildStats(
       isUnique: boolean;
     }[];
   }[],
-  matches: { races: { category: string; placements: { place: number; teamId: string; slot: number; umaName: string; spriteId: string; net: number }[] }[] }[],
+  matches: {
+    races: {
+      category: string;
+      placements: {
+        place: number;
+        teamId: string;
+        slot: number;
+        umaName?: string;
+        trainer?: string;
+        spriteId: string;
+        net: number;
+        base?: number;
+        penalty?: number;
+        uniqueBonus?: number;
+        teamName?: string;
+        teamColor?: string;
+      }[];
+    }[];
+  }[],
   pop: ReturnType<typeof popularityFromRosters>,
   skillRarity: Map<string, string> = new Map(),
 ) {
@@ -492,6 +555,64 @@ export function buildStats(
     .sort((a, b) => b.score - a.score || a.umaName.localeCompare(b.umaName))
     .slice(0, 10);
 
+  const playerRows = new Map<
+    string,
+    {
+      teamId: string;
+      teamName: string;
+      shortName: string;
+      color: string;
+      trainer: string;
+      umaName: string;
+      spriteId: string;
+      category: string;
+      slot: number;
+      games: number;
+      points: number;
+      placePoints: number;
+      oshi: number;
+      penalty: number;
+      wins: number;
+    }
+  >();
+  for (const match of matches) {
+    for (const race of match.races) {
+      for (const placement of race.placements) {
+        if (!placement.teamId || placement.place < 1) continue;
+        const key = `${placement.teamId}:${race.category}:${placement.slot}`;
+        const team = teams.find((row) => row.id === placement.teamId);
+        const uma = team?.roster.find((row) => row.category === race.category && row.slot === placement.slot);
+        const row = playerRows.get(key) ?? {
+          teamId: placement.teamId,
+          teamName: placement.teamName || team?.name || placement.teamId,
+          shortName: team?.shortName || placement.teamName || placement.teamId,
+          color: placement.teamColor || team?.color || "#c9a227",
+          trainer: (placement.trainer || uma?.trainer || "").trim(),
+          umaName: placement.umaName || uma?.umaName || "Unknown",
+          spriteId: placement.spriteId || uma?.spriteId || "",
+          category: race.category,
+          slot: placement.slot,
+          games: 0,
+          points: 0,
+          placePoints: 0,
+          oshi: 0,
+          penalty: 0,
+          wins: 0,
+        };
+        row.games += 1;
+        row.points += placement.net;
+        row.placePoints += placement.base ?? 0;
+        row.oshi += placement.uniqueBonus ?? 0;
+        row.penalty += placement.penalty ?? 0;
+        if (placement.place === 1) row.wins += 1;
+        playerRows.set(key, row);
+      }
+    }
+  }
+  const playerTable = [...playerRows.values()]
+    .map((row) => ({ ...row, ppg: row.games ? row.points / row.games : 0 }))
+    .sort((a, b) => b.ppg - a.ppg || b.points - a.points || a.trainer.localeCompare(b.trainer) || a.umaName.localeCompare(b.umaName));
+
   const skillList = [...skillCounts.entries()]
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
@@ -502,6 +623,7 @@ export function buildStats(
     mostPopularCombined: [...combined.values()].sort((a, b) => b.count - a.count)[0] ?? null,
     umaPopulation,
     topScores,
+    playerTable,
     skillsCommon: skillList.slice(0, 12),
     skillsRare: [...skillList].filter((s) => s.count >= 1).sort((a, b) => a.count - b.count || a.name.localeCompare(b.name)).slice(0, 12),
     teamPowerByStats: [...teamPower].sort((a, b) => b.totalStats - a.totalStats || a.name.localeCompare(b.name)),

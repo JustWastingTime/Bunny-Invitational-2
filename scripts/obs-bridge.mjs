@@ -24,10 +24,14 @@
  *                      Medium / Long / Dirt, and Medium Audio follows Medium.
  *                      Cast uses Sprint 2 / Mile 2 / Medium 2 / Long 2 / Dirt 2,
  *                      and Medium Audio follows Medium 2. Medium Audio turns off
- *                      for every other distance. A distance change fades that
- *                      audio out and the next distance in (Medium fades Medium
- *                      and Medium Audio). Switching Uma and Cast on the same
- *                      distance does not fade. Re-applied after a scene switch
+ *                      for every other distance. A distance change cuts that
+ *                      audio straight across: the next distance is put back to
+ *                      its resting volume while it is still hidden, then every
+ *                      distance source flips in one parallel batch. Medium
+ *                      includes Medium Audio. There is no fade, so the handoff
+ *                      is not silent and the two distances are not left up
+ *                      together. Switching Uma and Cast on the same distance
+ *                      does not touch audio. Re-applied after a scene switch
  *                      so the scene's saved default does not replace the
  *                      distance already on air.
  *
@@ -46,7 +50,9 @@
  *                         category -> source map still applies to every scene.
  *   OBS_TOGGLE_SCENES     JSON array of scenes to toggle sources in
  *   OBS_POLL_MS           state poll interval (default 750)
- *   OBS_AUDIO_FADE_MS     distance-change audio fade (default 400, 0 to skip)
+ *   OBS_AUDIO_FADE_MS     distance-change audio fade (default 0, a hard cut).
+ *                         A positive value fades the old distance out before
+ *                         the new one in, which leaves a gap.
  *
  * Flags:
  *   --once                sync one state, then exit (handy for a quick check)
@@ -127,7 +133,7 @@ export function loadConfig(env = process.env) {
   const defaultScenes = [...new Set(Object.values(sceneMap).filter((name) => typeof name === "string"))];
   const toggleScenes = parseJsonEnv(env.OBS_TOGGLE_SCENES, defaultScenes, "OBS_TOGGLE_SCENES");
   const fadeRaw = env.OBS_AUDIO_FADE_MS;
-  const fadeParsed = fadeRaw == null || String(fadeRaw).trim() === "" ? 400 : Number(fadeRaw);
+  const fadeParsed = fadeRaw == null || String(fadeRaw).trim() === "" ? 0 : Number(fadeRaw);
   return {
     stateUrl: env.OBS_STATE_URL || `${appUrl}/api/overlay/live`,
     obsUrl: env.OBS_URL || "ws://127.0.0.1:4455",
@@ -136,7 +142,7 @@ export function loadConfig(env = process.env) {
     categorySources,
     toggleScenes,
     pollMs: Math.max(100, Number(env.OBS_POLL_MS) || 750),
-    audioFadeMs: Number.isFinite(fadeParsed) ? Math.max(0, fadeParsed) : 400,
+    audioFadeMs: Number.isFinite(fadeParsed) ? Math.max(0, fadeParsed) : 0,
   };
 }
 
@@ -428,8 +434,19 @@ async function silenceCategoryAudio(obs, state, names) {
   );
 }
 
+/** Puts audio inputs back to the level they had before any fade. Hidden sources stay hidden. */
+async function restoreCategoryAudio(obs, state, names) {
+  await Promise.all(
+    names.map(async (name) => {
+      const resting = await rememberVolume(obs, state, name);
+      if (resting == null) return;
+      await writeVolume(obs, name, resting);
+    }),
+  );
+}
+
 export async function applyCategory(obs, config, state, category, log = console) {
-  let toggled = 0;
+  const jobs = [];
   for (const sceneName of config.toggleScenes) {
     const index = await sceneIndex(obs, sceneName, state, log);
     for (const [name, sources] of Object.entries(sourcesForScene(config.categorySources, sceneName))) {
@@ -448,31 +465,36 @@ export async function applyCategory(obs, config, state, category, log = console)
           continue;
         }
         if (item.enabled === want) continue;
-        try {
-          await obs.call("SetSceneItemEnabled", {
-            sceneName: item.owner,
-            sceneItemId: item.id,
-            sceneItemEnabled: want,
-          });
-        } catch (err) {
-          state.indexes.delete(sceneName);
-          if (err?.code === 600) {
-            warnOnce(
-              state,
-              log,
-              `gone:${sceneName}:${sourceName}`,
-              `source "${sourceName}" vanished from scene "${sceneName}"`,
-            );
-            continue;
-          }
-          throw err;
-        }
-        item.enabled = want;
-        toggled += 1;
+        jobs.push(
+          (async () => {
+            try {
+              await obs.call("SetSceneItemEnabled", {
+                sceneName: item.owner,
+                sceneItemId: item.id,
+                sceneItemEnabled: want,
+              });
+            } catch (err) {
+              state.indexes.delete(sceneName);
+              if (err?.code === 600) {
+                warnOnce(
+                  state,
+                  log,
+                  `gone:${sceneName}:${sourceName}`,
+                  `source "${sourceName}" vanished from scene "${sceneName}"`,
+                );
+                return 0;
+              }
+              throw err;
+            }
+            item.enabled = want;
+            return 1;
+          })(),
+        );
       }
     }
   }
-  return toggled;
+  const counts = await Promise.all(jobs);
+  return counts.reduce((sum, n) => sum + n, 0);
 }
 
 export async function applyState(obs, config, state, wanted, log) {
@@ -503,26 +525,30 @@ export async function applyState(obs, config, state, wanted, log) {
 
   // A scene switch restores that scene's saved source visibility (often Mile).
   // Re-apply the distance already on air so Show Race does not change it.
-  // Audio fades only when the distance changes, not when Uma and Cast swap.
+  // Audio changes only when the distance changes, not when Uma and Cast swap.
   if (wanted.category && (sceneChanged || wanted.category !== state.lastCategory)) {
     const categoryChanged = state.lastCategory != null && wanted.category !== state.lastCategory;
     if (sceneChanged) {
       for (const name of config.toggleScenes) state.indexes.delete(name);
     }
-    const fadeMs = config.audioFadeMs ?? 400;
-    const previous = categoryChanged
-      ? categorySourceNames(config.categorySources, config.toggleScenes, state.lastCategory)
-      : [];
+    const fadeMs = config.audioFadeMs ?? 0;
     const next = categoryChanged
       ? categorySourceNames(config.categorySources, config.toggleScenes, wanted.category)
       : [];
-    if (categoryChanged) {
+    if (categoryChanged && fadeMs > 0) {
+      const previous = categorySourceNames(config.categorySources, config.toggleScenes, state.lastCategory);
       log.info(`[obs-bridge] audio fade ${state.lastCategory} -> ${wanted.category}`);
       await fadeCategoryAudio(obs, state, previous, "out", fadeMs);
       await silenceCategoryAudio(obs, state, next);
+    } else if (categoryChanged) {
+      // Volume is restored while the next distance is still hidden, then every
+      // source flips together. The old distance is not ducked first, and the
+      // new one is not brought up from silence afterwards.
+      log.info(`[obs-bridge] audio cut ${state.lastCategory} -> ${wanted.category}`);
+      await restoreCategoryAudio(obs, state, next);
     }
     const toggled = await applyCategory(obs, config, state, wanted.category, log);
-    if (categoryChanged) await fadeCategoryAudio(obs, state, next, "in", fadeMs);
+    if (categoryChanged && fadeMs > 0) await fadeCategoryAudio(obs, state, next, "in", fadeMs);
     log.info(`[obs-bridge] category -> "${wanted.category}" (${toggled} source${toggled === 1 ? "" : "s"} changed)`);
     state.lastCategory = wanted.category;
   }

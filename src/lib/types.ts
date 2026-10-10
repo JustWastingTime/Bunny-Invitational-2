@@ -115,6 +115,25 @@ export type TopScoreUma = {
   slot: number;
 };
 
+export type PlayerForm = {
+  teamId: string;
+  teamName: string;
+  shortName: string;
+  color: string;
+  trainer: string;
+  umaName: string;
+  spriteId: string;
+  category: string;
+  slot: number;
+  games: number;
+  points: number;
+  ppg: number;
+  placePoints: number;
+  oshi: number;
+  penalty: number;
+  wins: number;
+};
+
 export type TeamPower = {
   teamId: string;
   name: string;
@@ -167,6 +186,7 @@ export type PublicPayload = {
     skillsCommon: { name: string; count: number }[];
     skillsRare: { name: string; count: number }[];
     topScores: TopScoreUma[];
+    playerTable: PlayerForm[];
     teamPowerByStats: TeamPower[];
     teamPowerByScore: TeamPower[];
     teamPowerBySkills: TeamPower[];
