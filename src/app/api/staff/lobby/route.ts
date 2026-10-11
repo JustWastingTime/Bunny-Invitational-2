@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { seedKnockoutSlots } from "@/lib/advancement";
 import { requireStaff } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { spriteFileName } from "@/lib/sprites";
@@ -13,6 +14,16 @@ import {
 } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
+
+let lastEmptySemiSeed = 0;
+
+function semisMissingGroupClubs(matches: { stage: string; teams: { slot: number; teamId: string | null }[] }[]) {
+  return matches.some(
+    (match) =>
+      match.stage === "semi" &&
+      [0, 1].some((slot) => !match.teams.some((row) => row.slot === slot && row.teamId)),
+  );
+}
 
 const KEY_RE = /^(code|room):[A-Za-z0-9_.:|-]{1,180}$/;
 
@@ -86,7 +97,7 @@ export async function GET() {
   const gate = await requireStaff();
   if (!gate.ok) return NextResponse.json({ error: "forbidden" }, { status: gate.status });
 
-  const [teams, matches, marks] = await Promise.all([
+  const [teams, storedMatches, marks] = await Promise.all([
     prisma.team.findMany({ include: { umaEntries: true } }),
     prisma.match.findMany({
       include: { teams: { orderBy: { slot: "asc" } } },
@@ -94,6 +105,22 @@ export async function GET() {
     }),
     prisma.deskMark.findMany({ where: { done: true }, select: { key: true } }),
   ]);
+
+  let matches = storedMatches;
+  if (semisMissingGroupClubs(matches) && Date.now() - lastEmptySemiSeed > 15_000) {
+    try {
+      await seedKnockoutSlots();
+      const refreshed = await prisma.match.findMany({
+        where: { stage: "semi" },
+        include: { teams: { orderBy: { slot: "asc" } } },
+      });
+      if (semisMissingGroupClubs(refreshed)) lastEmptySemiSeed = Date.now();
+      const byId = new Map(refreshed.map((match) => [match.id, match]));
+      matches = matches.map((match) => byId.get(match.id) ?? match);
+    } catch {
+      lastEmptySemiSeed = Date.now();
+    }
+  }
 
   const teamRows = teams.map((team) => ({
     id: team.id,
