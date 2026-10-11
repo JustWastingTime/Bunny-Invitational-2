@@ -7,7 +7,9 @@ import {
   PLAY_IN_STAGE,
   POPULAR_PENALTY_FIRST,
   POPULAR_PENALTY_SECOND_THIRD,
+  QF_SEEDS,
   RACE_MAPS,
+  SEMI_SEEDS,
   TEAM_KIND_MAIN,
   TEAM_KIND_PLAYIN,
   UNIQUE_BONUS,
@@ -58,9 +60,22 @@ export type BriefGroup = {
   teams: BriefClub[];
 };
 
+export type BriefLcq = {
+  id: string;
+  label: string;
+  destination: string;
+  teams: BriefClub[];
+};
+
+export type BriefMatch = {
+  id: string;
+  teams: { slot: number; teamId: string | null; name: string; shortName: string; color: string }[];
+};
+
 export type BriefSlide =
   | { id: string; kind: "soon" }
   | { id: string; kind: "title"; pool: BriefPool; groups: BriefGroup[] }
+  | { id: string; kind: "lcq"; rooms: BriefLcq[] }
   | { id: string; kind: "maps" }
   | { id: string; kind: "map"; category: Category }
   | { id: string; kind: "places" }
@@ -84,6 +99,8 @@ export function briefSlideGroup(slide: BriefSlide) {
       return "Welcome";
     case "title":
       return "Welcome";
+    case "lcq":
+      return "Last Chance";
     case "maps":
     case "map":
       return "Maps";
@@ -104,6 +121,8 @@ export function briefSlideLabel(slide: BriefSlide) {
       return "Starting soon";
     case "title":
       return slide.pool === "playin" ? "Play-in welcome" : "Main field welcome";
+    case "lcq":
+      return "Last Chance → semis";
     case "maps":
       return "The maps";
     case "map": {
@@ -130,16 +149,27 @@ export function briefSlideLabel(slide: BriefSlide) {
   }
 }
 
-export function buildBriefingSlides(teams: PublicTeam[], pool: BriefPool): BriefSlide[] {
+export function knockoutBriefing(stage: string | null | undefined) {
+  return stage === "qf" || stage === "semi" || stage === "gf";
+}
+
+export function buildBriefingSlides(teams: PublicTeam[], pool: BriefPool, matches: BriefMatch[] = [], stage?: string | null): BriefSlide[] {
   const umas = costumesInPool(teams, pool);
   const unique = umas.filter((uma) => uma.count === 1);
   const pairs = umas.filter((uma) => uma.count === 2 && uma.penalty === 0).sort(byName);
   const penalized = umas
     .filter((uma) => uma.penalty !== 0)
     .sort((a, b) => a.penalty - b.penalty || b.count - a.count || a.name.localeCompare(b.name));
-  const slides: BriefSlide[] = [
-    { id: "soon", kind: "soon" },
-    { id: "title", kind: "title", pool, groups: welcomeGroups(teams, pool) },
+  const slides: BriefSlide[] = knockoutBriefing(stage)
+    ? [
+        { id: "soon", kind: "soon" },
+        { id: "lcq", kind: "lcq", rooms: lcqRooms(matches) },
+      ]
+    : [
+        { id: "soon", kind: "soon" },
+        { id: "title", kind: "title", pool, groups: welcomeGroups(teams, pool) },
+      ];
+  slides.push(
     { id: "maps", kind: "maps" },
     ...RACE_MAPS.filter((map) => CATEGORIES.includes(map.category)).map((map) => ({
       id: `map-${map.category}`,
@@ -149,7 +179,7 @@ export function buildBriefingSlides(teams: PublicTeam[], pool: BriefPool): Brief
     { id: "places", kind: "places" },
     { id: "oshi", kind: "oshi", uniqueCount: unique.length, pairCount: pairs.length },
     { id: "penalty", kind: "penalty", penalized: penalized.length },
-  ];
+  );
 
   const heroes = penalized.filter((uma) => uma.penalty === POPULAR_PENALTY_FIRST);
   const rest = penalized.filter((uma) => uma.penalty !== POPULAR_PENALTY_FIRST);
@@ -199,6 +229,26 @@ export const BRIEF_POINTS = {
   first: POPULAR_PENALTY_FIRST,
   second: POPULAR_PENALTY_SECOND_THIRD,
 };
+
+function lcqRooms(matches: BriefMatch[]): BriefLcq[] {
+  return QF_SEEDS.map((qf) => {
+    const semi = SEMI_SEEDS.find((row) => row.qfId === qf.id);
+    const semiNumber = semi?.id.split("-").pop() ?? "";
+    const match = matches.find((row) => row.id === qf.id);
+    const teams = [...(match?.teams ?? [])].sort((a, b) => a.slot - b.slot).map((team) => ({
+      id: team.teamId || `${qf.id}-${team.slot}`,
+      name: team.teamId ? team.name : "TBD",
+      short: team.teamId ? team.shortName || team.name : "TBD",
+      color: team.teamId ? team.color || "#ffd56a" : "#ffd56a",
+    }));
+    return {
+      id: qf.id,
+      label: `LCQ ${qf.id.split("-").pop()}`,
+      destination: semiNumber ? `SF ${semiNumber}` : "SF",
+      teams,
+    };
+  });
+}
 
 function welcomeGroups(teams: PublicTeam[], pool: BriefPool): BriefGroup[] {
   const kind = pool === "playin" ? TEAM_KIND_PLAYIN : TEAM_KIND_MAIN;

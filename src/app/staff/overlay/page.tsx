@@ -2,7 +2,7 @@
 
 import { memo, startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { BriefingDeck, BriefingFrame } from "@/components/briefing-deck";
-import { briefSlideGroup, briefSlideLabel, briefingPool, buildBriefingSlides } from "@/lib/briefing-slides";
+import { briefSlideGroup, briefSlideLabel, briefingPool, buildBriefingSlides, knockoutBriefing } from "@/lib/briefing-slides";
 import { CATEGORIES, CATEGORY_LABEL, mainStageDayLabel } from "@/lib/constants";
 import { GateBoard } from "@/components/gate-board";
 import { usePublicData } from "@/components/use-public-data";
@@ -59,8 +59,16 @@ export default function OverlayDirectorPage() {
   const pending = Boolean(o && (prepMatchId !== o.activeMatchId || cat !== liveCat));
   const cuePool = briefingPool(stagedMatch?.stage);
   const airPool = briefingPool(liveMatch?.stage);
-  const deck = useMemo(() => buildBriefingSlides(data?.teams ?? [], cuePool), [data?.teams, cuePool]);
-  const airDeck = useMemo(() => buildBriefingSlides(data?.teams ?? [], airPool), [data?.teams, airPool]);
+  const cueKnockout = knockoutBriefing(stagedMatch?.stage);
+  const airKnockout = knockoutBriefing(liveMatch?.stage);
+  const deck = useMemo(
+    () => buildBriefingSlides(data?.teams ?? [], cuePool, data?.matches ?? [], cueKnockout ? stagedMatch?.stage : null),
+    [data?.teams, data?.matches, cuePool, cueKnockout, stagedMatch?.stage],
+  );
+  const airDeck = useMemo(
+    () => buildBriefingSlides(data?.teams ?? [], airPool, data?.matches ?? [], airKnockout ? liveMatch?.stage : null),
+    [data?.teams, data?.matches, airPool, airKnockout, liveMatch?.stage],
+  );
   const rawCue = cueSlide ?? data?.overlay.slide ?? 0;
   const index = deck.length ? Math.min(Math.max(0, rawCue), deck.length - 1) : 0;
   const airSlide = sentSlide ?? data?.overlay.slide ?? 0;

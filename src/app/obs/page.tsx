@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { HoldScreen } from "@/components/hold-screen";
 import { BriefingDeck } from "@/components/briefing-deck";
-import { briefingPool, buildBriefingSlides } from "@/lib/briefing-slides";
+import { briefingPool, buildBriefingSlides, knockoutBriefing } from "@/lib/briefing-slides";
 import { CATEGORIES, CATEGORY_LABEL, RACE_MAPS, STYLE_LABEL } from "@/lib/constants";
 import { defaultGate } from "@/lib/overlay-gates";
 import type { Cue, GroupStandingRow, PublicMatch, PublicPayload, PublicTeam, PublicUma } from "@/lib/types";
@@ -216,7 +216,12 @@ export default function ObsPage() {
   if (view === "slides") {
     const briefingMatch = data.matches.find((m) => m.id === shown.matchId) ?? null;
     const pool = briefingPool(briefingMatch?.stage);
-    const slides = buildBriefingSlides(data.teams, pool);
+    const slides = buildBriefingSlides(
+      data.teams,
+      pool,
+      data.matches,
+      knockoutBriefing(briefingMatch?.stage) ? briefingMatch?.stage : null,
+    );
     const slideIndex = Math.min(Math.max(0, Number(shown.slide) || 0), Math.max(0, slides.length - 1));
     const slide = slides[slideIndex];
     return (

@@ -10,6 +10,7 @@ import {
   briefSlideLabel,
   signed,
   type BriefClub,
+  type BriefLcq,
   type BriefPool,
   type BriefRunner,
   type BriefSlide,
@@ -75,6 +76,8 @@ function kickerFor(slide: BriefSlide) {
       return "Stream briefing";
     case "title":
       return "Stream briefing";
+    case "lcq":
+      return "Last Chance";
     case "maps":
       return "Courses";
     case "map":
@@ -98,6 +101,8 @@ function bodyFor(slide: BriefSlide) {
       return null;
     case "title":
       return <TitleSlide pool={slide.pool} groups={slide.groups} />;
+    case "lcq":
+      return <LcqSlide rooms={slide.rooms} />;
     case "maps":
       return <MapsSlide />;
     case "map":
@@ -156,6 +161,36 @@ function TitleSlide({ pool, groups }: { pool: BriefPool; groups: { id: string; l
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function LcqSlide({ rooms }: { rooms: BriefLcq[] }) {
+  return (
+    <div className="brief-lcq">
+      <h1>Last Chance</h1>
+      <p className="brief-lede">Win the lobby, and that club joins the semi named on the card.</p>
+      <div className="brief-lcq-board">
+        {rooms.map((room) => (
+          <section key={room.id} className="brief-lcq-card">
+            <h2>{room.label}</h2>
+            {room.teams.length ? (
+              <ol>
+                {room.teams.map((team) => (
+                  <li key={team.id}>
+                    <ClubRow team={team} />
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="brief-note">Clubs are not seated yet.</p>
+            )}
+            <p className="brief-lcq-next">
+              Winner <span>→ {room.destination}</span>
+            </p>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

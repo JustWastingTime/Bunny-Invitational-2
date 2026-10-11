@@ -155,6 +155,79 @@
   list-style: none;
 }
 
+.brief-lcq {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  justify-content: center;
+  gap: 28px;
+}
+
+.brief-lcq h1 {
+  margin: 0;
+  font-size: 72px;
+}
+
+.brief-lcq .brief-lede {
+  margin-top: 0;
+}
+
+.brief-lcq-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.brief-lcq-card {
+  min-width: 0;
+  border: 1px solid rgba(255, 246, 238, 0.16);
+  border-radius: 28px;
+  background: rgba(255, 246, 238, 0.07);
+  padding: 28px 28px 22px;
+}
+
+.brief-lcq-card h2 {
+  margin: 0 0 18px;
+  font-size: 40px;
+}
+
+.brief-lcq-card ol {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.brief-lcq-next {
+  margin: 28px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 246, 238, 0.16);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 246, 238, 0.72);
+}
+
+.brief-lcq-next span {
+  color: #ffd56a;
+}
+
+.brief-lcq-card .brief-club strong {
+  font-size: 40px;
+}
+
+.brief-lcq-card .brief-club em {
+  font-size: 22px;
+}
+
+.brief-lcq-card .brief-club i {
+  width: 14px;
+  height: 48px;
+}
+
 .brief-club {
   display: flex;
   align-items: center;
