@@ -160,12 +160,12 @@
   height: 100%;
   flex-direction: column;
   justify-content: center;
-  gap: 28px;
+  gap: 18px;
 }
 
 .brief-lcq h1 {
   margin: 0;
-  font-size: 72px;
+  font-size: 64px;
 }
 
 .brief-lcq .brief-lede {
@@ -183,40 +183,36 @@
   border: 1px solid rgba(255, 246, 238, 0.16);
   border-radius: 28px;
   background: rgba(255, 246, 238, 0.07);
-  padding: 28px 28px 22px;
+  padding: 22px 24px 18px;
 }
 
-.brief-lcq-card h2 {
-  margin: 0 0 18px;
-  font-size: 40px;
+.brief-lcq-card h2,
+.brief-lcq-semi h3 {
+  margin: 0 0 12px;
+  font-size: 34px;
 }
 
 .brief-lcq-card ol {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.brief-lcq-next {
-  margin: 28px 0 0;
-  padding-top: 18px;
+.brief-lcq-semi {
+  margin-top: 16px;
+  padding-top: 14px;
   border-top: 1px solid rgba(255, 246, 238, 0.16);
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: rgba(255, 246, 238, 0.72);
 }
 
-.brief-lcq-next span {
+.brief-lcq-semi h3 {
   color: #ffd56a;
 }
 
 .brief-lcq-card .brief-club strong {
-  font-size: 40px;
+  font-size: 32px;
 }
 
 .brief-lcq-card .brief-club em {

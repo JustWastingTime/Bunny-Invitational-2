@@ -65,6 +65,7 @@ export type BriefLcq = {
   label: string;
   destination: string;
   teams: BriefClub[];
+  semiTeams: BriefClub[];
 };
 
 export type BriefMatch = {
@@ -230,22 +231,31 @@ export const BRIEF_POINTS = {
   second: POPULAR_PENALTY_SECOND_THIRD,
 };
 
+function seatedClubs(match: BriefMatch | undefined, slots: number[], prefix: string): BriefClub[] {
+  const bySlot = new Map((match?.teams ?? []).map((team) => [team.slot, team]));
+  return slots.map((slot) => {
+    const team = bySlot.get(slot);
+    const named = Boolean(team?.teamId);
+    return {
+      id: team?.teamId || `${prefix}-${slot}`,
+      name: named ? team!.name : "TBD",
+      short: named ? team!.shortName || team!.name : "TBD",
+      color: named ? team!.color || "#ffd56a" : "#ffd56a",
+    };
+  });
+}
+
 function lcqRooms(matches: BriefMatch[]): BriefLcq[] {
   return QF_SEEDS.map((qf) => {
     const semi = SEMI_SEEDS.find((row) => row.qfId === qf.id);
     const semiNumber = semi?.id.split("-").pop() ?? "";
-    const match = matches.find((row) => row.id === qf.id);
-    const teams = [...(match?.teams ?? [])].sort((a, b) => a.slot - b.slot).map((team) => ({
-      id: team.teamId || `${qf.id}-${team.slot}`,
-      name: team.teamId ? team.name : "TBD",
-      short: team.teamId ? team.shortName || team.name : "TBD",
-      color: team.teamId ? team.color || "#ffd56a" : "#ffd56a",
-    }));
+    const semiMatch = matches.find((row) => row.id === semi?.id);
     return {
       id: qf.id,
       label: `LCQ ${qf.id.split("-").pop()}`,
       destination: semiNumber ? `SF ${semiNumber}` : "SF",
-      teams,
+      teams: seatedClubs(matches.find((row) => row.id === qf.id), [0, 1, 2], qf.id),
+      semiTeams: seatedClubs(semiMatch, [0, 1], semi?.id ?? qf.id),
     };
   });
 }
