@@ -125,6 +125,10 @@ export type PlayerForm = {
   spriteId: string;
   category: string;
   slot: number;
+  rating: string;
+  score: number;
+  style: string;
+  styleLabel: string;
   games: number;
   points: number;
   ppg: number;

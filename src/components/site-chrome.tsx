@@ -13,6 +13,7 @@ const LINKS: { href: string; label: string; live?: boolean; board?: boolean }[] 
   { href: "/schedule", label: "Schedule" },
   { href: "/scoreboard", label: "Scoreboard" },
   { href: "/teams", label: "Teams" },
+  { href: "/players", label: "Players" },
   { href: "/play-in", label: "Play-in", board: true },
   { href: "/stats", label: "Stats", live: true },
   { href: "/rules", label: "Rules" },

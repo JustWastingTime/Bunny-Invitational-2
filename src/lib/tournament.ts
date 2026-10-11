@@ -422,6 +422,8 @@ export function buildStats(
       slot?: number;
       skills: string[];
       score?: string | null;
+      style?: string | null;
+      styleLabel?: string | null;
       stats: { speed: number; stamina: number; power: number; guts: number; wisdom: number };
       aptitudes: { terrain: string | null; distance: string | null; style: string | null };
       isUnique: boolean;
@@ -535,26 +537,6 @@ export function buildStats(
     };
   });
 
-  const topScores = teams
-    .flatMap((team) =>
-      team.roster.map((uma, index) => ({
-        teamId: team.id,
-        teamName: team.name,
-        shortName: team.shortName,
-        color: team.color,
-        trainer: uma.trainer?.trim() ?? "",
-        umaName: uma.umaName,
-        spriteId: uma.spriteId,
-        rating: uma.rating?.trim() ?? "",
-        score: scoreTotal(uma.score),
-        category: uma.category ?? "",
-        slot: uma.slot ?? index,
-      })),
-    )
-    .filter((uma) => uma.score > 0)
-    .sort((a, b) => b.score - a.score || a.umaName.localeCompare(b.umaName))
-    .slice(0, 10);
-
   const playerRows = new Map<
     string,
     {
@@ -567,6 +549,10 @@ export function buildStats(
       spriteId: string;
       category: string;
       slot: number;
+      rating: string;
+      score: number;
+      style: string;
+      styleLabel: string;
       games: number;
       points: number;
       placePoints: number;
@@ -592,6 +578,10 @@ export function buildStats(
           spriteId: placement.spriteId || uma?.spriteId || "",
           category: race.category,
           slot: placement.slot,
+          rating: uma?.rating?.trim() ?? "",
+          score: scoreTotal(uma?.score),
+          style: uma?.style ?? "",
+          styleLabel: uma?.styleLabel?.trim() || uma?.style || "",
           games: 0,
           points: 0,
           placePoints: 0,
@@ -622,7 +612,7 @@ export function buildStats(
     mostPopular: umaPopulation[0] ?? null,
     mostPopularCombined: [...combined.values()].sort((a, b) => b.count - a.count)[0] ?? null,
     umaPopulation,
-    topScores,
+    topScores: [],
     playerTable,
     skillsCommon: skillList.slice(0, 12),
     skillsRare: [...skillList].filter((s) => s.count >= 1).sort((a, b) => a.count - b.count || a.name.localeCompare(b.name)).slice(0, 12),

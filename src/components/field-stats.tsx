@@ -1,13 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { spriteFileName, spriteLocalPath } from "@/lib/sprites";
-import type { PlayerForm, PublicPayload, PublicTeam, TeamPower, TopScoreUma } from "@/lib/types";
+import type { PublicPayload, TeamPower } from "@/lib/types";
 
-export function FieldStats({ stats, teams }: { stats: PublicPayload["stats"]; teams?: PublicTeam[] }) {
-  const [tab, setTab] = useState<"umas" | "teams" | "skills" | "players">("umas");
-  const topScores = stats.topScores?.length ? stats.topScores : scoresFromTeams(teams);
+export function FieldStats({ stats }: { stats: PublicPayload["stats"] }) {
+  const [tab, setTab] = useState<"umas" | "teams" | "skills">("umas");
 
   return (
     <div className="grid gap-8">
@@ -30,39 +28,10 @@ export function FieldStats({ stats, teams }: { stats: PublicPayload["stats"]; te
         </div>
       </dl>
 
-      {topScores.length ? (
-        <section>
-          <h2 className="mb-2 font-[family-name:var(--font-display)] text-2xl">Highest scores</h2>
-          <ol className="grid gap-1">
-            {topScores.map((uma, index) => (
-              <li key={`${uma.teamId}-${uma.category}-${uma.slot}`}>
-                <Link
-                  href={`/teams/${uma.teamId}`}
-                  className="flex items-center gap-3 rounded-xl px-2 py-1.5 text-sm hover:bg-[var(--surface)]"
-                >
-                  <span className="w-6 shrink-0 tabular-nums text-[var(--ink-soft)]">{index + 1}</span>
-                  <UmaSprite spriteId={uma.spriteId} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold">{uma.umaName}</span>
-                    <span className="flex min-w-0 items-center gap-2 text-[var(--ink-soft)]">
-                      <span className="h-2.5 w-2.5 shrink-0" style={{ background: uma.color }} />
-                      <span className="truncate">{uma.trainer || uma.teamName}</span>
-                    </span>
-                  </span>
-                  <span className="shrink-0 font-bold tracking-wide">{uma.rating || "—"}</span>
-                  <span className="w-[4.5rem] shrink-0 text-right tabular-nums">{uma.score.toLocaleString()}</span>
-                </Link>
-              </li>
-            ))}
-          </ol>
-        </section>
-      ) : null}
-
       <div className="flex flex-wrap gap-2">
         {(
           [
             ["umas", "Uma population"],
-            ["players", "Players"],
             ["teams", "Team strength"],
             ["skills", "Skill meta"],
           ] as const
@@ -129,8 +98,6 @@ export function FieldStats({ stats, teams }: { stats: PublicPayload["stats"]; te
         </div>
       ) : null}
 
-      {tab === "players" ? <PlayerTable rows={stats.playerTable ?? []} /> : null}
-
       {tab === "teams" ? (
         <div className="grid gap-10 lg:grid-cols-3">
           <TeamRank title="Stats" teams={stats.teamPowerByStats} value={(team) => team.totalStats.toLocaleString()} />
@@ -150,103 +117,6 @@ export function FieldStats({ stats, teams }: { stats: PublicPayload["stats"]; te
           <SkillList title="Rarest taken" items={stats.skillsRare} />
         </div>
       ) : null}
-    </div>
-  );
-}
-
-function scoresFromTeams(teams: PublicTeam[] | undefined): TopScoreUma[] {
-  if (!teams?.length) return [];
-  return teams
-    .filter((team) => team.kind !== "playin")
-    .flatMap((team) =>
-      team.roster.map((uma) => ({
-        teamId: team.id,
-        teamName: team.name,
-        shortName: team.shortName,
-        color: team.color,
-        trainer: uma.trainer.trim(),
-        umaName: uma.umaName,
-        spriteId: uma.spriteId,
-        rating: uma.rating?.trim() ?? "",
-        score: Number(String(uma.score ?? "").replace(/[^\d.]/g, "")) || 0,
-        category: uma.category,
-        slot: uma.slot,
-      })),
-    )
-    .filter((uma) => uma.score > 0)
-    .sort((a, b) => b.score - a.score || a.umaName.localeCompare(b.umaName))
-    .slice(0, 10);
-}
-
-function signedPoints(n: number) {
-  if (n > 0) return `+${n}`;
-  return String(n);
-}
-
-function PlayerTable({ rows }: { rows: PlayerForm[] }) {
-  if (!rows.length) {
-    return <p className="text-sm text-[var(--ink-soft)]">No races scored yet.</p>;
-  }
-  return (
-    <div className="min-w-0 overflow-x-auto rounded-2xl bg-[var(--surface)]">
-      <table className="ink-table min-w-[52rem]">
-        <thead>
-          <tr>
-            <th scope="col">Player</th>
-            <th scope="col">Team</th>
-            <th scope="col" className="text-right">
-              PPG
-            </th>
-            <th scope="col" className="text-right">
-              GP
-            </th>
-            <th scope="col" className="text-right">
-              Pts
-            </th>
-            <th scope="col" className="text-right">
-              Place
-            </th>
-            <th scope="col" className="text-right">
-              Oshi
-            </th>
-            <th scope="col" className="text-right">
-              Penalty
-            </th>
-            <th scope="col" className="text-right">
-              Wins
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, index) => (
-            <tr key={`${row.teamId}-${row.category}-${row.slot}`}>
-              <td>
-                <Link href={`/teams/${row.teamId}`} className="flex items-center gap-2">
-                  <span className="w-5 shrink-0 tabular-nums text-[var(--ink-soft)]">{index + 1}</span>
-                  <UmaSprite spriteId={row.spriteId} />
-                  <span className="min-w-0">
-                    <span className="block truncate font-semibold">{row.trainer || "—"}</span>
-                    <span className="block truncate text-sm text-[var(--ink-soft)]">{row.umaName}</span>
-                  </span>
-                </Link>
-              </td>
-              <td>
-                <Link href={`/teams/${row.teamId}`} className="inline-flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 shrink-0" style={{ background: row.color }} />
-                  {row.shortName}
-                </Link>
-              </td>
-              <td className="text-right font-semibold tabular-nums">{row.ppg.toFixed(1)}</td>
-              <td className="text-right tabular-nums">{row.games}</td>
-              <td className="text-right tabular-nums">{signedPoints(row.points)}</td>
-              <td className="text-right tabular-nums">{row.placePoints}</td>
-              <td className="text-right tabular-nums">{signedPoints(row.oshi)}</td>
-              <td className="text-right tabular-nums">{signedPoints(row.penalty)}</td>
-              <td className="text-right tabular-nums">{row.wins}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 }
