@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { PUBLIC_GROUP_SCHEDULE, PUBLIC_GROUPS_LIVE, PUBLIC_KNOCKOUT_SCHEDULE, mainStageDayLabel } from "@/lib/constants";
-import { NowNext } from "@/components/now-next";
 import { GroupSchedule, KnockoutBoard } from "@/components/tournament-ui";
 import { DataError, Loading, PageTitle } from "@/components/site-chrome";
 import { usePublicData } from "@/components/use-public-data";
@@ -27,7 +26,6 @@ export default function SchedulePage() {
       <PageTitle kicker="Order of play" title="Schedule">
         {`Group matches 1–3 on ${mainStageDayLabel(1)}, matches 4–7 on ${mainStageDayLabel(2)}, then last chance, semis, and finals on ${mainStageDayLabel(3)}.`}
       </PageTitle>
-      <NowNext now={data.now} next={data.next} />
 
       <div>
         <div className="mb-3 flex flex-wrap gap-2">

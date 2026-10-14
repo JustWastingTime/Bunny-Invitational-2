@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { NowNext } from "@/components/now-next";
 import { DataError, Loading, PageTitle } from "@/components/site-chrome";
 import { GroupTable, KnockoutBoard, ScorerList } from "@/components/tournament-ui";
 import { usePublicData } from "@/components/use-public-data";
@@ -26,7 +25,6 @@ export default function ScoreboardPage() {
           ? "Group tables, knockout, and who actually scored the points."
           : "Group scores and who actually scored the points."}
       </PageTitle>
-      <NowNext now={data.now} next={data.next} />
 
       {data.groups.length ? (
         <div className="grid gap-10 xl:grid-cols-3">

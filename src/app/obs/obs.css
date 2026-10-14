@@ -31,6 +31,17 @@ body:has(.obs-root) {
   display: block !important;
 }
 
+/* Opaque cover while a screen fades out and the next fades in. Matchup → race
+   leaves this off so the race scene can show through that one handoff. */
+.obs-veil {
+  background: #000;
+}
+
+html:has(.obs-veil),
+body:has(.obs-veil) {
+  background: #000 !important;
+}
+
 .obs-bg {
   position: absolute;
   inset: 0;

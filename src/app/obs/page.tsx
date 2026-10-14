@@ -9,6 +9,17 @@ import { CATEGORIES, CATEGORY_LABEL, RACE_MAPS, STYLE_LABEL } from "@/lib/consta
 import { defaultGate } from "@/lib/overlay-gates";
 import type { Cue, GroupStandingRow, PublicMatch, PublicPayload, PublicTeam, PublicUma } from "@/lib/types";
 
+/** Race and gates are drawn on top of the footage, so they crossfade clear. */
+function liveOverlay(view: string) {
+  return view === "race" || view === "gates";
+}
+
+/** Matchup → race is the one handoff that should show the scene underneath. */
+function clearTransition(from: string, to: string) {
+  if (from === "matchup" && to === "race") return true;
+  return liveOverlay(from) && liveOverlay(to);
+}
+
 type OverlayPayload = {
   overlay: PublicPayload["overlay"];
   match: PublicMatch | null;
@@ -31,7 +42,9 @@ export default function ObsPage() {
     slide: string;
   } | null>(null);
   const [phase, setPhase] = useState<"in" | "out">("in");
+  const [veil, setVeil] = useState(false);
   const shownRef = useRef(shown);
+  const veilOffRef = useRef(0);
   shownRef.current = shown;
 
   useEffect(() => {
@@ -142,9 +155,11 @@ export default function ObsPage() {
     const nextSlide = slide || "0";
     const nextShown = { view, category, matchId: shownMatchId, focus: focus || "", slide: nextSlide };
     const current = shownRef.current;
+    window.clearTimeout(veilOffRef.current);
     if (!current) {
       setShown(nextShown);
       setPhase("in");
+      setVeil(false);
       return;
     }
     if (
@@ -156,14 +171,23 @@ export default function ObsPage() {
     ) {
       return;
     }
+    const clear = clearTransition(current.view, view);
+    setVeil(!clear);
     setPhase("out");
     // Bringing the race up waits for OBS: the scene transition has to finish and
-    // the race has to start before the rows rise in.
+    // the race has to start before the rows rise in. Matchup → race stays clear
+    // so the footage shows through; every other handoff covers with black.
+    const hold = view === "race" ? 2000 : 380;
     const t = window.setTimeout(() => {
       setShown(nextShown);
       setPhase("in");
-    }, view === "race" ? 2000 : 380);
-    return () => window.clearTimeout(t);
+      if (!clear && liveOverlay(view)) setVeil(false);
+      else if (!clear) veilOffRef.current = window.setTimeout(() => setVeil(false), 700);
+    }, hold);
+    return () => {
+      window.clearTimeout(t);
+      window.clearTimeout(veilOffRef.current);
+    };
   }, [viewKey]);
 
   if (!data) {
@@ -185,6 +209,7 @@ export default function ObsPage() {
     ? { teamId: shown.focus.slice(0, shown.focus.lastIndexOf(":")), slot: Number(shown.focus.slice(shown.focus.lastIndexOf(":") + 1)) }
     : null;
 
+  const rootClass = veil ? "obs-root obs-veil" : "obs-root";
   const wrap = (child: ReactNode) => (
     <div className={phase === "out" ? "obs-view-out" : "obs-view-in"}>{child}</div>
   );
@@ -192,7 +217,7 @@ export default function ObsPage() {
   if (view === "pause") {
     const cue = data.now ?? data.next;
     return (
-      <div className="obs-root">
+      <div className={rootClass}>
         {wrap(
           <HoldScreen
             title="PAUSE"
@@ -207,7 +232,7 @@ export default function ObsPage() {
 
   if (view === "ending") {
     return (
-      <div className="obs-root">
+      <div className={rootClass}>
         {wrap(<HoldScreen title="THANK YOU" tag="Thank you for watching" />)}
       </div>
     );
@@ -225,7 +250,7 @@ export default function ObsPage() {
     const slideIndex = Math.min(Math.max(0, Number(shown.slide) || 0), Math.max(0, slides.length - 1));
     const slide = slides[slideIndex];
     return (
-      <div className="obs-root">
+      <div className={rootClass}>
         <div className={`brief-host ${phase === "out" ? "obs-view-out" : "obs-view-in"}`}>
           {slide ? <BriefingDeck slide={slide} index={slideIndex} total={slides.length} pool={pool} /> : null}
         </div>
@@ -235,7 +260,7 @@ export default function ObsPage() {
 
   if (!liveMatch) {
     return (
-      <div className="obs-root">
+      <div className={rootClass}>
         <div className="mu">
           <header className="mu-top">
             <h1>Waiting for a match…</h1>
@@ -249,7 +274,7 @@ export default function ObsPage() {
 
   if (view === "matchup" && shownFocus && Number.isInteger(shownFocus.slot)) {
     return (
-      <div className="obs-root">
+      <div className={rootClass}>
         {wrap(
           <UmaSpotlight
             match={liveMatch}
@@ -263,7 +288,7 @@ export default function ObsPage() {
   }
 
   return (
-    <div className="obs-root">
+    <div className={rootClass}>
       {view === "matchup"
         ? wrap(<Matchup match={liveMatch} teams={data.teams} category={cat} />)
         : view === "race" || view === "gates"

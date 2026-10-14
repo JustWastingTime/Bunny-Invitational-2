@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { NowNext } from "@/components/now-next";
 import { GroupTable } from "@/components/tournament-ui";
 import { MapsGrid } from "@/components/race-maps";
 import { ActionButton, DataError, Loading, SectionHeading, Ticker } from "@/components/site-chrome";
@@ -73,10 +72,12 @@ export default function HomePage() {
         </dl>
       </section>
 
-      {error && !data ? <DataError what="board" /> : null}
-      {data ? <NowNext now={data.now} next={data.next} /> : error ? null : <Loading what="board" />}
+      <Podium />
 
-      {data && PUBLIC_GROUPS_LIVE ? (
+      {PUBLIC_GROUPS_LIVE ? (
+        !data ? (
+          error ? <DataError what="board" /> : <Loading what="board" />
+        ) : (
         <section>
           <SectionHeading
             title="Group tables"
@@ -97,6 +98,7 @@ export default function HomePage() {
             ))}
           </div>
         </section>
+        )
       ) : (
         <section id="maps">
           <SectionHeading title="The five distances">
@@ -106,6 +108,49 @@ export default function HomePage() {
         </section>
       )}
     </div>
+  );
+}
+
+const PODIUM = [
+  { place: "2", code: "KITA", id: "kita", color: "#b41225", label: "Second", order: "order-2 sm:order-1" },
+  { place: "1", code: "SOUP", id: "soup", color: "#67bed9", label: "Winner", order: "order-1 sm:order-2" },
+  { place: "3", code: "BUNS", id: "buns", color: "#e73d57", label: "Third", order: "order-3" },
+] as const;
+
+function Podium() {
+  return (
+    <section aria-label="Final standings" className="rise">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="kicker">Final result</p>
+          <h2 className="display-lg mt-2 text-3xl sm:text-4xl">SOUP take the invitational</h2>
+        </div>
+        <p className="max-w-[28ch] text-sm text-[var(--ink-soft)] sm:text-right">Two-set grand final.</p>
+      </div>
+      <ol className="grid items-end gap-3 sm:grid-cols-3">
+        {PODIUM.map((club) => (
+          <li key={club.id} className={club.order}>
+            <Link
+              href={`/teams/${club.id}`}
+              className="group block border-2 border-dashed border-[var(--line-strong)] bg-[var(--surface)] transition-colors hover:border-[var(--ink)]"
+            >
+              <span className="block h-2" style={{ background: club.color }} />
+              <span className={`flex items-end justify-between gap-3 px-4 ${club.place === "1" ? "py-7 sm:py-9" : club.place === "2" ? "py-5" : "py-4"}`}>
+                <span>
+                  <span className="block text-xs font-extrabold uppercase tracking-[0.14em] text-[var(--ink-soft)]">
+                    {club.label}
+                  </span>
+                  <span className={`display-xl mt-1 block ${club.place === "1" ? "text-5xl sm:text-6xl" : "text-4xl"}`}>
+                    {club.code}
+                  </span>
+                </span>
+                <span className={`tote ${club.place === "1" ? "tote-gold text-lg" : "text-base"}`}>{club.place}</span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 
